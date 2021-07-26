@@ -4,26 +4,48 @@ An experimental environment for context-based flow artifact analysis. It impleme
 * building a context for the specified object using the set of predefined queries
 * performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
 
-The context is defined as a collection of artifacts related to the artifact in question.
-The context is build by querying the source data store (currently represented by Flowmon REST API). 
+A context is organized as a key,value collection. The key is a string label. The value is an artifact. 
+The context is build by querying the source data store (currently represented by Flowmon REST API)
+using the query specified with the builder.
 The context is built from: 
 
-* environment -  general system wide information 
-* local context - information related to artifact type
+* environment -  general system wide information, which is available for all analyzed artifacts. 
+* local context - information related to the specific artifact type, this context is created by builders.
 
 The artifact data model is typed. It means that each artifact has associated type, which 
-defines its operations, fields and also the builders for the local contaxt. 
+defines its operations, fields and also the builders that contain queries executed to get the local context. 
 
-For example, consider the `flow` artifacts, it contains a builder for enriching the flow
+For example, consider the `flow` artifacts, it contains set of operations, fields and builder for enriching the flow
 with domain information:
 
 ```
-input flow
-select dns.reply where dns.dst_ip = flow.src_ip and dns.a = flow.dst_ip when last_preceding(dns,flow) 
+artifact flow:
+    operations:
+        - start
+        - end
+    fields:
+        - application_protocol
+        - content
+        - dest_hostname
+        - dest_ip
+        - dest_port
+        - end_time
+        - in_bytes
+        - network_direction
+        - out_bytes
+        - packet_count
+        - proto_info
+        - protocol
+        - src_ip
+        - src_port
+        - start_time
+        - tcp_flags
+        - transport_protocol
+    builders:
+        dest_fqdn: select dns.reply where dns.dst_ip = flow.src_ip and dns.a = flow.dst_ip when last_preceding(dns,flow) 
 ```
-
-
-
+In this example, there is a single builder that creates a local context with label `domain` associated 
+with a value, which is an artifact of type `dns`.
 
 ## Environment and Packages 
 

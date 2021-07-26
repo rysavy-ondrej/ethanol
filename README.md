@@ -10,6 +10,9 @@ An experimental environment for context-based flow artifact analysis. It impleme
 ## Why?
 
 ## Documentation
+The system is used to analyse the data source, e.g., NetFlow collection that provides an input data. For the selected object, its context 
+is created and then analyzed. Using this approach it is possible to either provide a rich information for each object or to perfom advanced
+security threats identification or network troubleshooting. 
 
 ## Install
 

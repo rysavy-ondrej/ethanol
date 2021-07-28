@@ -2,6 +2,8 @@
 using NRules.Fluent;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Ethanol.Demo
@@ -13,7 +15,10 @@ namespace Ethanol.Demo
             Console.WriteLine("This is a demo showing the principles of Context-based analysis.");
 
             Artifact input = null;
-            DataSource source = null;
+            DataSource source = OpenDataSource("Data");
+
+
+
 
             var ctx = InitializeContext(input, source);
             var rules = LoadRules(Assembly.GetExecutingAssembly());
@@ -23,6 +28,21 @@ namespace Ethanol.Demo
             {
                 AnalyseOutput(artifact);
             }
+        }
+
+        /// <summary>
+        /// Creates data source from files in the specified folder.
+        /// </summary>
+        /// <param name="path">The path to the folder with data files.</param>
+        /// <returns></returns>
+        private static DataSource OpenDataSource(string path)
+        {
+            foreach(var file in Directory.GetFiles(path))
+            {
+
+            }
+            var ds = new DataSource()
+            throw new NotImplementedException();
         }
 
         private static IEnumerable<Artifact> EvaluateContext(Context ctx, Artifact input, RuleRepository rules)
@@ -66,7 +86,8 @@ namespace Ethanol.Demo
 
             foreach (var builder in target.Builders)
             {
-                
+                var collection = source.GetArtifactSource(builder.OutputType);
+                collection.Artifacts.Where(builder.GetPredicate(target)); 
             }
             return ctx;
         }

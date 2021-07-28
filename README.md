@@ -90,6 +90,10 @@ This project was developed in the frame of research initiative [Context-based En
 
 ## See Also
 
+### References
+
+* [Temporal Database Concepts](https://www.cs.uct.ac.za/mit_notes/database/htmls/chp18.html)
+
 ### Suitable datasets
 
 * [LITNET 2020 Dataset](https://dataset.litnet.lt/index.php)

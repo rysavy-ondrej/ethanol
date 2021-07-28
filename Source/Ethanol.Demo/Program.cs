@@ -14,13 +14,20 @@ namespace Ethanol.Demo
         {
             Console.WriteLine("This is a demo showing the principles of Context-based analysis.");
 
-            Artifact input = null;
+            var tlsLoader = new CsvArtifactSource<ArtifactTlsFlow>(@"Data\tls.csv");
+
+            Artifact input = tlsLoader.Artifacts.Skip(368).First();
             DataSource source = OpenDataSource("Data");
 
-
-
-
             var ctx = InitializeContext(input, source);
+
+            Console.WriteLine("--- ARTIFACT ---");
+            input.Dump(Console.Out);
+            Console.WriteLine();
+            Console.WriteLine("--- CONTEXT ---");
+            ctx.Dump(Console.Out);
+            Console.WriteLine();
+
             var rules = LoadRules(Assembly.GetExecutingAssembly());
 
             var output = EvaluateContext(ctx, input, rules);
@@ -37,12 +44,17 @@ namespace Ethanol.Demo
         /// <returns></returns>
         private static DataSource OpenDataSource(string path)
         {
-            foreach(var file in Directory.GetFiles(path))
+            ArtifactFactory.LoadArtifactsFromAssembly(Assembly.GetExecutingAssembly());
+            IEnumerable<ArtifactSource> GetSources()
             {
-
+                foreach (var file in Directory.GetFiles(path))
+                {
+                    var artifactType = ArtifactFactory.GetArtifact(Path.GetFileNameWithoutExtension(file), StringComparison.InvariantCultureIgnoreCase);
+                    yield return CsvArtifactSource.CreateArtifactSource(artifactType, file);
+                }
             }
-            var ds = new DataSource()
-            throw new NotImplementedException();
+            var ds = new DataSource(GetSources());
+            return ds;
         }
 
         private static IEnumerable<Artifact> EvaluateContext(Context ctx, Artifact input, RuleRepository rules)
@@ -54,7 +66,7 @@ namespace Ethanol.Demo
             var session = factory.CreateSession();
             
             //Insert facts into rules engine's memory
-            session.InsertAll(ctx.Facts);
+            session.InsertAll(ctx.Facts.Select(x=>(object)x.Value));
 
             //Start match/resolve/act cycle
             session.Fire();
@@ -83,11 +95,15 @@ namespace Ethanol.Demo
         {
             // load artifacts from source...
             var ctx = new Context();
-
+            
             foreach (var builder in target.Builders)
             {
                 var collection = source.GetArtifactSource(builder.OutputType);
-                collection.Artifacts.Where(builder.GetPredicate(target)); 
+                var facts = collection.Artifacts.Where(builder.GetPredicate(target));
+                foreach (var fact in facts)
+                {
+                    ctx.Add(builder.Name, fact);
+                }
             }
             return ctx;
         }

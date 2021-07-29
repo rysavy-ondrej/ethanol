@@ -19,8 +19,16 @@ namespace Ethanol.Demo
             await Host.CreateDefaultBuilder().RunConsoleAppFrameworkAsync<Program>(args);
         }
 
-        [Command("create")]
-        public void CreateContext(string dataPath, string targetType, string srcIp, string dstIp)
+        [Command("create", "Creates a context for the specified flow object.")]
+        public void CreateContext(
+            [Option("p", "path to data folder with source csv files.")]
+            string dataPath, 
+            [Option("t", "type of the target flow artifact. It can be flow, dns, tls, http, samba or tcp.")]
+            string targetType, 
+            [Option("s", "source IP address of the flow.")]
+            string srcIp,
+            [Option("d", "destination IP address of the flow.")]
+            string dstIp)
         {
             Console.WriteLine($"Preparing context for {targetType} flow {srcIp}->{dstIp}...");
 

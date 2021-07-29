@@ -6,36 +6,37 @@ using System.Net;
 namespace Ethanol.Demo
 {
     /// <summary>
-    /// This class defines operators according to https://www.cs.uct.ac.za/mit_notes/database/htmls/chp18.html#concepts-of-time.
+    /// This class defines a simple interval in time and some common operations.
+    /// See https://www.cs.uct.ac.za/mit_notes/database/htmls/chp18.html#concepts-of-time.
     /// </summary>
-    public static class T
+    public record DateTimeInterval(DateTime Start, TimeSpan Duration)
     {
-        /// <summary>
-        /// E1 occurs before E2.
-        /// </summary>
-        public static bool Before(DateTime e1, DateTime e2)
+        public DateTimeInterval(DateTime point, TimeSpan before, TimeSpan after) : this(point-before, before+after) {}
+
+        public bool Before(DateTime e1)
         {
-            return e1 < e2;
+            return e1 < Start;
+        }
+        public bool Before(DateTimeInterval e1)
+        {
+            return e1.Start + e1.Duration < Start;
+        }
+        public bool During(DateTime e1)
+        {
+            return e1 >= Start && e1 < Start + Duration;
+        }
+        public bool During(DateTimeInterval e1)
+        {
+            return e1.Start + Duration >= Start && e1.Start < Start + Duration;
         }
 
-        /// <summary>
-        /// E1 takes place during E2,S2
-        /// </summary>
-        public static bool During(DateTime e1, DateTime e2, TimeSpan s2)
-        {
-            return e1 >= e2 && e1 < e2 + s2;
-        }
     }
+
+ 
 
     [ArtifactName("Tls")]
     public class ArtifactTlsFlow : Artifact
-    {
-        public override IEnumerable<ArtifactBuilder> Builders =>
-            new[]
-            {
-                new ArtifactBuilder<ArtifactTlsFlow, ArtifactDnsFlow>("DstDomainName", (tls,dns) => dns.DstIp == tls.SrcIp && dns.DnsResponseData == tls.DstIp && T.During(tls.FirstSeenDateTime, dns.FirstSeenDateTime, TimeSpan.FromMinutes(10)) )
-            };
-
+    {  
         [Index(0)]
         public string FirstSeen { get; set; }
         [Index(1)]
@@ -72,11 +73,35 @@ namespace Ethanol.Demo
         [Ignore]
         public DateTime FirstSeenDateTime => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
         [Ignore]
+        public TimeSpan DurationTimeSpan => TimeSpan.TryParse(Duration, out var d) ? d : TimeSpan.MinValue;
+        [Ignore]
         public IPAddress SrcIpAddress => IPAddress.TryParse(SrcIp, out var x) ? x : null;
         [Ignore]
         public IPAddress DstIpAddress => IPAddress.TryParse(DstIp, out var x) ? x : null;
 
-        public override string Operation => throw new NotImplementedException();
+        public override IEnumerable<ArtifactBuilder> Builders
+        {
+            get
+            {
+
+                if (this.DstPt == 443)
+                {   // this is HTTPS
+                    return new ArtifactBuilder[] { DomainNameBuilder, SurroundingTls, ReverseTls, RelatedHttp };
+                }
+                else
+                {
+                    return new ArtifactBuilder[] { DomainNameBuilder, SurroundingTls, ReverseTls };
+                }
+            }
+        }
+        #region Builders
+        static ArtifactBuilder DomainNameBuilder = new ArtifactBuilder<ArtifactTlsFlow, ArtifactDnsFlow>("DstDomainName", (tls, dns) => dns.DstIp == tls.SrcIp && dns.DnsResponseData == tls.DstIp && new DateTimeInterval(dns.FirstSeenDateTime, TimeSpan.FromMinutes(10)).During(tls.FirstSeenDateTime));
+        static ArtifactBuilder SurroundingTls = new ArtifactBuilder<ArtifactTlsFlow, ArtifactTlsFlow>("SurroundingTls", (tls, other) => ((tls.SrcIp == other.SrcIp && tls.DstIp == other.DstIp) || (tls.SrcIp == other.DstIp && tls.DstIp == other.SrcIp)) && new DateTimeInterval(tls.FirstSeenDateTime, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)).During(other.FirstSeenDateTime));
+        static ArtifactBuilder ReverseTls = new ArtifactBuilder<ArtifactTlsFlow, ArtifactTlsFlow>("ReverseTls", (tls, other) => tls.SrcIp == other.DstIp && tls.DstIp == other.SrcIp && tls.SrcPt == other.DstPt && tls.DstPt == other.SrcPt && new DateTimeInterval(tls.FirstSeenDateTime, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1)).During(other.FirstSeenDateTime));
+        static ArtifactBuilder RelatedHttp = new ArtifactBuilder<ArtifactTlsFlow, ArtifactHttpFlow>("RelatedHttp", (tls, http) => (tls.SrcIp == http.SrcIp && tls.DstIp == http.DstIp) && new DateTimeInterval(tls.FirstSeenDateTime, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1)).During(http.FirstSeenDateTime));
+
+        #endregion
+
     }
 }
 

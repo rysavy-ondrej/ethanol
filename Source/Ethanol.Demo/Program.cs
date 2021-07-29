@@ -1,33 +1,46 @@
-﻿using NRules;
+﻿using ConsoleAppFramework;
+using Microsoft.Extensions.Hosting;
+using NRules;
 using NRules.Fluent;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Ethanol.Demo
 {
-    class Program
+    class Program : ConsoleAppBase
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("This is a demo showing the principles of Context-based analysis.");
+            await Host.CreateDefaultBuilder().RunConsoleAppFrameworkAsync<Program>(args);
+        }
 
-            var tlsLoader = new CsvArtifactSource<ArtifactTlsFlow>(@"Data\tls.csv");
+        [Command("create")]
+        public void CreateContext(string dataPath, string targetType, string srcIp, string dstIp)
+        {
+            Console.WriteLine($"Preparing context for {targetType} flow {srcIp}->{dstIp}...");
 
-            Artifact input = tlsLoader.Artifacts.Skip(368).First();
-            DataSource source = OpenDataSource("Data");
+            var tlsLoader = new CsvArtifactSource<ArtifactTlsFlow>(Path.Combine(dataPath, $"{targetType}.csv"));
+
+            Artifact input = tlsLoader.Artifacts.Cast<ArtifactTlsFlow>().Where(f => f.SrcIp == srcIp && f.DstIp == dstIp).First();
+            DataSource source = OpenDataSource(dataPath);
+            source.Validate();
 
             var ctx = InitializeContext(input, source);
 
-            Console.WriteLine("--- ARTIFACT ---");
-            input.Dump(Console.Out);
-            Console.WriteLine();
-            Console.WriteLine("--- CONTEXT ---");
-            ctx.Dump(Console.Out);
-            Console.WriteLine();
-
+            var writer = new IndentedTextWriter(Console.Out, "  ");
+            writer.WriteLine("Artifact:");
+            writer.Indent += 2;
+            input.DumpYaml(writer);
+            writer.Indent -= 2;
+            Console.WriteLine("Context:");
+            writer.Indent += 2;
+            ctx.DumpYaml(writer);
+            /*
             var rules = LoadRules(Assembly.GetExecutingAssembly());
 
             var output = EvaluateContext(ctx, input, rules);
@@ -35,6 +48,7 @@ namespace Ethanol.Demo
             {
                 AnalyseOutput(artifact);
             }
+            */
         }
 
         /// <summary>

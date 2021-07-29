@@ -1,19 +1,17 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace Ethanol.Demo
 {
-
-
     /// <summary>
     /// Base class for all artifacts.
     /// </summary>
     public abstract class Artifact
     {
-        public abstract string Operation { get; }
-        public abstract IEnumerable<ArtifactBuilder> Builders { get; }
+        public virtual IEnumerable<ArtifactBuilder> Builders => new ArtifactBuilder[] { };
 
         public object Field(string name)
         {
@@ -29,24 +27,13 @@ namespace Ethanol.Demo
             writer.Write($"{{ {fields} }}");
               
         }
-    }
 
-
-    /// <summary>
-    /// Typed base class for all artifacts.
-    /// </summary>
-    /// <typeparam name="TOperation"></typeparam>
-    public abstract class Artifact<TOperation> : Artifact
-    {
-        public override string Operation => ArtifactOperation.ToString();
-
-        TOperation ArtifactOperation { get; set; }
-    }
-
-    public class ArtifactAllFlow : Artifact
-    {
-        public override string Operation => throw new NotImplementedException();
-
-        public override IEnumerable<ArtifactBuilder> Builders => throw new NotImplementedException();
+        internal void DumpYaml(IndentedTextWriter writer)
+        {
+            foreach (var field in Fields.Select(x => $"{x}: {Field(x)}"))
+            {
+                writer.WriteLine(field);
+            }
+        }
     }
 }

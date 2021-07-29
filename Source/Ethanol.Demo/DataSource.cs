@@ -23,5 +23,13 @@ namespace Ethanol.Demo
         {
             return _artifactSources.First(x => x.ArtifactType == artifactType);
         }
+
+        public void Validate()
+        {
+            foreach(var artifactSource in _artifactSources)
+            {
+                artifactSource.Validate();
+            }
+        }
     }
 }

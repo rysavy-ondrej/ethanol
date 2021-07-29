@@ -50,6 +50,11 @@ namespace Ethanol.Demo
             }
         }
 
+        public override void Validate()
+        {
+            Load();
+        }
+
         public override Type ArtifactType => typeof(TArtifactType);
 
         public override IEnumerable<Artifact> Artifacts

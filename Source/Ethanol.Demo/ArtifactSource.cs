@@ -9,5 +9,6 @@ namespace Ethanol.Demo
 
         public abstract IEnumerable<Artifact> Artifacts { get; }
 
+        public abstract void Validate();
     }
 }

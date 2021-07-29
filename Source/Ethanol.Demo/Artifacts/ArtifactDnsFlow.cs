@@ -41,10 +41,6 @@ namespace Ethanol.Demo
         [Index(10)]
         public long Bytes { get; set; }
 
-        public override string Operation => throw new NotImplementedException();
-
-        public override IEnumerable<ArtifactBuilder> Builders => throw new NotImplementedException();
-
         [Ignore]
         public DateTime FirstSeenDateTime => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
         [Ignore]

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,17 @@ namespace Ethanol.Demo
                 writer.Write($"{fact.Key}: ");
                 fact.Value.Dump(writer);
                 writer.WriteLine();
+            }
+        }
+
+        internal void DumpYaml(IndentedTextWriter writer)
+        {
+            foreach (var fact in _keyValuePairs)
+            {
+                writer.WriteLine($"{fact.Key}: ");
+                writer.Indent += 2;
+                fact.Value.DumpYaml(writer);
+                writer.Indent -= 2;
             }
         }
 

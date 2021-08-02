@@ -41,11 +41,13 @@ namespace Ethanol.Demo
         [Index(10)]
         public long Bytes { get; set; }
 
-        [Ignore]
-        public DateTime FirstSeenDateTime => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
-        [Ignore]
-        public IPAddress SrcIpAddress => IPAddress.TryParse(SrcIp, out var x) ? x : null;
-        [Ignore]
-        public IPAddress DstIpAddress => IPAddress.TryParse(DstIp, out var x) ? x : null;
+        public override DateTime Start => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
+
+        public override IPAddress Source => IPAddress.TryParse(SrcIp, out var x) ? x : null;
+
+        public override IPAddress Destination => IPAddress.TryParse(DstIp, out var x) ? x : null;
+
+        public override TimeSpan Duration => TimeSpan.Zero;
+
     }
 }

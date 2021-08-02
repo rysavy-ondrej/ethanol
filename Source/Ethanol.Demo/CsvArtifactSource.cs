@@ -45,8 +45,12 @@ namespace Ethanol.Demo
                 reader.ReadLine();
                 using (var csv = new CsvReader(reader, config))
                 {
-                    _artifacts = csv.GetRecords<TArtifactType>().ToList();
+                    _artifacts = csv.GetRecords<TArtifactType>().ToList();                    
                 }
+            }
+            for(int i = 0; i < _artifacts.Count; i++)
+            {
+                _artifacts[i].Id = $"{i+1}";
             }
         }
 

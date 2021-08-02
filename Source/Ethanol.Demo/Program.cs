@@ -25,19 +25,20 @@ namespace Ethanol.Demo
             string dataPath, 
             [Option("t", "type of the target flow artifact. It can be flow, dns, tls, http, samba or tcp.")]
             string targetType, 
-            [Option("s", "source IP address of the flow.")]
-            string srcIp,
-            [Option("d", "destination IP address of the flow.")]
-            string dstIp)
+            [Option("i", "flow id.")]
+            string flowId)
         {
-            Console.WriteLine($"Preparing context for {targetType} flow {srcIp}->{dstIp}...");
+            Console.WriteLine($"Preparing context for {targetType} flow id={flowId}...");
 
-            var tlsLoader = new CsvArtifactSource<ArtifactTlsFlow>(Path.Combine(dataPath, $"{targetType}.csv"));
-
-            Artifact input = tlsLoader.Artifacts.Cast<ArtifactTlsFlow>().Where(f => f.SrcIp == srcIp && f.DstIp == dstIp).First();
             DataSource source = OpenDataSource(dataPath);
             source.Validate();
-
+            var targetArtifactType = ArtifactFactory.GetArtifact(targetType);
+            Artifact input = source.GetArtifactSource(targetArtifactType).Artifacts.FirstOrDefault(f => f.Id == flowId);
+            if (input == null)
+            {
+                Console.Error.WriteLine($"Flow id={flowId} not found in '{targetType}'");
+                return;
+            }
             var ctx = InitializeContext(input, source);
 
             var writer = new IndentedTextWriter(Console.Out, "  ");

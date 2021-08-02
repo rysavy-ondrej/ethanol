@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Ethanol.Demo": {
+      "commandName": "Project",
+      "commandLineArgs": "create -p .\\Data\\ -t tls -i 1000"
+    }
+  }
+}

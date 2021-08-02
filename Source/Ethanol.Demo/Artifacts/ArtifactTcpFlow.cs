@@ -11,7 +11,7 @@ namespace Ethanol.Demo
         [Index(0)]
         public string FirstSeen { get; set; }
         [Index(1)]
-        public string Duration { get; set; }
+        public string FlowDuration { get; set; }
         [Index(2)]
         public string Protocol { get; set; }
 
@@ -42,13 +42,15 @@ namespace Ethanol.Demo
         public int BytesPerPacket { get; set; }
         [Index(14)]
         public int Flows { get; set; }
-        [Ignore]
-        public DateTime FirstSeenDateTime => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
-        [Ignore]
-        public TimeSpan DurationTimeSpan => TimeSpan.TryParse(Duration, out var d) ? d : TimeSpan.MinValue;
-        [Ignore]
-        public IPAddress SrcIpAddress => IPAddress.TryParse(SrcIp, out var x) ? x : null;
-        [Ignore]
-        public IPAddress DstIpAddress => IPAddress.TryParse(DstIp, out var x) ? x : null;
+
+        public override DateTime Start => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
+
+        public override IPAddress Source => IPAddress.TryParse(SrcIp, out var x) ? x : null;
+
+        public override IPAddress Destination => IPAddress.TryParse(DstIp, out var x) ? x : null;
+
+        public override TimeSpan Duration => TimeSpan.TryParse(FlowDuration, out var d) ? d : TimeSpan.Zero;
+
+        public override IEnumerable<ArtifactBuilder> Builders => new ArtifactBuilder[] { FactLoaders.Common.DomainName, FactLoaders.Common.Surrounding<ArtifactTcpFlow>(TimeSpan.FromMinutes(10)) };
     }
 }

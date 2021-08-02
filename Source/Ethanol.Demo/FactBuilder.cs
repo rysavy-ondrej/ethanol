@@ -3,7 +3,10 @@ using System.Linq.Expressions;
 
 namespace Ethanol.Demo
 {
-    public abstract class ArtifactBuilder
+    /// <summary>
+    /// A base class of all context fact builders. 
+    /// </summary>
+    public abstract class FactBuilder
     {
         public abstract string Name { get; }
         public abstract Type ArtifactType { get; }
@@ -13,17 +16,17 @@ namespace Ethanol.Demo
 
     }
     /// <summary>
-    /// Represents an artifact builder. It is expression thjat can be used either as
+    /// Represents a context fact builder. It is expression that can be used either as
     /// a function to be executed on input collection of type <typeparamref name="OutputType"/> or
     /// to generate query string against the database with data.
     /// </summary>
     /// <typeparam name="TArtifact">The type of artifact that owns the builder.</typeparam>
-    /// <typeparam name="OutputType">The type of artifact that is being selected by the builder from the datasource.</typeparam>
-    public class ArtifactBuilder<TArtifact, TOutput> : ArtifactBuilder where TArtifact : Artifact
+    /// <typeparam name="TOutput">The type of artifact that is being selected by the builder from the datasource.</typeparam>
+    public class FactBuilder<TArtifact, TOutput> : FactBuilder where TArtifact : Artifact
                                                                        where TOutput : Artifact
     {
         readonly string _name; 
-        public ArtifactBuilder(string name, Expression<Func<TArtifact, TOutput, bool>> predicate)
+        public FactBuilder(string name, Expression<Func<TArtifact, TOutput, bool>> predicate)
         {
             _name = name;
             Predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));

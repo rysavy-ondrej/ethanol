@@ -36,7 +36,7 @@ namespace Ethanol.Demo
             foreach(var fact in _keyValuePairs)
             {
                 writer.Write($"{fact.Key}: ");
-                fact.Value.Dump(writer);
+                fact.Value.DumpJson(writer);
                 writer.WriteLine();
             }
         }

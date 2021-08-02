@@ -7,10 +7,10 @@ namespace Ethanol.Demo
     {
         public static class Common
         {
-            public static ArtifactBuilder DomainName =
-                new ArtifactBuilder<Artifact, ArtifactDnsFlow>("HasDomain", (tls, dns) => tls.EndPoint(dns.DstIp, dns.DnsResponseData) && tls.Before(TimeSpan.FromMinutes(30), dns));
-            public static ArtifactBuilder Surrounding<Target>(TimeSpan span) where Target : Artifact =>
-                new ArtifactBuilder<Artifact, Target>("IsNearTo", (tls, other) => tls.Id != other.Id && tls.EndPointConv(other) && tls.Window(span, span, other));
+            public static FactBuilder DomainName =
+                new FactBuilder<Artifact, ArtifactDns>("HasDomain", (tls, dns) => tls.EndPoint(dns.DstIp, dns.DnsResponseData) && tls.Before(TimeSpan.FromMinutes(30), dns));
+            public static FactBuilder Surrounding<Target>(TimeSpan span) where Target : Artifact =>
+                new FactBuilder<Artifact, Target>("IsNearTo", (tls, other) => tls.Id != other.Id && tls.EndPointConv(other) && tls.Window(span, span, other));
         }
     }
 }

@@ -10,10 +10,10 @@ namespace Ethanol.Demo
         public static class Common
         {
 
-            public static FactBuilder DomainName =
-                new FactBuilder<Artifact, ArtifactDns>("HasDomain", (tls, dns) => tls.EndPoint(dns.DstIp, dns.DnsResponseData) && tls.Before(TimeSpan.FromMinutes(30), dns));
-            public static FactBuilder Adjacent<Target>(TimeSpan span) where Target : Artifact =>
-                new FactBuilder<Artifact, Target>("IsNearTo", (tls, other) => tls.Id != other.Id && tls.EndPointConv(other) && tls.Window(span, span, other));
+            public static FactBuilder ServiceDomainName =
+                new FactBuilder<Artifact, ArtifactDns>("ServiceDomain", (tls, dns) => tls.EndPoint(dns.DstIp, dns.DnsResponseData) && tls.Before(TimeSpan.FromMinutes(30), dns));
+            public static FactBuilder AdjacentFlow<Target>(TimeSpan span) where Target : Artifact =>
+                new FactBuilder<Artifact, Target>("Adjacent", (tls, other) => tls.Id != other.Id && tls.EndPointConv(other) && tls.Window(span, span, other));
 
 
             public static IEnumerable<(string, ArtifactDns)> DomainNameLinq(ArtifactTls target, IEnumerable<ArtifactDns> dnsFlows) => 

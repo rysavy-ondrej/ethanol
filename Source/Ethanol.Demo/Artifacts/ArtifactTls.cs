@@ -60,18 +60,18 @@ namespace Ethanol.Demo
                 if (this.DstPt == 443)
                 {   // this is HTTPS
                     return new FactBuilder[] { 
-                        FactLoaders.Common.DomainName, 
-                        FactLoaders.Common.Adjacent<ArtifactTls>(TimeSpan.FromMinutes(5)), 
-                        FactLoaders.Tls.Reverse, 
-                        FactLoaders.Tls.PossiblyRelatedTls,
+                        FactLoaders.Common.ServiceDomainName, 
+                        FactLoaders.Common.AdjacentFlow<ArtifactTls>(TimeSpan.FromMinutes(5)), 
+                        FactLoaders.Tls.ReverseFlow, 
+                        FactLoaders.Tls.SiblingFlow,
                         FactLoaders.Http.Related };
                 }
                 else
                 {
                     return new FactBuilder[] { 
-                        FactLoaders.Common.DomainName,
-                        FactLoaders.Common.Adjacent<ArtifactTls>(TimeSpan.FromMinutes(5)), 
-                        FactLoaders.Tls.Reverse };
+                        FactLoaders.Common.ServiceDomainName,
+                        FactLoaders.Common.AdjacentFlow<ArtifactTls>(TimeSpan.FromMinutes(5)), 
+                        FactLoaders.Tls.ReverseFlow };
                }
             }
         }

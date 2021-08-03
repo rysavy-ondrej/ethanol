@@ -16,7 +16,7 @@ namespace Ethanol.Demo
         }
         public static class Http
         {
-            public static FactBuilder Related = new FactBuilder<Artifact, ArtifactHttp>("HasRelatedHttp", (tls, http) => tls.EndPoint(http) && tls.Window(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), http));
+            public static FactBuilder Related = new FactBuilder<Artifact, ArtifactHttp>("RelatedHttp", (tls, http) => tls.EndPoint(http) && tls.Window(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), http));
         }
     }
 }

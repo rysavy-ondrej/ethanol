@@ -51,6 +51,6 @@ namespace Ethanol.Demo
 
         public override TimeSpan Duration => TimeSpan.TryParse(FlowDuration, out var d) ? d : TimeSpan.Zero;
 
-        public override IEnumerable<FactBuilder> Builders => new FactBuilder[] { FactLoaders.Common.DomainName, FactLoaders.Common.Surrounding<ArtifactTcp>(TimeSpan.FromMinutes(10)) };
+        public override IEnumerable<FactBuilder> Builders => new FactBuilder[] { FactLoaders.Common.ServiceDomain, FactLoaders.Common.ÄdjacentFlow<ArtifactTcp>(TimeSpan.FromMinutes(10)) };
     }
 }

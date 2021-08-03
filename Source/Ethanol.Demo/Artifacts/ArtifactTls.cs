@@ -61,7 +61,7 @@ namespace Ethanol.Demo
                 {   // this is HTTPS
                     return new FactBuilder[] { 
                         FactLoaders.Common.DomainName, 
-                        FactLoaders.Common.Surrounding<ArtifactTls>(TimeSpan.FromMinutes(5)), 
+                        FactLoaders.Common.Adjacent<ArtifactTls>(TimeSpan.FromMinutes(5)), 
                         FactLoaders.Tls.Reverse, 
                         FactLoaders.Tls.PossiblyRelatedTls,
                         FactLoaders.Http.Related };
@@ -70,9 +70,9 @@ namespace Ethanol.Demo
                 {
                     return new FactBuilder[] { 
                         FactLoaders.Common.DomainName,
-                        FactLoaders.Common.Surrounding<ArtifactTls>(TimeSpan.FromMinutes(5)), 
+                        FactLoaders.Common.Adjacent<ArtifactTls>(TimeSpan.FromMinutes(5)), 
                         FactLoaders.Tls.Reverse };
-                }
+               }
             }
         }
     }

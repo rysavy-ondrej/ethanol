@@ -13,6 +13,11 @@ namespace Ethanol.Demo
         {
             return IPAddressEquals(x.Source, y.Source) && IPAddressEquals(x.Destination, y.Destination);
         }
+
+        public static bool SameSource(this Artifact x, Artifact y)
+        {
+            return IPAddressEquals(x.Source, y.Source);
+        }
         public static bool EndPointConv(this Artifact x, Artifact y)
         {
             return IPAddressEquals(x.Source, y.Source) && IPAddressEquals(x.Destination, y.Destination)

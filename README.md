@@ -80,7 +80,7 @@ Each context property holds the name/value pair of the property name and the obj
 A context is built iterativelly:
 
 * Initial step: Collect objects by query source database and using target artifact builders
-* Iterative step: Apply rules (NRules) to produce context information for the target
+* Iterative step: Apply rules (NRules) to produce context information for the target and export the selected facts
 
 ## Install
 

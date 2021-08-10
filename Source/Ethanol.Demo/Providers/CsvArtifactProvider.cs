@@ -9,30 +9,30 @@ using System.Linq;
 namespace Ethanol.Demo
 {
 
-    public static class CsvArtifactSource
+    public static class CsvArtifactProvider
     {
-        public static ArtifactSource CreateArtifactSource(Type artifactType, string filename)
+        public static IArtifactProvider CreateArtifactSource(Type artifactType, string filename)
         {
-            var genericType = typeof(CsvArtifactSource<>);
+            var genericType = typeof(CsvArtifactProvider<>);
             Type constructed = genericType.MakeGenericType(new[] { artifactType });
             object o = Activator.CreateInstance(type: constructed, args: filename);
-            return o as ArtifactSource;
+            return o as IArtifactProvider;
         }
     }
     /// <summary>
-    /// Represents a data source based on CSV file that provides artifacts of type <typeparamref name="TArtifactType"/>.
+    /// Represents a data source based on CSV file that provides artifacts of type <typeparamref name="TArtifact"/>.
     /// </summary>
-    public class CsvArtifactSource<TArtifactType> : ArtifactSource where TArtifactType : Artifact
+    public class CsvArtifactProvider<TArtifact> : IArtifactProvider<TArtifact> where TArtifact : IpfixArtifact
     {
         readonly string _filename;
-        private List<TArtifactType> _artifacts;
+        private List<TArtifact> _artifacts;
 
-        public CsvArtifactSource(string filename)
+        public CsvArtifactProvider(string filename)
         {
             _filename = filename ?? throw new ArgumentNullException(nameof(filename));
         }
 
-        public void Load()
+        void Load()
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -45,7 +45,7 @@ namespace Ethanol.Demo
                 reader.ReadLine();
                 using (var csv = new CsvReader(reader, config))
                 {
-                    _artifacts = csv.GetRecords<TArtifactType>().ToList();                    
+                    _artifacts = csv.GetRecords<TArtifact>().ToList();                    
                 }
             }
             for(int i = 0; i < _artifacts.Count; i++)
@@ -54,20 +54,22 @@ namespace Ethanol.Demo
             }
         }
 
-        public override void Validate()
+
+        public IQueryable<TTarget> GetQueryable<TTarget>() where TTarget : Artifact
         {
-            Load();
+            return (IQueryable<TTarget>)Artifacts.AsQueryable();
         }
 
-        public override Type ArtifactType => typeof(TArtifactType);
 
-        public override IEnumerable<Artifact> Artifacts
+        IEnumerable<IpfixArtifact> Artifacts
         {
             get 
             {
                 if (_artifacts == null) Load();
-                return _artifacts.Cast<Artifact>(); 
+                return _artifacts.Cast<IpfixArtifact>(); 
             }
         }
+
+        public IQueryable<TArtifact> Queryable => (IQueryable<TArtifact>)Artifacts.AsQueryable();
     }
 }

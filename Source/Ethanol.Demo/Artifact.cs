@@ -4,50 +4,16 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 
 namespace Ethanol.Demo
 {
-    /// <summary>
-    /// Base class for all artifacts.
-    /// </summary>
     public abstract class Artifact
     {
-
-
         /// <summary>
         /// Id string of the current artifact. It can have various format, hash value, index in table of objects, etc.
         /// </summary>
         [Ignore]
         public string Id { get; set; }
-
-        /// <summary>
-        /// Start of the event realted to the artifact, e.g., flow first seen value.
-        /// </summary>
-        [Ignore]
-        public abstract DateTime Start { get; }
-        /// <summary>
-        /// Duration of the event related to the artifact, e.g., duration of the flow.
-        /// </summary>
-        [Ignore]
-        public abstract TimeSpan Duration { get; }
-        /// <summary>
-        /// SOurce IP address of the flow object.
-        /// </summary>
-        [Ignore]
-        public abstract IPAddress Source { get; }
-        /// <summary>
-        /// Destionation IP address of the flow object.
-        /// </summary>
-        [Ignore]
-        public abstract IPAddress Destination { get; }
-
-
-        /// <summary>
-        /// Collection of context fact builders. The builders are used to enrich the context for the current object.
-        /// </summary>
-        public virtual IEnumerable<FactBuilder> Builders => new FactBuilder[] { };
-
 
         /// <summary>
         /// Gets the value of the given field. 
@@ -65,6 +31,10 @@ namespace Ethanol.Demo
         /// </summary>
         public string[] Fields => GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(CsvHelper.Configuration.Attributes.IndexAttribute), false).Length > 0).Select(x => x.Name).ToArray();
 
+        /// <summary>
+        /// Represents a collection of associated loaders.
+        /// </summary>
+        public virtual IEnumerable<FactLoader> Loaders => Array.Empty<FactLoader>();
 
         /// <summary>
         /// Dumps the current object using JSON format.
@@ -87,6 +57,27 @@ namespace Ethanol.Demo
             foreach (var field in Fields.Select(x => $"{x}: {Field(x)}"))
             {
                 writer.WriteLine(field);
+            }
+        }
+
+
+        /// <summary>
+        /// Loads the relevant facts of this artifact to the context.
+        /// </summary>
+        /// <param name="ctx">The target context to be enriched.</param>
+        /// <param name="artifactServiceProvider">The artifact service provider.</param>
+        public void LoadToContext(Context ctx, ArtifactServiceProvider artifactServiceProvider)
+        {
+            foreach (var builder in Loaders)
+            {
+                var provider = artifactServiceProvider.GetService(builder.InputType);
+                if (provider != null)
+                {
+                    foreach (var fact in builder.Query(this, provider.GetQueryable<Artifact>()))
+                    {
+                        ctx.Add(fact.Label, fact.Artifact);
+                    }
+                }
             }
         }
     }

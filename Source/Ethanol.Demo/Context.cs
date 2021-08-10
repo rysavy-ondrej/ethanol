@@ -9,7 +9,7 @@ namespace Ethanol.Demo
     /// <summary>
     /// Represents a context for artifacts.
     /// </summary>
-    class Context
+    public class Context
     {
         /// <summary>
         /// COntext consits of (key,value) pairs of artifacts.
@@ -24,7 +24,7 @@ namespace Ethanol.Demo
         /// <summary>
         /// Gets the collection of facts.
         /// </summary>
-        public ICollection<KeyValuePair<string,Artifact>> Facts => _keyValuePairs;
+        public ICollection<KeyValuePair<string, Artifact>> Facts => _keyValuePairs;
 
         public void Add(string name, Artifact value)
         {

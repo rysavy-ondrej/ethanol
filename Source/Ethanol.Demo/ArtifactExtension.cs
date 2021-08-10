@@ -3,36 +3,36 @@ using System.Net;
 
 namespace Ethanol.Demo
 {
-    public static class ArtifactExtension
+    public static class ArtifactOperations
     {
         static bool IPAddressEquals(IPAddress addr1, IPAddress addr2)
         {
             return addr1.ToString() == addr2.ToString();
         }
-        public static bool EndPoint(this Artifact x, Artifact y)
+        public static bool EndPoint(this IpfixArtifact x, IpfixArtifact y)
         {
-            return IPAddressEquals(x.Source, y.Source) && IPAddressEquals(x.Destination, y.Destination);
+            return (x.SrcIp == y.SrcIp) && (x.DstIp == y.DstIp);
         }
 
-        public static bool SameSource(this Artifact x, Artifact y)
+        public static bool SameSource(this IpfixArtifact x, IpfixArtifact y)
         {
-            return IPAddressEquals(x.Source, y.Source);
+            return (x.SrcIp == y.SrcIp);
         }
-        public static bool EndPointConv(this Artifact x, Artifact y)
+        public static bool EndPointConv(this IpfixArtifact x, IpfixArtifact y)
         {
-            return IPAddressEquals(x.Source, y.Source) && IPAddressEquals(x.Destination, y.Destination)
+            return (x.SrcIp == y.SrcIp) && (x.DstIp == y.DstIp)
                 ||
-                IPAddressEquals(x.Source, y.Destination) && IPAddressEquals(x.Destination, y.Source);
+                (x.SrcIp == y.DstIp) && (x.DstIp == y.SrcIp);
         }
-        public static bool EndPoint(this Artifact source, string src2, string dst2)
+        public static bool EndPoint(this IpfixArtifact source, string src2, string dst2)
         {
-            return source.Source.ToString() == src2 && source.Destination.ToString() == dst2;
+            return source.SrcIp == src2 && source.DstIp == dst2;
         }
-        public static bool EndPointConv(this Artifact source, string src2, string dst2)
+        public static bool EndPointConv(this IpfixArtifact source, string src2, string dst2)
         {
-            return (source.Source.ToString() == src2 && source.Destination.ToString() == dst2)
+            return (source.SrcIp == src2 && source.DstIp == dst2)
                 ||
-                    (source.Source.ToString() == dst2 && source.Destination.ToString() == src2);
+                    (source.SrcIp == dst2 && source.DstIp == src2);
         }
         /// <summary>
         /// Test if <paramref name="target"/> artifact occurs in window starting at <paramref name="source"/> artifact and the given <paramref name="interval"/>.
@@ -41,35 +41,17 @@ namespace Ethanol.Demo
         /// <param name="interval"></param>
         /// <param name="target"></param>
         /// <returns></returns>
-        public static bool After(this Artifact source, TimeSpan interval, Artifact target)
+        public static bool After(this IpfixArtifact source, TimeSpan interval, IpfixArtifact target)
         {
-            return target.Start > source.Start && target.Start < source.Start + interval;
+            return target.GetStart() > source.GetStart() && target.GetStart() < source.GetStart() + interval;
         }
-        public static bool Before(this Artifact source, TimeSpan interval, Artifact target)
+        public static bool Before(this IpfixArtifact source, TimeSpan interval, IpfixArtifact target)
         {
-            return target.Start > source.Start - interval && target.Start < source.Start;
+            return target.GetStart() > source.GetStart() - interval && target.GetStart() < source.GetStart();
         }
-        public static bool Window(this Artifact source, TimeSpan before, TimeSpan after, Artifact target)
+        public static bool Window(this IpfixArtifact source, TimeSpan before, TimeSpan after, IpfixArtifact target)
         {
-            return target.Start > source.Start -before && target.Start < source.Start + after;
+            return target.GetStart() > source.GetStart() - before && target.GetStart() < source.GetStart() + after;
         }
-
-
     }
-
 }
-
-// 0-Date first seen          
-// 1-Duration 
-// 2-Proto
-// 3-Src IP Addr 
-// 4-Src Pt                             
-// 5-Dst IP Addr 
-// 6-Dst Pt  
-// 7-TLS Client version  
-// 8-TLS Server version  
-// 9-TLS Server cipher suite            
-// 10-TLS server name (SNI)    
-// 11-TLS Subject organisation name  
-// 12-Packets    
-// 13-Bytes

@@ -6,16 +6,16 @@ using System.Net;
 namespace Ethanol.Demo
 {
     [ArtifactName("Dns")]
-    public class ArtifactDns : Artifact
+    public class ArtifactDns : IpfixArtifact
     {
         [Index(0)]
-        public string FirstSeen { get; set; }
+        public override string FirstSeen { get; set; }
 
         [Index(1)]
-        public string SrcIp { get; set; }
+        public override string SrcIp { get; set; }
 
         [Index(2)]
-        public string DstIp { get; set; }
+        public override string DstIp { get; set; }
 
         [Index(3)]
         public string DnsFlag { get; set; }
@@ -41,13 +41,11 @@ namespace Ethanol.Demo
         [Index(10)]
         public long Bytes { get; set; }
 
-        public override DateTime Start => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
-
-        public override IPAddress Source => IPAddress.TryParse(SrcIp, out var x) ? x : null;
-
-        public override IPAddress Destination => IPAddress.TryParse(DstIp, out var x) ? x : null;
-
-        public override TimeSpan Duration => TimeSpan.Zero;
-
+        [Ignore]
+        public override string Duration { get; set; }
+        [Ignore]
+        public override int SrcPt { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        [Ignore]
+        public override int DstPt { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
 }

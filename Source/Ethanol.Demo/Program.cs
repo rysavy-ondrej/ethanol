@@ -1,4 +1,5 @@
 ﻿using ConsoleAppFramework;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NRules;
 using NRules.Fluent;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Ethanol.Demo
@@ -16,7 +18,12 @@ namespace Ethanol.Demo
     {
         static async Task Main(string[] args)
         {
-            await Host.CreateDefaultBuilder().RunConsoleAppFrameworkAsync<Program>(args);
+            await Host.CreateDefaultBuilder().ConfigureServices(ConfigureServices).RunConsoleAppFrameworkAsync<Program>(args);
+        }
+
+        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        {            
+            services.AddSingleton<ArtifactServiceCollection>();         
         }
 
         [Command("create", "Creates a context for the specified flow object.")]
@@ -29,18 +36,19 @@ namespace Ethanol.Demo
             string flowId)
         {
             Console.WriteLine($"Preparing context for {targetType} flow id={flowId}...");
+            var artifactServiceFactory = this.Context.ServiceProvider.GetService<ArtifactServiceCollection>();
 
-            DataSource source = OpenDataSource(dataPath);
-            source.Validate();
-            var targetArtifactType = ArtifactFactory.GetArtifact(targetType);
-            Artifact input = source.GetArtifactSource(targetArtifactType).Artifacts.FirstOrDefault(f => f.Id == flowId);
+            OpenDataSources(dataPath, artifactServiceFactory);
+            var artifactServices = artifactServiceFactory.Build();
+
+            var source = artifactServices.GetService(artifactServiceFactory.GetArtifactTypeByName(targetType)) as IArtifactProvider;                        
+            var input = source?.GetQueryable<IpfixArtifact>().FirstOrDefault(f => f.Id == flowId);
             if (input == null)
             {
                 Console.Error.WriteLine($"Flow id={flowId} not found in '{targetType}'");
                 return;
             }
-            var ctx = InitializeContext(input, source);
-
+            var ctx = InitializeContext(input, artifactServices);
             var writer = new IndentedTextWriter(Console.Out, "  ");
             writer.WriteLine("Artifact:");
             writer.Indent += 2;
@@ -61,26 +69,23 @@ namespace Ethanol.Demo
         }
 
         /// <summary>
-        /// Creates data source from files in the specified folder.
+        /// Creates data sources from files in the specified folder.
         /// </summary>
         /// <param name="path">The path to the folder with data files.</param>
         /// <returns></returns>
-        private static DataSource OpenDataSource(string path)
+        private static void OpenDataSources(string path, ArtifactServiceCollection artifactServiceFactory)
         {
-            ArtifactFactory.LoadArtifactsFromAssembly(Assembly.GetExecutingAssembly());
-            IEnumerable<ArtifactSource> GetSources()
+            foreach (var file in Directory.GetFiles(path))
             {
-                foreach (var file in Directory.GetFiles(path))
+                var artifactType = artifactServiceFactory.GetArtifactTypeByName(Path.GetFileNameWithoutExtension(file));
+                if (artifactType != null)
                 {
-                    var artifactType = ArtifactFactory.GetArtifact(Path.GetFileNameWithoutExtension(file), StringComparison.InvariantCultureIgnoreCase);
-                    yield return CsvArtifactSource.CreateArtifactSource(artifactType, file);
+                    artifactServiceFactory.AddArtifactProvider(artifactType, s => CsvArtifactProvider.CreateArtifactSource(artifactType, file));
                 }
             }
-            var ds = new DataSource(GetSources());
-            return ds;
         }
 
-        private static IEnumerable<Artifact> EvaluateContext(Context ctx, Artifact input, RuleRepository rules)
+        private static IEnumerable<IpfixArtifact> EvaluateContext(Context ctx, IpfixArtifact input, RuleRepository rules)
         {
             //Compile rules
             var factory = rules.Compile();
@@ -102,7 +107,7 @@ namespace Ethanol.Demo
         /// Executed to perform analysis of the rich artifact.
         /// </summary>
         /// <param name="ctx"></param>
-        private static void AnalyseOutput(Artifact ctx)
+        private static void AnalyseOutput(IpfixArtifact ctx)
         {
             throw new NotImplementedException();
         }
@@ -114,20 +119,10 @@ namespace Ethanol.Demo
             return repository;
         }
 
-        private static Context InitializeContext(Artifact target, DataSource source)
+        private static Context InitializeContext(IpfixArtifact target, ArtifactServiceProvider artifactServiceProvider)
         {
-            // load artifacts from source...
             var ctx = new Context();
-            
-            foreach (var builder in target.Builders)
-            {
-                var collection = source.GetArtifactSource(builder.OutputType);
-                var facts = collection.Artifacts.Where(builder.GetPredicate(target));
-                foreach (var fact in facts)
-                {
-                    ctx.Add(builder.Name, fact);
-                }
-            }
+            target.LoadToContext(ctx, artifactServiceProvider);
             return ctx;
         }
     }

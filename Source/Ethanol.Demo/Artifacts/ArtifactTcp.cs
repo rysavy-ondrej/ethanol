@@ -6,24 +6,24 @@ using System.Net;
 namespace Ethanol.Demo
 {
     [ArtifactName("Tcp")]
-    public class ArtifactTcp : Artifact
+    public class ArtifactTcp : IpfixArtifact
     {
         [Index(0)]
-        public string FirstSeen { get; set; }
+        public override string FirstSeen { get; set; }
         [Index(1)]
-        public string FlowDuration { get; set; }
+        public override string Duration { get; set; }
         [Index(2)]
         public string Protocol { get; set; }
 
         [Index(3)]
-        public string SrcIp { get; set; }
+        public override string SrcIp { get; set; }
         [Index(4)]
-        public int SrcPt { get; set; }
+        public override int SrcPt { get; set; }
 
         [Index(5)]
-        public string DstIp { get; set; }
+        public override string DstIp { get; set; }
         [Index(6)]
-        public int DstPt { get; set; }
+        public override int DstPt { get; set; }
 
         [Index(7)]
         public string Flags { get; set; }
@@ -42,15 +42,5 @@ namespace Ethanol.Demo
         public int BytesPerPacket { get; set; }
         [Index(14)]
         public int Flows { get; set; }
-
-        public override DateTime Start => DateTime.TryParse(FirstSeen, out var d) ? d : DateTime.MinValue;
-
-        public override IPAddress Source => IPAddress.TryParse(SrcIp, out var x) ? x : null;
-
-        public override IPAddress Destination => IPAddress.TryParse(DstIp, out var x) ? x : null;
-
-        public override TimeSpan Duration => TimeSpan.TryParse(FlowDuration, out var d) ? d : TimeSpan.Zero;
-
-        public override IEnumerable<FactBuilder> Builders => new FactBuilder[] { FactLoaders.Common.ServiceDomainName, FactLoaders.Common.AdjacentFlow<ArtifactTcp>(TimeSpan.FromMinutes(10)) };
     }
 }

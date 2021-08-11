@@ -16,9 +16,9 @@ namespace Ethanol.Demo
              (Target target, IQueryable<Target> input) =>
                 from other in input
                 where target.Id != other.Id
-                    && target.SameSource(other)
+                    && FlowRelation.SrcHost.Check(target,other)
                     && target.SrcPt - 10 <= other.SrcPt && other.SrcPt <= target.SrcPt + 10
-                    && target.Window(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), other)
+                    && target.Window(span, span, other)
                 select new Fact(nameof(SiblingFlow), other);
 
         public static FactLoaderFunction<Target, ArtifactHttp> RelatedHttp<Target>(TimeSpan span) where Target : IpfixArtifact =>

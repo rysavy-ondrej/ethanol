@@ -9,21 +9,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Ethanol.Demo
 {
     class Program : ConsoleAppBase
     {
+        readonly ArtifactServiceCollection _artifactServiceCollection;
+
+        public Program()
+        {
+            _artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetExecutingAssembly());
+        }
+
         static async Task Main(string[] args)
         {
             await Host.CreateDefaultBuilder().ConfigureServices(ConfigureServices).RunConsoleAppFrameworkAsync<Program>(args);
         }
 
         private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
-        {            
-            services.AddSingleton<ArtifactServiceCollection>();         
+        {                     
         }
 
         [Command("create", "Creates a context for the specified flow object.")]
@@ -35,13 +40,13 @@ namespace Ethanol.Demo
             [Option("i", "flow id.")]
             string flowId)
         {
+            
             Console.WriteLine($"Preparing context for {targetType} flow id={flowId}...");
-            var artifactServiceFactory = this.Context.ServiceProvider.GetService<ArtifactServiceCollection>();
+            _artifactServiceCollection.AddArtifactFromCsvFiles(dataPath);
+            var artifactServices = _artifactServiceCollection.Build();
+            Console.WriteLine(String.Join(',', artifactServices.Services));
 
-            OpenDataSources(dataPath, artifactServiceFactory);
-            var artifactServices = artifactServiceFactory.Build();
-
-            var source = artifactServices.GetService(artifactServiceFactory.GetArtifactTypeByName(targetType)) as IArtifactProvider;                        
+            var source = artifactServices.GetService(_artifactServiceCollection.GetArtifactTypeByName(targetType));                        
             var input = source?.GetQueryable<IpfixArtifact>().FirstOrDefault(f => f.Id == flowId);
             if (input == null)
             {
@@ -68,22 +73,7 @@ namespace Ethanol.Demo
             */
         }
 
-        /// <summary>
-        /// Creates data sources from files in the specified folder.
-        /// </summary>
-        /// <param name="path">The path to the folder with data files.</param>
-        /// <returns></returns>
-        private static void OpenDataSources(string path, ArtifactServiceCollection artifactServiceFactory)
-        {
-            foreach (var file in Directory.GetFiles(path))
-            {
-                var artifactType = artifactServiceFactory.GetArtifactTypeByName(Path.GetFileNameWithoutExtension(file));
-                if (artifactType != null)
-                {
-                    artifactServiceFactory.AddArtifactProvider(artifactType, s => CsvArtifactProvider.CreateArtifactSource(artifactType, file));
-                }
-            }
-        }
+
 
         private static IEnumerable<IpfixArtifact> EvaluateContext(Context ctx, IpfixArtifact input, RuleRepository rules)
         {

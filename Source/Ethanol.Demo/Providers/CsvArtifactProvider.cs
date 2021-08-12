@@ -71,5 +71,9 @@ namespace Ethanol.Demo
         }
 
         public IQueryable<TArtifact> Queryable => (IQueryable<TArtifact>)Artifacts.AsQueryable();
+
+        public Type ArtifactType => typeof(TArtifact);
+
+        public string Source => $"file://{Path.GetFullPath(this._filename)}";
     }
 }

@@ -41,7 +41,7 @@ namespace Ethanol.Demo
             }
         }
 
-        internal void DumpYaml(IndentedTextWriter writer)
+        public void DumpYaml(IndentedTextWriter writer)
         {
             foreach (var fact in _keyValuePairs)
             {

@@ -30,5 +30,7 @@ namespace Ethanol.Demo
 
         [Ignore]
         public override int SrcPt { get; set; }
+        [Ignore]
+        public override string Protocol { get; set; } = "TCP";
     }
 }

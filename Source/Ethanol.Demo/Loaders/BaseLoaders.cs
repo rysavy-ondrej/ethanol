@@ -34,9 +34,9 @@ namespace Ethanol.Demo
             public static FactLoaderFunction<Target, ArtifactDns> ServiceDomain<Target>(TimeSpan span) where Target : IpfixArtifact =>
                 (Target target, IQueryable<ArtifactDns> input) =>
                 from dns in input 
-                where target.SrcIp == dns.DstIp 
-                   && target.DstIp == dns.DnsResponseData 
-                   && target.Before(span, dns) 
+                where target.Before(span, dns)
+                    && target.SrcIp == dns.DstIp 
+                    && target.DstIp == dns.DnsResponseData  
                 select new Fact("ServiceDomain", dns);  
     }
 }

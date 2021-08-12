@@ -44,8 +44,10 @@ namespace Ethanol.Demo
         [Ignore]
         public override string Duration { get; set; }
         [Ignore]
-        public override int SrcPt { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public override int SrcPt { get; set; }
         [Ignore]
-        public override int DstPt { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public override int DstPt { get; set; }
+        [Ignore]
+        public override string Protocol { get; set; } = "UDP";
     }
 }

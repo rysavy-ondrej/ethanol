@@ -33,6 +33,6 @@ namespace Ethanol.Demo
 
         public abstract int DstPt { get; set; }
 
-       
+        public abstract string Protocol { get; set; }
     }
 }

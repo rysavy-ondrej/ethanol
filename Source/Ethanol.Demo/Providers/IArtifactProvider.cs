@@ -20,6 +20,8 @@ namespace Ethanol.Demo
 
     public interface IArtifactProvider
     {
+        string Source { get; }
+        Type ArtifactType { get; }
         IQueryable<TArtifact> GetQueryable<TArtifact>() where TArtifact : Artifact;
     }
 }

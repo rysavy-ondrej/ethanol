@@ -1,0 +1,50 @@
+#!markdown
+
+# Initialize environment
+
+The following code reference the ETHANOL library and prepares the environment.
+
+#!csharp
+
+#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+
+using Ethanol.Demo;
+using System.Reflection;
+using System.CodeDom.Compiler;
+
+var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactServiceCollection)));
+
+#!markdown
+
+# Add artifact providers
+
+#!csharp
+
+artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
+var artifactServices = artifactServiceCollection.Build();
+
+#!csharp
+
+artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display()
+
+#!markdown
+
+# Create context
+
+Compute context for all flows.
+
+#!csharp
+
+var source = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow"));                        
+var input = source?.GetQueryable<IpfixArtifact>().Take(1000);
+
+var loaders = new FactLoader[] {
+    LoaderFunctions.ServiceDomain<ArtifactLong>(TimeSpan.FromMinutes(5)).GetLoader()
+};
+
+foreach(var target in input)
+{
+    var ctx = new Context();
+    target.LoadToContext(ctx, artifactServices, loaders);
+    
+}

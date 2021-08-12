@@ -17,7 +17,7 @@ namespace Ethanol.Demo
         public override string Duration { get; set; }
         
         [Index(2)]
-        public string Protocol { get; set; }
+        public override string Protocol { get; set; }
 
         [Index(3)]
         public override string SrcIp { get; set; }
@@ -75,9 +75,5 @@ namespace Ethanol.Demo
           }
       }
       */
-        public override IEnumerable<FactLoader> Loaders => new FactLoader[]
-        {
-            LoaderFunctions.ServiceDomain<ArtifactTls>(TimeSpan.FromMinutes(5)).GetLoader()
-        };
     }
 }

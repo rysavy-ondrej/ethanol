@@ -32,11 +32,6 @@ namespace Ethanol.Demo
         public string[] Fields => GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(CsvHelper.Configuration.Attributes.IndexAttribute), false).Length > 0).Select(x => x.Name).ToArray();
 
         /// <summary>
-        /// Represents a collection of associated loaders.
-        /// </summary>
-        public virtual IEnumerable<FactLoader> Loaders => Array.Empty<FactLoader>();
-
-        /// <summary>
         /// Dumps the current object using JSON format.
         /// </summary>
         /// <param name="writer"></param>
@@ -51,7 +46,7 @@ namespace Ethanol.Demo
         /// Dumps the current object using YAML format.
         /// </summary>
         /// <param name="writer"></param>
-        internal void DumpYaml(IndentedTextWriter writer)
+        public void DumpYaml(IndentedTextWriter writer)
         {
             writer.WriteLine($"Id: {Id}");
             foreach (var field in Fields.Select(x => $"{x}: {Field(x)}"))
@@ -66,9 +61,9 @@ namespace Ethanol.Demo
         /// </summary>
         /// <param name="ctx">The target context to be enriched.</param>
         /// <param name="artifactServiceProvider">The artifact service provider.</param>
-        public void LoadToContext(Context ctx, ArtifactServiceProvider artifactServiceProvider)
+        public void LoadToContext(Context ctx, ArtifactServiceProvider artifactServiceProvider, params FactLoader[] loaders)
         {
-            foreach (var builder in Loaders)
+            foreach (var builder in loaders)
             {
                 var provider = artifactServiceProvider.GetService(builder.InputType);
                 if (provider != null)

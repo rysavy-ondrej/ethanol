@@ -1,15 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Ethanol.Demo
 {
     public class ArtifactServiceProvider
     {
-        private ServiceProvider _serviceProvider;
-
-        public ArtifactServiceProvider(ServiceProvider serviceProvider)
+        private readonly ServiceProvider _serviceProvider;
+        private readonly Type[] _serviceTypes;
+        public ArtifactServiceProvider(ServiceProvider serviceProvider, IEnumerable<Type> serviceTypes)
         {
             _serviceProvider = serviceProvider;
+            _serviceTypes = serviceTypes.ToArray(); ;
         }
 
         public IArtifactProvider GetService(Type artifactType)
@@ -21,5 +24,7 @@ namespace Ethanol.Demo
         {            
             return _serviceProvider.GetService<IArtifactProvider<TArtifact>>();
         }
+
+        public IEnumerable<Type> Services => _serviceTypes;
     }
 }

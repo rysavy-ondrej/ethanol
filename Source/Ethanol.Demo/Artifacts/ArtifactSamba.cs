@@ -13,7 +13,7 @@ namespace Ethanol.Demo
         [Index(1)]
         public override string Duration { get; set; }
         [Index(2)]
-        public string Protocol { get; set; }
+        public override string Protocol { get; set; }
 
         [Index(3)]
         public override string SrcIp { get; set; }

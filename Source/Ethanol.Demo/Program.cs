@@ -46,14 +46,18 @@ namespace Ethanol.Demo
             var artifactServices = _artifactServiceCollection.Build();
             Console.WriteLine(String.Join(',', artifactServices.Services));
 
-            var source = artifactServices.GetService(_artifactServiceCollection.GetArtifactTypeByName(targetType));                        
+            var artifactType = _artifactServiceCollection.GetArtifactTypeByName(targetType);
+            var source = artifactServices.GetService(artifactType);                        
             var input = source?.GetQueryable<IpfixArtifact>().FirstOrDefault(f => f.Id == flowId);
             if (input == null)
             {
                 Console.Error.WriteLine($"Flow id={flowId} not found in '{targetType}'");
                 return;
             }
-            var ctx = InitializeContext(input, artifactServices);
+
+            var ctx = new Context();
+            input.LoadToContext(ctx, artifactServices, GetFactLoaders(artifactType));
+
             var writer = new IndentedTextWriter(Console.Out, "  ");
             writer.WriteLine("Artifact:");
             writer.Indent += 2;
@@ -73,7 +77,13 @@ namespace Ethanol.Demo
             */
         }
 
-
+        private FactLoader[] GetFactLoaders(Type targetType)
+        {
+            var loaders = new FactLoader[] {
+                LoaderFunctions.ServiceDomain<ArtifactLong>(TimeSpan.FromMinutes(5)).GetLoader()
+            };
+            return loaders;
+        }
 
         private static IEnumerable<IpfixArtifact> EvaluateContext(Context ctx, IpfixArtifact input, RuleRepository rules)
         {
@@ -107,13 +117,6 @@ namespace Ethanol.Demo
             var repository = new RuleRepository();
             repository.Load(x => x.From(assembly));
             return repository;
-        }
-
-        private static Context InitializeContext(IpfixArtifact target, ArtifactServiceProvider artifactServiceProvider)
-        {
-            var ctx = new Context();
-            target.LoadToContext(ctx, artifactServiceProvider);
-            return ctx;
         }
     }
 }

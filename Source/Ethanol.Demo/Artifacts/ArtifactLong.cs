@@ -40,7 +40,5 @@ namespace Ethanol.Demo
         public int Bytes { get; set; }
         [Index(11)]
         public int Flows { get; set; }
-        [Ignore]
-        public override long Timestamp => this.GetStart().Ticks;
     }    
 }

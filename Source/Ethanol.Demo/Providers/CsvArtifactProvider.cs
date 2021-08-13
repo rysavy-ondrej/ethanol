@@ -76,13 +76,13 @@ namespace Ethanol.Demo
 
         public IStreamable<Empty, TArtifact> GetStreamable()
         {
-            return _artifacts.ToObservable().ToTemporalStreamable(x => x.Timestamp);
+            return _artifacts.ToObservable().ToTemporalStreamable(x => x.StartTime);
         }
 
         public IStreamable<Empty, TTarget> GetStreamable<TTarget>() where TTarget : Artifact
         {
             
-            return _artifacts.Cast<TTarget>().ToObservable().ToTemporalStreamable(x => x.Timestamp);
+            return _artifacts.Cast<TTarget>().ToObservable().ToTemporalStreamable(x => x.StartTime);
         }
 
         public Type ArtifactType => typeof(TArtifact);

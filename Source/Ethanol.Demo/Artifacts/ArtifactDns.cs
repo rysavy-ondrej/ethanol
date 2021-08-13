@@ -49,7 +49,5 @@ namespace Ethanol.Demo
         public override int DstPt { get; set; }
         [Ignore]
         public override string Protocol { get; set; } = "UDP";
-        [Ignore]
-        public override long Timestamp => this.GetStart().Ticks;
     }
 }

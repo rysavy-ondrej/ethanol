@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsvHelper.Configuration.Attributes;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
@@ -34,5 +35,10 @@ namespace Ethanol.Demo
         public abstract int DstPt { get; set; }
 
         public abstract string Protocol { get; set; }
+
+        [Ignore]
+        public override long StartTime => this.GetStart().Ticks;
+        [Ignore]
+        public override long EndTime => StartTime + (this.GetDuration().Ticks);
     }
 }

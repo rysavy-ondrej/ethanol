@@ -16,8 +16,16 @@ namespace Ethanol.Demo
         public string Id { get; set; }
 
 
+        /// <summary>
+        /// Get the start time of the logical event interval for this artifact.
+        /// </summary>
         [Ignore]
-        public abstract long Timestamp { get; } 
+        public abstract long StartTime { get; }
+        /// <summary>
+        ///  Get the end time of the logical event interval for this artifact.
+        /// </summary>
+        [Ignore]
+        public abstract long EndTime { get; }
         /// <summary>
         /// Gets the value of the given field. 
         /// </summary>

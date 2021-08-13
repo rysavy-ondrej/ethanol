@@ -32,7 +32,5 @@ namespace Ethanol.Demo
         public override int SrcPt { get; set; }
         [Ignore]
         public override string Protocol { get; set; } = "TCP";
-        [Ignore]
-        public override long Timestamp => this.GetStart().Ticks;
     }
 }

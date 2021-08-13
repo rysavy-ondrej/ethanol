@@ -1,0 +1,37 @@
+#!csharp
+
+#r "nuget:System.Reactive"
+#r "nuget:Trill"
+
+using System.Reactive;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
+
+#!csharp
+
+record NetFlow (long Start, long Duration, string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
+
+var events = new NetFlow[]
+{
+    new NetFlow(10,20, "TCP", "192.168.77.31", 34534, "71.43.25.21", 80),
+    new NetFlow(11,25, "TCP", "192.168.77.31", 34535, "71.43.25.21", 80),
+    new NetFlow(12,20, "TCP", "192.168.77.31", 34536, "71.43.25.21", 80),
+    new NetFlow(13,20, "TCP", "192.168.77.31", 34537, "71.43.25.21", 80),
+    new NetFlow(14,20, "TCP", "192.168.77.31", 34538, "71.43.25.21", 80),
+    new NetFlow(15,20, "TCP", "192.168.77.31", 34539, "71.43.25.21", 80),
+    new NetFlow(21,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+    new NetFlow(22,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+    new NetFlow(22,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+    new NetFlow(23,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+    new NetFlow(25,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+}.Select(x=> StreamEvent.CreateInterval(x.Start, x.Start+x.Duration, x)).ToObservable();
+var stream = events.ToStreamable();
+
+#!csharp
+
+stream.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
+
+#!csharp
+
+var related = stream.GroupApply(e => new { e.SrcIp, e.DstIp }, s => s.HoppingWindowLifetime(20,20).Count(), (g,p)=> new {Group = g.Key, Flows= p});
+related.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();

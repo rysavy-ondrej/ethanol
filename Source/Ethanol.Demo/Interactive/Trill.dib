@@ -9,21 +9,23 @@ using Microsoft.StreamProcessing;
 
 #!csharp
 
-record NetFlow (long Start, long Duration, string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
+record NetFlow (long Id, long Start, long Duration, string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
 
 var events = new NetFlow[]
 {
-    new NetFlow(10,20, "TCP", "192.168.77.31", 34534, "71.43.25.21", 80),
-    new NetFlow(11,25, "TCP", "192.168.77.31", 34535, "71.43.25.21", 80),
-    new NetFlow(12,20, "TCP", "192.168.77.31", 34536, "71.43.25.21", 80),
-    new NetFlow(13,20, "TCP", "192.168.77.31", 34537, "71.43.25.21", 80),
-    new NetFlow(14,20, "TCP", "192.168.77.31", 34538, "71.43.25.21", 80),
-    new NetFlow(15,20, "TCP", "192.168.77.31", 34539, "71.43.25.21", 80),
-    new NetFlow(21,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
-    new NetFlow(22,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
-    new NetFlow(22,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
-    new NetFlow(23,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
-    new NetFlow(25,20, "TCP", "192.168.77.31", 35534, "71.43.25.21", 443),
+    new NetFlow(1,10,20, "TCP", "192.168.77.31", 10001, "71.43.25.21", 80),
+    new NetFlow(2,11,25, "TCP", "192.168.77.31", 10002, "71.43.25.22", 80),
+    new NetFlow(3,12,20, "TCP", "192.168.77.31", 10003, "71.43.25.23", 80),
+    new NetFlow(4,13,20, "TCP", "192.168.77.31", 10004, "71.43.25.21", 80),
+    new NetFlow(5,14,20, "TCP", "192.168.77.31", 10005, "71.43.25.22", 80),
+    new NetFlow(6,15,20, "TCP", "192.168.77.31", 10006, "71.43.25.23", 80),
+    new NetFlow(12,15,5, "TCP", "192.168.77.31", 10001, "71.43.25.21",80),
+    new NetFlow(7,21,20, "TCP", "192.168.77.31", 10007, "71.43.25.21", 443),
+    new NetFlow(8,22,20, "TCP", "192.168.77.31", 10008, "71.43.25.22", 443),
+    new NetFlow(9,22,20, "TCP", "192.168.77.31", 10009, "71.43.25.23", 443),
+    new NetFlow(10,23,20, "TCP", "192.168.77.31", 10010, "71.43.25.21", 443),
+    new NetFlow(11,25,20, "TCP", "192.168.77.31", 10011, "71.43.25.22", 443),
+
 }.Select(x=> StreamEvent.CreateInterval(x.Start, x.Start+x.Duration, x)).ToObservable();
 var stream = events.ToStreamable();
 
@@ -33,5 +35,15 @@ stream.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.Writ
 
 #!csharp
 
-var related = stream.GroupApply(e => new { e.SrcIp, e.DstIp }, s => s.HoppingWindowLifetime(20,20).Count(), (g,p)=> new {Group = g.Key, Flows= p});
+var grouped = stream.GroupApply(e => new { e.SrcIp, e.DstIp }, s => s.HoppingWindowLifetime(20,20).Count(), (g,p)=> new {Group = g.Key, Flows= p});
+grouped.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
+
+#!csharp
+
+var related = stream.LeftOuterJoin(stream, f => new {f.SrcIp,f.DstIp,f.DstPt}, f => new {f.SrcIp,f.DstIp,f.DstPt},f => new { KeyFlow = f, RelatedFlow = f}, (f,g)=> new {KeyFlow= f, RelatedFlow = g});
 related.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
+
+#!csharp
+
+var groupedRelated = related.GroupApply(f => f.KeyFlow, g => g.HoppingWindowLifetime(10,10).Select(x=>x.RelatedFlow).AlterEventLifetime(x=>0, StreamEvent.InfinitySyncTime), (k,v) => new {Flow = k.Key, Related = v });
+groupedRelated.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();

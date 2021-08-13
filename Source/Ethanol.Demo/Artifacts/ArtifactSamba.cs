@@ -57,5 +57,7 @@ namespace Ethanol.Demo
         public int BytesPerPacket { get; set; }
         [Index(20)]
         public int Flows { get; set; }
+        [Ignore]
+        public override long Timestamp => this.GetStart().Ticks;
     }
 }

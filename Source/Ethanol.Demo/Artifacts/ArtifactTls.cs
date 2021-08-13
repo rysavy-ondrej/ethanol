@@ -51,6 +51,8 @@ namespace Ethanol.Demo
         
         [Index(13)]
         public long Bytes { get; set; }
+        [Ignore]
+        public override long Timestamp => this.GetStart().Ticks;
         /*
       public override IEnumerable<FactBuilder> Builders
       {

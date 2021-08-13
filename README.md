@@ -75,7 +75,7 @@ security threats identification or network troubleshooting.
 A context is an ordered sequence of properties that define an environment for the artifacts.
 Each context property holds the name/value pair of the property name and the object representing the property of a context.
 
-### Context buidling
+### Context building
 
 A context is built iterativelly:
 
@@ -93,7 +93,7 @@ This project was developed in the frame of research initiative [Context-based En
 ### References
 
 * [Temporal Database Concepts](https://www.cs.uct.ac.za/mit_notes/database/htmls/chp18.html)
-
+* [Trill Blog](https://cloudblogs.microsoft.com/opensource/2019/03/28/trill-101-how-to-add-temporal-queries-to-your-applications/)
 ### Suitable datasets
 
 * [LITNET 2020 Dataset](https://dataset.litnet.lt/index.php)

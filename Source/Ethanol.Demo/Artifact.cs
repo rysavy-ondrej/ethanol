@@ -15,6 +15,9 @@ namespace Ethanol.Demo
         [Ignore]
         public string Id { get; set; }
 
+
+        [Ignore]
+        public abstract long Timestamp { get; } 
         /// <summary>
         /// Gets the value of the given field. 
         /// </summary>

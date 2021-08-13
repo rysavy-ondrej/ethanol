@@ -1,10 +1,12 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 
 namespace Ethanol.Demo
 {
@@ -70,7 +72,18 @@ namespace Ethanol.Demo
             }
         }
 
-        public IQueryable<TArtifact> Queryable => (IQueryable<TArtifact>)Artifacts.AsQueryable();
+        public IQueryable<TArtifact> GetQueryable() => (IQueryable<TArtifact>)Artifacts.AsQueryable();
+
+        public IStreamable<Empty, TArtifact> GetStreamable()
+        {
+            return _artifacts.ToObservable().ToTemporalStreamable(x => x.Timestamp);
+        }
+
+        public IStreamable<Empty, TTarget> GetStreamable<TTarget>() where TTarget : Artifact
+        {
+            
+            return _artifacts.Cast<TTarget>().ToObservable().ToTemporalStreamable(x => x.Timestamp);
+        }
 
         public Type ArtifactType => typeof(TArtifact);
 

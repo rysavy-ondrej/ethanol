@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.StreamProcessing;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,12 @@ namespace Ethanol.Demo
         /// <summary>
         /// Provides a collection of artifacts. It may be possible to build LINQ query on this collection.
         /// </summary>
-        IQueryable<TArtifact> Queryable { get; }
+        IQueryable<TArtifact> GetQueryable();
+
+        /// <summary>
+        /// Gets the data as streamable collection to be processed by TRILL query.
+        /// </summary>
+        IStreamable<Empty, TArtifact> GetStreamable();
     }
 
     public interface IArtifactProvider
@@ -23,5 +29,7 @@ namespace Ethanol.Demo
         string Source { get; }
         Type ArtifactType { get; }
         IQueryable<TArtifact> GetQueryable<TArtifact>() where TArtifact : Artifact;
+
+        IStreamable<Empty, TArtifact> GetStreamable<TArtifact>() where TArtifact : Artifact;
     }
 }

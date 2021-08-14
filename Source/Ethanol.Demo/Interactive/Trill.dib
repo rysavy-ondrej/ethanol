@@ -45,5 +45,5 @@ related.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.Wri
 
 #!csharp
 
-var groupedRelated = related.GroupApply(f => f.KeyFlow, g => g.HoppingWindowLifetime(10,10).Select(x=>x.RelatedFlow).AlterEventLifetime(x=>0, StreamEvent.InfinitySyncTime), (k,v) => new {Flow = k.Key, Related = v });
+var groupedRelated = related.GroupApply(f => f.KeyFlow, g => g.HoppingWindowLifetime(10,10).Aggregate(x => x.CollectFlows(f=>f.RelatedFlow)), (k,v) => new {Flow = k.Key, Related = v });
 groupedRelated.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();

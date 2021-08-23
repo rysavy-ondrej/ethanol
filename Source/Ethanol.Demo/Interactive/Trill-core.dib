@@ -1,11 +1,17 @@
 #!csharp
 
-#r "nuget:System.Reactive"
-#r "nuget:Trill"
+#r "System.Reactive"
+#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
 
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.StreamProcessing;
+
+
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    stream.ToStreamEventObservable().Where(predicate).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
 
 #!csharp
 
@@ -14,20 +20,85 @@ record Artifact (string Id, long Start, long Duration, string value);
 var events = new Artifact[]
 {
     new Artifact("A",10,5, "TCP"),
-    new Artifact("B",20,5, "TCP"),
-    new Artifact("C",30,15, "TCP"),
-    new Artifact("D",40,5, "TCP"),
+    new Artifact("B",20,5, "UDP"),
+    new Artifact("C",30,30, "TCP"),
+    new Artifact("D",40,5, "UDP"),
     new Artifact("E",50,5, "TCP"),
-    new Artifact("F",60,5, "TCP"),
+    new Artifact("F",60,5, "UDP"),
 
 }.Select(x=> StreamEvent.CreateInterval(x.Start, x.Start+x.Duration, x)).ToObservable();
 var stream = events.ToStreamable();
 
+#!markdown
+
+# Streams
+
+Every event has associated an interval of its validity.
+
 #!csharp
 
-stream.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
+PrintStream(stream, e=>e.IsInterval);
+
+#!markdown
+
+# Aggregation
+Operators are applied to events considering their temporal propertires. Thus in [40,45) and [50,55) intervals there are "active" two events, while in the rest always only a single event.
 
 #!csharp
 
 var counts = stream.Count();
-counts.ToStreamEventObservable().Where(e=>e.IsEnd).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+PrintStream(counts, e=>e.IsEnd);
+
+#!markdown
+
+# Join
+
+LeftOuterJoin is an operation that takes all left events and tries to find corresponding right events. If there is not any right event then the left event is in the output with the right value provided by the function.
+
+Example bellow pairs artifacts based on their values. As can be seen only those events that overlaps can be paired.
+
+#!csharp
+
+var joinStream = stream.LeftOuterJoin(stream, left => left.value, right => right.value, left => new { Left = left, Right = new Artifact(null, 0,0,null)},(left,right) =>  new { Left = left, Right = right});
+PrintStream(joinStream, e=>e.IsData);
+
+#!markdown
+
+LeftOuterJoin has the following signature:
+```
+IStreamable<Empty, T> LeftOuterJoin<L,R,K,T>(
+    this IStreamable<Empty, L> left, 
+    IStreamable<Empty, R> right,
+    Func<L,K> leftKeySelector,
+    Func<R,K> rightKeySelector, 
+    Func<L,T> outerResultSelector,
+    Func<L,R,T> innerResultSelector
+)
+
+```
+where `LeftKeySelector` and `rightKeySelector` are used to produce key values that need to match for the join to be produced, 
+`outerResultSelector` is used to produce a value if not match with left event is found and `innerResultSelector` is to produce a result value if left matches with right. 
+
+#!markdown
+
+# GroupApply
+
+Grouping is combined in apply operation, which means that stream is first partitioned into groups and to each group specified operation is applied.
+
+#!csharp
+
+var groupStream = joinStream.GroupApply(x=>x.Left,g => g.Count(), (k,v) => new {Key = k.Key, Value = v });
+PrintStream(groupStream, e => e.IsEnd);
+
+#!markdown
+
+The GroupApply operation has the following signature:
+
+```
+IStreamable<Empty, TResult> GroupApply<TSource,TKey,TValue,TResult>(
+    this IStreamable<Empty, TSource> stream, 
+    Func<TSource,TKey> keySelector, 
+    Func<TSource,TValue> applyFunc, 
+    Func<TKey,TValue,TResult> resultSelector)
+```
+where `keySelector` gives a key to be used in group operation, `applyFunc` is applied on the input data in each group to produce an intermediate value (possibly aggregated), and `resultSelector` is given key and value to produce the result.

@@ -6,6 +6,8 @@
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.StreamProcessing;
+using Ethanol.Demo.Streaming;
+using System.Linq;
 
 #!csharp
 
@@ -40,13 +42,11 @@ grouped.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.Wri
 
 #!csharp
 
-var related = stream.LeftOuterJoin(stream, f => new {f.SrcIp,f.DstIp,f.DstPt}, f => new {f.SrcIp,f.DstIp,f.DstPt},f => new { KeyFlow = f, RelatedFlow = f}, (f,g)=> new {KeyFlow= f, RelatedFlow = g});
-related.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
+var related = stream.LeftOuterJoin(stream, f => new {f.SrcIp,f.DstIp,f.DstPt}, f => new {f.SrcIp,f.DstIp,f.DstPt}, f => new { KeyFlow = f, RelatedFlow = f}, (k,v)=> new {KeyFlow= k, RelatedFlow = v});
+var groupedRelated = related.GroupApply(e => e.KeyFlow, g => g.Aggregate(x=>x.Collect(y=>y.RelatedFlow)), (g,f) => new { Key = g.Key, Related = f.Count()});
+groupedRelated.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine(e)).Wait();
 
 #!csharp
-
-using Ethanol.Demo.Streaming;
-using System.Linq;
 
 var groupedRelated = related.GroupApply(f => f.KeyFlow, g => g.HoppingWindowLifetime(10,10).Aggregate(x => x.Collect(f=>f.RelatedFlow)), (k,v) => new {Flow = k.Key, Related = v });
 groupedRelated.ToStreamEventObservable().Where(e=>e.IsData).ForEachAsync(e=>Console.WriteLine($"{e} :[{String.Join(',', e.Payload.Related.Select(x=>x.ToString()))}]")).Wait();

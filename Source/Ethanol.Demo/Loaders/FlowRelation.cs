@@ -1,5 +1,8 @@
 ﻿namespace Ethanol.Demo
 {
+    /// <summary>
+    /// Represents basic relations on flows.
+    /// </summary>
     public abstract class FlowRelation
     {
         public abstract string Name { get; }

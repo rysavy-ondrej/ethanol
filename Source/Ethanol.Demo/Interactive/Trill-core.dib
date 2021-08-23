@@ -87,7 +87,7 @@ Grouping is combined in apply operation, which means that stream is first partit
 
 #!csharp
 
-var groupStream = joinStream.GroupApply(x=>x.Left,g => g.Count(), (k,v) => new {Key = k.Key, Value = v });
+var groupStream = joinStream.GroupApply(x=>x.Left, g => g.SessionTimeoutWindow(50,100).Count(), (k,v) => new { Key = k.Key, Value = v });
 PrintStream(groupStream, e => e.IsEnd);
 
 #!markdown

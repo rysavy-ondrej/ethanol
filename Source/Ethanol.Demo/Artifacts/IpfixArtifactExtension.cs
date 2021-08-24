@@ -11,6 +11,6 @@ namespace Ethanol.Demo
 
         public static DateTime GetStart(this IpfixArtifact artifact) => DateTime.TryParse(artifact.FirstSeen, out var value) ? value : DateTime.MinValue;
 
-        public static TimeSpan GetDuration(this IpfixArtifact artifact) => TimeSpan.TryParse(artifact.Duration, out var value) ? value : TimeSpan.Zero;
+        public static TimeSpan GetDuration(this IpfixArtifact artifact) => Double.TryParse(artifact.Duration, out var value) ? TimeSpan.FromSeconds(value) : TimeSpan.Zero;
     }
 }

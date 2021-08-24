@@ -7,10 +7,20 @@ The following code reference the ETHANOL library and prepares the environment.
 #!csharp
 
 #r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+#r "System.Reactive"
+#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
 
+using System.Reactive;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
 using Ethanol.Demo;
 using System.Reflection;
 using System.CodeDom.Compiler;
+
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    stream.ToStreamEventObservable().Where(predicate).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
 
 var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactServiceCollection)));
 
@@ -36,15 +46,6 @@ Compute context for all flows.
 #!csharp
 
 var source = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow"));                        
-var input = source?.GetQueryable<IpfixArtifact>().Take(1000);
+var inputStream = source.GetStreamable<IpfixArtifact>();
 
-var loaders = new FactLoader[] {
-    LoaderFunctions.ServiceDomain<ArtifactLong>(TimeSpan.FromMinutes(5)).GetLoader()
-};
-
-foreach(var target in input)
-{
-    var ctx = new Context();
-    target.LoadToContext(ctx, artifactServices, loaders);
-    
-}
+PrintStream(inputStream, e=>e.IsData);

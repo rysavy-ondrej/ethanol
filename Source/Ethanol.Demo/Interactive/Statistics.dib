@@ -17,9 +17,9 @@ using Ethanol.Demo;
 using System.Reflection;
 using System.CodeDom.Compiler;
 
-void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
 {
-    stream.ToStreamEventObservable().Where(predicate).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+    stream.ToStreamEventObservable().Where(predicate).Take(count).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
 }
 
 var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactServiceCollection)));
@@ -48,4 +48,4 @@ Compute context for all flows.
 var source = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow"));                        
 var inputStream = source.GetStreamable<IpfixArtifact>();
 
-PrintStream(inputStream, e=>e.IsData);
+PrintStream(inputStream, e=>e.IsData, 100);

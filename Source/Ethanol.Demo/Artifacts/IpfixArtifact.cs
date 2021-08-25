@@ -39,6 +39,6 @@ namespace Ethanol.Demo
         [Ignore]
         public override long StartTime => this.GetStart().Ticks;
         [Ignore]
-        public override long EndTime => StartTime + (this.GetDuration().Ticks);
+        public override long EndTime => StartTime + (this.GetDuration().Ticks + 1);
     }
 }

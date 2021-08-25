@@ -7,8 +7,10 @@ The following code reference the ETHANOL library and prepares the environment.
 #!csharp
 
 #r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
-#r "System.Reactive"
-#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
+//#r "System.Reactive"
+//#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
+#r "nuget:System.Reactive"
+#r "nuget:Trill"
 
 using System.Reactive;
 using System.Reactive.Linq;
@@ -20,6 +22,11 @@ using System.CodeDom.Compiler;
 void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
 {
     stream.ToStreamEventObservable().Where(predicate).Take(count).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
+
+IList<StreamEvent<V>> GetList<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    return stream.ToStreamEventObservable().Where(predicate).ToList().FirstAsync().Wait();    
 }
 
 var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactServiceCollection)));
@@ -45,7 +52,37 @@ Compute context for all flows.
 
 #!csharp
 
-var source = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow"));                        
-var inputStream = source.GetStreamable<IpfixArtifact>();
+var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>();                        
+var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>();
+var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>();
 
-PrintStream(inputStream, e=>e.IsData, 100);
+display( GetList(flowStream, e=>e.IsData).Count);
+display( GetList(dnsStream, e=>e.IsData).Count);
+display( GetList(httpStream, e=>e.IsData).Count);
+
+#!csharp
+
+var tcpStream = flowStream.Where(f => f.Protocol == "TCP");
+var tcpList = GetList(tcpStream, e=>e.IsData);
+display(tcpList.Count);
+
+#!csharp
+
+var reverseFlowStream = tcpStream.Multicast(m=> m.Join(m, f => new {SA = f.SrcIp, SP = f.SrcPt, DA = f.DstIp, DP = f.DstPt}, f => new { SA = f.DstIp, SP = f.DstPt, DA = f.SrcIp, DP = f.SrcPt}, (k,v) => new {KeyFlow= k, ReverseFlow = v}));
+var reverseFlowList = GetList(reverseFlowStream, e=>e.IsData);
+display(reverseFlowList);
+
+#!csharp
+
+var domainFlowStream = tcpStream.Join(dnsStream.SessionTimeoutWindow(TimeSpan.FromMinutes(5).Ticks, TimeSpan.FromMinutes(10).Ticks), f => new {SA = f.SrcIp, DA = f.DstIp }, f => new { SA = f.DstIp, DA = f.DnsResponseData }, (k,v) => new {KeyFlow= k, DomainFlow = v});
+var domainFlowList = GetList(domainFlowStream, e => e.IsData);
+display(domainFlowList);
+
+#!csharp
+
+var webFlowStream = tcpStream.Join(httpStream.SessionTimeoutWindow(TimeSpan.FromSeconds(5).Ticks, TimeSpan.FromSeconds(10).Ticks), 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP_HTTP = 80, DP_HTTPS = f.DstPt }, 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP_HTTP = f.DstPt, DP_HTTPS = 443 }, 
+    (k,v) => new {KeyFlow= k, WebFlow = v});
+var webFlowList = GetList(webFlowStream, e => e.IsData);
+display(webFlowList);

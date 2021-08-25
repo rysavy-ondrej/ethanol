@@ -66,6 +66,12 @@ namespace Ethanol.Demo
             }
         }
 
+        public override string ToString()
+        {
+            var fields = String.Join(", ", Fields.Select(x => $"{x}={Field(x)}"));
+            return $"{this.GetType().Name} {{ {fields} }}";
+        }
+
 
         /// <summary>
         /// Loads the relevant facts of this artifact to the context.

@@ -86,3 +86,21 @@ var webFlowStream = tcpStream.Join(httpStream.SessionTimeoutWindow(TimeSpan.From
     (k,v) => new {KeyFlow= k, WebFlow = v});
 var webFlowList = GetList(webFlowStream, e => e.IsData);
 display(webFlowList);
+
+#!markdown
+
+# Making a context
+
+#!csharp
+
+var revGroups = reverseFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
+var webGroups = webFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
+var dnsGroups = domainFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
+var grps = revGroups.Join(
+    webGroups.Join(dnsGroups, x=>x.Flow, x=>x.Flow, (x,y) => new {Flow = x.Flow, WebCount= x.Count, DnsCount = y.Count}),
+    x=>x.Flow,
+    y=>y.Flow,
+    (x,y) => new {Flow = x.Flow, RevCount = x.Count, WebCount = y.WebCount, DnsCount = y.DnsCount});
+var lst = GetList(grps, e => e.IsEnd);
+
+display(lst);

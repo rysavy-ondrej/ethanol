@@ -43,4 +43,10 @@ display(webFlowList);
 ```
 
 
-#
+# Making a context
+Each temporal query yields to pairs of flows. There is always a key flow and the corresponding 
+flow. Next step towards the context is to aggregate all the corresponding flows to form a context.
+
+```csharp
+
+```

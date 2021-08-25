@@ -40,6 +40,7 @@ namespace Ethanol.Demo
         /// <summary>
         /// Collection of field names of the current artifact.
         /// </summary>
+        [Ignore]
         public string[] Fields => GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(CsvHelper.Configuration.Attributes.IndexAttribute), false).Length > 0).Select(x => x.Name).ToArray();
 
         /// <summary>

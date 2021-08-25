@@ -96,11 +96,16 @@ display(webFlowList);
 var revGroups = reverseFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
 var webGroups = webFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
 var dnsGroups = domainFlowStream.GroupApply(k => k.KeyFlow.Id, s => s.Count(), (k,v)=> new { Flow = k.Key, Count = v} );
-var grps = revGroups.Join(
-    webGroups.Join(dnsGroups, x=>x.Flow, x=>x.Flow, (x,y) => new {Flow = x.Flow, WebCount= x.Count, DnsCount = y.Count}),
+var grps = revGroups.LeftOuterJoin(
+    webGroups.LeftOuterJoin(dnsGroups, 
+        x=>x.Flow, 
+        x=>x.Flow, 
+        x => new {Flow = x.Flow, WebCount = x.Count, DnsCount = 0uL },
+        (x,y) => new {Flow = x.Flow, WebCount = x.Count, DnsCount = y.Count}),
     x=>x.Flow,
     y=>y.Flow,
-    (x,y) => new {Flow = x.Flow, RevCount = x.Count, WebCount = y.WebCount, DnsCount = y.DnsCount});
+    x => new {FlowId = x.Flow, RevCount = x.Count, WebCount = 0uL, DnsCount = 0uL},
+    (x,y) => new {FlowId = x.Flow, RevCount = x.Count, WebCount = y.WebCount, DnsCount = y.DnsCount});
 var lst = GetList(grps, e => e.IsEnd);
 
 display(lst);

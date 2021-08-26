@@ -70,7 +70,7 @@ namespace Ethanol.Demo
         public override string ToString()
         {
             var fields = String.Join(", ", Fields.Select(x => $"{x}={Field(x)}"));
-            return $"{this.GetType().Name} {{ {fields} }}";
+            return $"{this.GetType().Name} {{ Id={this.Id}, {fields} }}";            
         }
 
 

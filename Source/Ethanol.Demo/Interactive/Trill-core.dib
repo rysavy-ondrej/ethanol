@@ -1,7 +1,7 @@
 #!csharp
 
 #r "System.Reactive"
-#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
+#r "nuget:Trill"
 
 using System.Reactive;
 using System.Reactive.Linq;
@@ -11,6 +11,12 @@ using Microsoft.StreamProcessing;
 void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
 {
     stream.ToStreamEventObservable().Where(predicate).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
+void PrintStreams<V>(IStreamable<Empty,V>[] streams, Func<StreamEvent<V>, bool> predicate)
+{
+    var observables = streams.Select(s=> s.ToStreamEventObservable().Where(predicate)).ToArray();
+    var tasks = observables.Select(o=> o.ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")));
+    Task.WaitAll(tasks.ToArray());
 }
 
 #!csharp
@@ -31,13 +37,14 @@ var stream = events.ToStreamable();
 
 #!markdown
 
-# Streams
+# Substreams
 
-Every event has associated an interval of its validity.
+Stream can be multicasted. It creates a number of substreams.
 
 #!csharp
 
-PrintStream(stream, e=>e.IsInterval);
+var substreams = stream.Multicast(2);
+PrintStreams(substreams, e=>e.IsInterval);
 
 #!markdown
 
@@ -89,6 +96,12 @@ Grouping is combined in apply operation, which means that stream is first partit
 
 var groupStream = joinStream.GroupApply(x=>x.Left, g => g.SessionTimeoutWindow(50,100).Count(), (k,v) => new { Key = k.Key, Value = v });
 PrintStream(groupStream, e => e.IsEnd);
+
+#!markdown
+
+# Multicast
+
+Multicast is used to inspect the stream in several places without the necessity to contruct it multiple times.
 
 #!markdown
 

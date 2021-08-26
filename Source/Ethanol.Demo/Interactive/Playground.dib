@@ -1,0 +1,189 @@
+#!markdown
+
+# Initialize environment
+
+The following code reference the ETHANOL library and prepares the environment.
+
+#!csharp
+
+#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+//#r "System.Reactive"
+//#r "C:\GitHub\ethanol\References\Microsoft.StreamProcessing\Microsoft.StreamProcessing.dll"
+#r "nuget:System.Reactive"
+#r "nuget:Trill"
+
+using System.Reactive;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
+using Ethanol.Demo;
+using Ethanol.Demo.Streaming;
+using System.Reflection;
+using System.CodeDom.Compiler;
+
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
+{
+    stream.ToStreamEventObservable().Where(predicate).Take(count).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
+
+IList<StreamEvent<V>> GetList<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    return stream.ToStreamEventObservable().Where(predicate).ToList().FirstAsync().Wait();    
+}
+
+#!markdown
+
+Explanation of various basic concepts of Trill:
+
+* https://cloudblogs.microsoft.com/opensource/2019/03/28/trill-101-how-to-add-temporal-queries-to-your-applications/
+* https://cloudblogs.microsoft.com/opensource/2019/05/01/trill-102-temporal-joins/
+* https://cloudblogs.microsoft.com/opensource/2019/08/13/trill-103-ingress-egress-trills-notion-of-time-tutorial/
+
+#!markdown
+
+# Configuration (Static Context)
+
+#!csharp
+
+record StaticContext(string ClientPrefix, string ServerPrefix);
+
+var config = new StaticContext("147.229.12.", "");
+
+display(config);
+
+#!markdown
+
+# Add artifact providers
+
+#!csharp
+
+var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactServiceCollection)));
+artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
+var artifactServices = artifactServiceCollection.Build();
+artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display()
+
+#!markdown
+
+# Create streams from the data sources
+
+Different data sources are converted to streams in order to ingest flow events. The basic source is `flowStream`, which provides all flows captured by the monitoring system. 
+
+#!csharp
+
+var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>();                        
+var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>();
+var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>();
+var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>();
+
+display( GetList(flowStream, e=>e.IsData).Count);
+display( GetList(dnsStream, e=>e.IsData).Count);
+display( GetList(httpStream, e=>e.IsData).Count);
+display( GetList(tlsStream, e=>e.IsData).Count);
+
+#!markdown
+
+# Tcp flows and client flows
+
+In this demo, only TCP flows are considered. Moreover, the static context is used to select flows initiated by local clients. 
+
+#!csharp
+
+var tcpStream = flowStream.Where(f => f.Protocol == "TCP");
+var tcpList = GetList(tcpStream, e=>e.IsData);
+display(tcpList.Count);
+
+var clientStream = tcpStream.Where(f => f.SrcIp.StartsWith(config.ClientPrefix) );
+
+var clientList = GetList(clientStream, e=>e.IsData);
+display(clientList);
+
+#!markdown
+
+## Reverse Flows
+
+#!csharp
+
+var reverseFlowStream = clientStream.Join(tcpStream, f => new {SA = f.SrcIp, SP = f.SrcPt, DA = f.DstIp, DP = f.DstPt}, f => new { SA = f.DstIp, SP = f.DstPt, DA = f.SrcIp, DP = f.SrcPt}, (k,v) => new {KeyFlow= k, ReverseFlow = v});
+var reverseFlowList = GetList(reverseFlowStream, e=>e.IsData);
+display(reverseFlowList);
+
+#!markdown
+
+## Associated domain queries
+
+#!csharp
+
+var domainFlowStream = clientStream.Join(dnsStream.SessionTimeoutWindow(TimeSpan.FromMinutes(5).Ticks, TimeSpan.FromMinutes(10).Ticks), f => new {SA = f.SrcIp, DA = f.DstIp }, f => new { SA = f.DstIp, DA = f.DnsResponseData }, (k,v) => new {KeyFlow= k, DomainFlow = v});
+var domainFlowList = GetList(domainFlowStream, e => e.IsData);
+display(domainFlowList);
+
+#!markdown
+
+## Related HTTP Requests
+
+#!csharp
+
+var webFlowStream = clientStream.Join(httpStream.SessionTimeoutWindow(TimeSpan.FromSeconds(5).Ticks, TimeSpan.FromSeconds(10).Ticks), 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP_HTTP = 80, DP_HTTPS = f.DstPt }, 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP_HTTP = f.DstPt, DP_HTTPS = 443 }, 
+    (k,v) => new {KeyFlow= k, WebFlow = v});
+var webFlowList = GetList(webFlowStream, e => e.IsData);
+display(webFlowList);
+
+#!markdown
+
+## TLS handshake atrributes
+
+#!csharp
+
+var tlsFlowStream = clientStream.Join(tlsStream, 
+    f => new {SA = f.SrcIp, SP = f.SrcPt, DA = f.DstIp, DP = f.DstPt}, 
+    f => new { SA = f.SrcIp, SP = f.SrcPt, DA = f.DstIp, DP = f.DstPt}, 
+    (k,v) => new {KeyFlow= k, HandshakeFlow = v});
+
+var tlsFlowList = GetList(tlsFlowStream, e=>e.IsInterval || e.IsEnd);
+display(tlsFlowList);
+
+#!markdown
+
+## Same application session flows
+
+Flows that (probably) belongs to the same application, which opens multiple connections to the same end point. 
+
+#!csharp
+
+var sameSessionFlowStream = clientStream.Multicast(m => m.Join(m, 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP = f.DstPt}, 
+    f => new { SA = f.SrcIp, DA = f.DstIp, DP = f.DstPt}, 
+    (k,v) => new {KeyFlow= k, RelatedFlow = v}));
+var sameSessionFlowList = GetList(sameSessionFlowStream, e=>e.IsData);
+display(sameSessionFlowList);
+
+#!markdown
+
+## Same Host Flows
+
+#!csharp
+
+var sameHostFlowStream = clientStream.Multicast(m => m.Join(m, 
+    f => new { SA = f.SrcIp, DA = f.DstIp}, 
+    f => new { SA = f.SrcIp, DA = f.DstIp }, 
+    (k,v) => new {KeyFlow= k, RelatedFlow = v}));
+var sameHostFlowList = GetList(sameHostFlowStream, e=>e.IsData);
+display(sameHostFlowList);
+
+#!markdown
+
+## Same application flows
+
+Flows from (possibly) multiply local hosts that connects to the same application. 
+
+The related flows must be within a window that opens 30 seconds before the flow start and closes 30 seconds after the end of the flow.
+
+#!csharp
+
+var sameAppFlowStream = clientStream.Multicast(m => m.ExtendLifetime(TimeSpan.FromSeconds(30).Ticks).Join(m.ExtendLifetime(TimeSpan.FromSeconds(30).Ticks), 
+    f => new { DA = f.DstIp, DP = f.DstPt}, 
+    f => new { DA = f.DstIp, DP = f.DstPt}, 
+    (k,v) => new {KeyFlow= k, RelatedFlow = v}));
+var sameAppFlowList = GetList(sameAppFlowStream, e=>e.IsData);
+display(sameAppFlowList);

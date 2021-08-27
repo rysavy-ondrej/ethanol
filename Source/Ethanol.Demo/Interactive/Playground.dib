@@ -187,3 +187,29 @@ var sameAppFlowStream = clientStream.Multicast(m => m.ExtendLifetime(TimeSpan.Fr
     (k,v) => new {KeyFlow= k, RelatedFlow = v}));
 var sameAppFlowList = GetList(sameAppFlowStream, e=>e.IsData);
 display(sameAppFlowList);
+
+#!markdown
+
+# Flow burst
+
+A collection of flows initiated by the client within a given time window. 
+
+#!csharp
+
+var burstThreshold = TimeSpan.FromSeconds(1);
+var burstCutOff = TimeSpan.FromSeconds(5); 
+var flowBurstStream = clientStream.GroupApply(k => new { SA = k.SrcIp, DA = k.DstIp, DP = k.DstPt }, g => g.SessionTimeoutWindow(burstThreshold.Ticks, burstCutOff.Ticks).Aggregate(x => x.Collect(f => f)),  (c, v) => new { FlowKey = c.Key, FlowBurst = v}).Where(t=>t.FlowBurst.Count() > 5);
+display(GetList(flowBurstStream, e => e.IsEnd));
+
+#!markdown
+
+# Flow burst of HTTPS
+
+We may try to identify the web page loading by detecting flow burst initiated from a single host possibly targeting different servers. 
+
+#!csharp
+
+var webBurstThreshold = TimeSpan.FromSeconds(5);
+var webBurstCutOff = TimeSpan.FromSeconds(60); 
+var flowBurstWebStream = clientStream.GroupApply(k => new { SA = k.SrcIp, DP = k.DstPt }, g => g.SessionTimeoutWindow(webBurstThreshold.Ticks, webBurstCutOff.Ticks).Aggregate(x => x.Collect(f => new { SP = f.SrcPt, DA = f.DstIp, D = f.Duration })),  (c, v) => new { FlowKey = c.Key, FlowBurst = v}).Where(t=>t.FlowBurst.Count() > 5);
+display(GetList(flowBurstWebStream, e => e.IsEnd));

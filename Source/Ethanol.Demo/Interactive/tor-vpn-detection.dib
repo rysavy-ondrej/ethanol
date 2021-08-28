@@ -1,0 +1,7 @@
+#!markdown
+
+# Detection of VPN
+
+This playbook is about context-based detection of TOR/VPN traffic.
+
+For some informaiton on Tor: https://ipdata.co/blog/tor-detection/

@@ -5,3 +5,7 @@
 This playbook is about context-based detection of TOR/VPN traffic.
 
 For some informaiton on Tor: https://ipdata.co/blog/tor-detection/
+
+The idea of detection is that TOR/VPN traffic has always a single destination service. It means that there will be many connections to this endpoint (Tor exit node) that othewrise would be done to different nodes. 
+
+Thus we need to aggregate these flows and analyze their parameters.

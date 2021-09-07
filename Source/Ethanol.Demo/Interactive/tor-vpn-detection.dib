@@ -1,11 +1,22 @@
 #!markdown
 
-# Detection of VPN
+# Detection of VPN/TOR
 
 This playbook is about context-based detection of TOR/VPN traffic.
 
-For some informaiton on Tor: https://ipdata.co/blog/tor-detection/
 
-The idea of detection is that TOR/VPN traffic has always a single destination service. It means that there will be many connections to this endpoint (Tor exit node) that othewrise would be done to different nodes. 
+## TOR connections
+For some information on Tor: https://ipdata.co/blog/tor-detection/
 
-Thus we need to aggregate these flows and analyze their parameters.
+The idea of detection TOR traffic is to identify connection that uses TOR exit point node(s) for communication. Although there is a list of exit nodes that can be used to identify the TOR exit nodes, it is also possible to detect the communication by performing correlation on flows. 
+At the moment we have the following observations:
+
+* TOR connection to the exit node is encrypted using TLS, all connections have the same client's ciphersuite list 
+* TOR TLS server name is commonly a generated domain name not related to the real DNS name.
+* TOR client creates multiple connections to the exit nodes
+* TOR exit nodes may listen on a variety of ports, it seems that default is 9001, but any port can be used
+* some TOR nodes have reverse DNS record, that is it is possible to identify them by DNS (word "tor" is often a part of the name of the node)
+
+#!markdown
+
+This notebook uses dataset with TOR communication originated only from the single node (192.168.111.18).  

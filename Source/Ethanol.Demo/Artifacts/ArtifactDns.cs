@@ -1,7 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using Ethanol.Artifacts;
 using System;
-using System.Collections.Generic;
-using System.Net;
 
 namespace Ethanol.Demo
 {

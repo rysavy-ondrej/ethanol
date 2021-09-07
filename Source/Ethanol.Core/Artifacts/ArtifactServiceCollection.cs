@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Ethanol.Providers;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Ethanol.Demo
+namespace Ethanol.Artifacts
 {
     /// <summary>
     /// Collect services offering access to artifact data sources. It internally uses <see cref="ServiceCollection"/> class.
@@ -48,7 +49,7 @@ namespace Ethanol.Demo
         }
 
 
-        public ArtifactServiceCollection AddArtifactProvider<TArtifact>(Func<IServiceProvider, IArtifactProvider<TArtifact>> implementationFactory) where TArtifact : IpfixArtifact 
+        public ArtifactServiceCollection AddArtifactProvider<TArtifact>(Func<IServiceProvider, IArtifactProvider<TArtifact>> implementationFactory) where TArtifact : Artifact 
         {
             _services.AddTransient(implementationFactory);
             return this;

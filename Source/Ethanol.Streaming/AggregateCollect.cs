@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using Microsoft.StreamProcessing;
 using System.Collections.Immutable;
 
-namespace Ethanol.Demo.Streaming
+namespace Ethanol.Streaming
 {
     public static class AggregateCollect
     {

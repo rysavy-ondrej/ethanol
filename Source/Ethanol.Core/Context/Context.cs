@@ -1,22 +1,23 @@
-﻿using System;
+﻿using Ethanol.Artifacts;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Context
 {
     /// <summary>
     /// Represents a context for artifacts.
     /// </summary>
-    public class Context
+    public class ContextSet
     {
         /// <summary>
-        /// COntext consits of (key,value) pairs of artifacts.
+        /// Context consits of (key,value) pairs of artifacts.
         /// </summary>
         private readonly List<KeyValuePair<string, Artifact>> _keyValuePairs;
 
-        public Context()
+        public ContextSet()
         {
             _keyValuePairs = new List<KeyValuePair<string, Artifact>>();
         }

@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ethanol.Core\Ethanol.Core.csproj" />
+    <ProjectReference Include="..\Ethanol.Streaming\Ethanol.Streaming.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Data\dns.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

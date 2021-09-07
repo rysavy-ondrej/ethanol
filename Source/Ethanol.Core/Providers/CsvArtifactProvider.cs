@@ -1,6 +1,6 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
-using Microsoft.StreamProcessing;
+using Ethanol.Artifacts;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Providers
 {
 
     public static class CsvArtifactProvider
@@ -24,7 +24,7 @@ namespace Ethanol.Demo
     /// <summary>
     /// Represents a data source based on CSV file that provides artifacts of type <typeparamref name="TArtifact"/>.
     /// </summary>
-    public class CsvArtifactProvider<TArtifact> : IArtifactProvider<TArtifact> where TArtifact : IpfixArtifact
+    public class CsvArtifactProvider<TArtifact> : IArtifactProvider<TArtifact> where TArtifact : Artifact
     {
         readonly string _filename;
         private List<TArtifact> _artifacts;
@@ -57,32 +57,21 @@ namespace Ethanol.Demo
         }
 
 
-        public IQueryable<TTarget> GetQueryable<TTarget>() where TTarget : Artifact
+        public IObservable<TTarget> GetObservable<TTarget>() where TTarget : Artifact
         {
-            return (IQueryable<TTarget>)Artifacts.AsQueryable();
+            return GetOrLoadArtifacts().Cast<TTarget>().ToObservable();
         }
 
 
-        IEnumerable<IpfixArtifact> Artifacts
+        IList<TArtifact> GetOrLoadArtifacts()
         {
-            get 
-            {
-                if (_artifacts == null) Load();
-                return _artifacts.Cast<IpfixArtifact>(); 
-            }
+            if (_artifacts == null) Load();
+            return _artifacts; 
         }
 
-        public IQueryable<TArtifact> GetQueryable() => (IQueryable<TArtifact>)Artifacts.AsQueryable();
-
-        public IStreamable<Empty, TArtifact> GetStreamable()
+        public IObservable<TArtifact> GetObservable()
         {
-            return Artifacts.Cast<TArtifact>().ToObservable().ToTemporalStreamable(x => x.StartTime, x => x.EndTime);
-        }
-
-        public IStreamable<Empty, TTarget> GetStreamable<TTarget>() where TTarget : Artifact
-        {
-            
-            return Artifacts.Cast<TTarget>().ToObservable().ToTemporalStreamable(x => x.StartTime, x => x.EndTime);
+            return GetOrLoadArtifacts().ToObservable();
         }
 
         public Type ArtifactType => typeof(TArtifact);

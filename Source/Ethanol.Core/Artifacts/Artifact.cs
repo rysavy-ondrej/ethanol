@@ -1,11 +1,12 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using Ethanol.Context;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Artifacts
 {
     public abstract class Artifact
     {
@@ -71,27 +72,6 @@ namespace Ethanol.Demo
         {
             var fields = String.Join(", ", Fields.Select(x => $"{x}={Field(x)}"));
             return $"{this.GetType().Name} {{ Id={this.Id}, {fields} }}";            
-        }
-
-
-        /// <summary>
-        /// Loads the relevant facts of this artifact to the context.
-        /// </summary>
-        /// <param name="ctx">The target context to be enriched.</param>
-        /// <param name="artifactServiceProvider">The artifact service provider.</param>
-        public void LoadToContext(Context ctx, ArtifactServiceProvider artifactServiceProvider, params FactLoader[] loaders)
-        {
-            foreach (var builder in loaders)
-            {
-                var provider = artifactServiceProvider.GetService(builder.InputType);
-                if (provider != null)
-                {
-                    foreach (var fact in builder.Query(this, provider.GetQueryable<Artifact>()))
-                    {
-                        ctx.Add(fact.Label, fact.Artifact);
-                    }
-                }
-            }
         }
     }
 }

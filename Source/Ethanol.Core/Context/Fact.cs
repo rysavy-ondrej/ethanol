@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Ethanol.Artifacts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Ethanol.Demo
+namespace Ethanol.Context
 {
     /// <summary>
     /// Represents a single fact in the context.

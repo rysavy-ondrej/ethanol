@@ -1,4 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using Ethanol.Artifacts;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;

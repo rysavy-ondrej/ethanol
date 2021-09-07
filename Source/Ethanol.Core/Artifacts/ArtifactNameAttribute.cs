@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Ethanol.Demo
+namespace Ethanol.Artifacts
 {
-    internal class ArtifactNameAttribute : Attribute
+    public class ArtifactNameAttribute : Attribute
     {
         private readonly string _artifactName;
 

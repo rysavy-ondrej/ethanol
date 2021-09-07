@@ -1,4 +1,6 @@
 ﻿using ConsoleAppFramework;
+using Ethanol.Artifacts;
+using Ethanol.Context;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NRules;
@@ -8,6 +10,7 @@ using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -48,14 +51,14 @@ namespace Ethanol.Demo
 
             var artifactType = _artifactServiceCollection.GetArtifactTypeByName(targetType);
             var source = artifactServices.GetService(artifactType);                        
-            var input = source?.GetQueryable<IpfixArtifact>().FirstOrDefault(f => f.Id == flowId);
+            var input = source?.GetObservable<IpfixArtifact>().FirstOrDefaultAsync(f => f.Id == flowId).Wait();
             if (input == null)
             {
                 Console.Error.WriteLine($"Flow id={flowId} not found in '{targetType}'");
                 return;
             }
 
-            var ctx = new Context();
+            var ctx = new ContextSet();
             input.LoadToContext(ctx, artifactServices, GetFactLoaders(artifactType));
 
             var writer = new IndentedTextWriter(Console.Out, "  ");
@@ -80,12 +83,13 @@ namespace Ethanol.Demo
         private FactLoader[] GetFactLoaders(Type targetType)
         {
             var loaders = new FactLoader[] {
-                LoaderFunctions.ServiceDomain<ArtifactLong>(TimeSpan.FromMinutes(5)).GetLoader()
+                LoaderFunctions.ServiceDomain<ArtifactLong>(TimeSpan.FromMinutes(5))
+                               .GetLoader()
             };
             return loaders;
         }
 
-        private static IEnumerable<IpfixArtifact> EvaluateContext(Context ctx, IpfixArtifact input, RuleRepository rules)
+        private static IEnumerable<IpfixArtifact> EvaluateContext(ContextSet ctx, IpfixArtifact input, RuleRepository rules)
         {
             //Compile rules
             var factory = rules.Compile();

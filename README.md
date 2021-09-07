@@ -58,6 +58,8 @@ Question: is it ok to do it this way? Can we precompute the context that will be
 Note: For temporal operators see Trill, for instance.
 
 ## Environment and Packages 
+Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required. 
+
 
 ## Usage
 

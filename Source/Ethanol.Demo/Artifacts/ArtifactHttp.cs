@@ -8,25 +8,24 @@ namespace Ethanol.Demo
 {
     [ArtifactName("Http")]
     public class ArtifactHttp : IpfixArtifact
-    {
-              
-        [Index(0)]
+    {     
+        [Name("ts")]
         public override  string FirstSeen { get; set; }
-        [Index(1)]
+        [Name("td")]
         public override string Duration { get; set; }
-        [Index(2)]
+        [Name("sa")]
         public override string SrcIp { get; set; }
-        [Index(3)]
+        [Name("da")]
         public override  string DstIp { get; set; }
-        [Index(4)]
+        [Name("hhost")]
         public string HttpHostName { get; set; }
-        [Index(5)]
+        [Name("hurl")]
         public string HttpUrl { get; set; }
-        [Index(6)]
+        [Name("dp")]
         public override int DstPt { get; set; }
-        [Index(7)]
+        [Name("pkt")]
         public int Packets { get; set; }
-        [Index(8)]                                                                                                   
+        [Name("byt")]                                                                                                   
         public long Bytes { get; set; }
 
         [Ignore]

@@ -7,37 +7,37 @@ namespace Ethanol.Demo
     [ArtifactName("Dns")]
     public class ArtifactDns : IpfixArtifact
     {
-        [Index(0)]
+        [Name("ts")]
         public override string FirstSeen { get; set; }
 
-        [Index(1)]
+        [Name("sa")]
         public override string SrcIp { get; set; }
 
-        [Index(2)]
+        [Name("da")]
         public override string DstIp { get; set; }
 
-        [Index(3)]
+        [Name("dnsflags")]
         public string DnsFlag { get; set; }
 
-        [Index(4)]
+        [Name("dnsqtype")]
         public string DnsQuestionType { get; set; }
 
-        [Index(5)]
+        [Name("dnsqname")]
         public string DnsQuestionName { get; set; }
 
-        [Index(6)]
+        [Name("dnsrname")]
         public string DnsResponseName { get; set; }
 
-        [Index(7)]
+        [Name("dnsrdata")]
         public string DnsResponseData { get; set; }
 
-        [Index(8)]
+        [Name("dnsrcode")]
         public string DnsResponseCode { get; set; }
 
-        [Index(9)]
+        [Name("pkt")]
         public int Packets { get; set; }
 
-        [Index(10)]
+        [Name("byt")]
         public long Bytes { get; set; }
 
         [Ignore]

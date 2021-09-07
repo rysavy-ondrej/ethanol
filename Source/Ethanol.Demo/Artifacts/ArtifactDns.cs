@@ -7,15 +7,6 @@ namespace Ethanol.Demo
     [ArtifactName("Dns")]
     public class ArtifactDns : IpfixArtifact
     {
-        [Name("ts")]
-        public override string FirstSeen { get; set; }
-
-        [Name("sa")]
-        public override string SrcIp { get; set; }
-
-        [Name("da")]
-        public override string DstIp { get; set; }
-
         [Name("dnsflags")]
         public string DnsFlag { get; set; }
 
@@ -33,20 +24,5 @@ namespace Ethanol.Demo
 
         [Name("dnsrcode")]
         public string DnsResponseCode { get; set; }
-
-        [Name("pkt")]
-        public int Packets { get; set; }
-
-        [Name("byt")]
-        public long Bytes { get; set; }
-
-        [Ignore]
-        public override string Duration { get; set; }
-        [Ignore]
-        public override int SrcPt { get; set; }
-        [Ignore]
-        public override int DstPt { get; set; }
-        [Ignore]
-        public override string Protocol { get; set; } = "UDP";
     }
 }

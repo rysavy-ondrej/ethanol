@@ -1,13 +1,65 @@
 ﻿using CsvHelper.Configuration.Attributes;
-using Ethanol.Context;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace Ethanol.Artifacts
 {
+    public static class ArtifactExtension
+    {
+        /// <summary>
+        /// Gets the value of the given field. 
+        /// </summary>
+        /// <param name="name">Name of the field.</param>
+        /// <returns>Field value.</returns>
+        public static object GetArtifactFieldValue(this Artifact artifact, string name)
+        {
+            var p = artifact.GetType().GetProperty(name);
+            return p.GetValue(artifact);
+        }
+
+        /// <summary>
+        /// Collection of field names of the current artifact.
+        /// </summary>
+        public static string[] GetArtifactFields(this Artifact artifact)
+        {
+            return artifact.GetType().GetProperties().Where(p => HasCsvAttribute(p)).Select(x => x.Name).ToArray();
+        }
+
+        private static bool HasCsvAttribute(PropertyInfo p)
+        {
+            return p.GetCustomAttribute<CsvHelper.Configuration.Attributes.NameAttribute>(true) != null
+                || p.GetCustomAttribute<CsvHelper.Configuration.Attributes.IndexAttribute>(true) != null
+                || p.GetCustomAttribute<CsvHelper.Configuration.Attributes.NameIndexAttribute>(true) != null;
+        }
+
+        /// <summary>
+        /// Dumps the current object using JSON format.
+        /// </summary>
+        /// <param name="writer"></param>
+        public static void DumpJson(this Artifact artifact, TextWriter writer)
+        {
+            var fields = string.Join(',', artifact.GetArtifactFields().Select(x => $"{x}={artifact.GetArtifactFieldValue(x)}"));
+            writer.Write($"{{ {fields} }}");
+
+        }
+
+        /// <summary>
+        /// Dumps the current object using YAML format.
+        /// </summary>
+        /// <param name="writer"></param>
+        public static void DumpYaml(this Artifact artifact, IndentedTextWriter writer)
+        {
+            writer.WriteLine($"Id: {artifact.Id}");
+            foreach (var field in artifact.GetArtifactFields().Select(x => $"{x}: {artifact.GetArtifactFieldValue(x)}"))
+            {
+                writer.WriteLine(field);
+            }
+        }
+    }
+
     public abstract class Artifact
     {
         /// <summary>
@@ -27,50 +79,10 @@ namespace Ethanol.Artifacts
         /// </summary>
         [Ignore]
         public abstract long EndTime { get; }
-        /// <summary>
-        /// Gets the value of the given field. 
-        /// </summary>
-        /// <param name="name">Name of the field.</param>
-        /// <returns>Field value.</returns>
-        public object Field(string name)
-        {
-            var p = GetType().GetProperty(name);
-            return p.GetValue(this);
-        }
-
-        /// <summary>
-        /// Collection of field names of the current artifact.
-        /// </summary>
-        [Ignore]
-        public string[] Fields => GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(CsvHelper.Configuration.Attributes.IndexAttribute), false).Length > 0).Select(x => x.Name).ToArray();
-
-        /// <summary>
-        /// Dumps the current object using JSON format.
-        /// </summary>
-        /// <param name="writer"></param>
-        public void DumpJson(TextWriter writer)
-        {
-            var fields = String.Join(',', Fields.Select(x => $"{x}={Field(x)}"));
-            writer.Write($"{{ {fields} }}");
-
-        }
-
-        /// <summary>
-        /// Dumps the current object using YAML format.
-        /// </summary>
-        /// <param name="writer"></param>
-        public void DumpYaml(IndentedTextWriter writer)
-        {
-            writer.WriteLine($"Id: {Id}");
-            foreach (var field in Fields.Select(x => $"{x}: {Field(x)}"))
-            {
-                writer.WriteLine(field);
-            }
-        }
 
         public override string ToString()
         {
-            var fields = String.Join(", ", Fields.Select(x => $"{x}={Field(x)}"));
+            var fields = String.Join(", ", this.GetArtifactFields().Select(x => $"{x}={this.GetArtifactFieldValue(x)}"));
             return $"{this.GetType().Name} {{ Id={this.Id}, {fields} }}";            
         }
     }

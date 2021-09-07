@@ -18,7 +18,7 @@ namespace Ethanol.Demo
                 from other in input
                 where target.Id != other.Id
                     && FlowRelation.SrcHost.Check(target,other)
-                    && target.SrcPt - 10 <= other.SrcPt && other.SrcPt <= target.SrcPt + 10
+                    // && target.SrcPt - 10 <= other.SrcPt && other.SrcPt <= target.SrcPt + 10
                     && target.Window(span, span, other)
                 select new Fact(nameof(SiblingFlow), other);
 

@@ -8,15 +8,127 @@ This playbook is about context-based detection of TOR/VPN traffic.
 ## TOR connections
 For some information on Tor: https://ipdata.co/blog/tor-detection/
 
-The idea of detection TOR traffic is to identify connection that uses TOR exit point node(s) for communication. Although there is a list of exit nodes that can be used to identify the TOR exit nodes, it is also possible to detect the communication by performing correlation on flows. 
-At the moment we have the following observations:
+The idea of detection TOR traffic is to identify connection that uses TOR exit point node(s) for communication. Although there is a list of exit nodes that can be used to identify the TOR exit nodes, it is also possible to detect the communication by performing correlation on flows. TOR client establishes multiple connections to the exit nodes. 
+The detector should be able to identify TOR session and provide the following information:
 
-* TOR connection to the exit node is encrypted using TLS, all connections have the same client's ciphersuite list 
-* TOR TLS server name is commonly a generated domain name not related to the real DNS name.
-* TOR client creates multiple connections to the exit nodes
-* TOR exit nodes may listen on a variety of ports, it seems that default is 9001, but any port can be used
-* some TOR nodes have reverse DNS record, that is it is possible to identify them by DNS (word "tor" is often a part of the name of the node)
+* Client identity
+* TOR exit nodes
+* list of related flows
+* amount of upload bytes/packets
+* amount of download bytes/packets
+* duration
+
+
+To detect TOR flows, we can apply the following rules based on the multiple observations:
+
+* TOR connection to the exit node is encrypted using TLS, it seems that all connections done by a single TOR client have the same client's ciphersuite list (even JA3 fingerprint). 
+* TOR TLS server name (SNI) is commonly a generated domain name, e.g., `www.ivuq24fj4fwmink.com`. This string is not constant and changes with every connection.
+* TOR exit nodes may listen on a variety of ports, it seems that default is 9001, but any port can be used.
+* Some TOR nodes have a reverse DNS record, e.g., `torexit.as3265.net`.
+
+The initial step may be the identification of communication with a directory server during the bootstrap procedure:
+
+Tor ships with a list of directory authorities and some information about them. In particular, this information includes for each authority its IP address, onion port and onion key fingerprint.
+This makes it possible for clients to make an onion connection to one or more authorities for bootstrapping purposes. It then connects to the authority's DirPort via the onion connection to that authority.
 
 #!markdown
 
-This notebook uses dataset with TOR communication originated only from the single node (192.168.111.18).  
+This notebook uses dataset with TOR communication originated only from the single node (192.168.111.18). Note that this node also have other (encrypted) communication.   
+
+#!csharp
+
+#r "nuget:System.Reactive"
+#r "nuget:Trill"
+
+#r "..\bin\Debug\net5.0\Ethanol.Core.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+
+using System.Reactive;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
+using System.Reflection;
+using System.CodeDom.Compiler;
+
+using Ethanol.Demo;
+using Ethanol.Streaming;
+using Ethanol.Artifacts;
+using Ethanol.Context;
+using Ethanol.Providers;
+
+
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
+{
+    stream.ToStreamEventObservable().Where(predicate).Take(count).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
+
+IList<StreamEvent<V>> GetList<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    return stream.ToStreamEventObservable().Where(predicate).ToList().FirstAsync().Wait();    
+}
+
+#!csharp
+
+public double ComputeEntropy(string message)
+{
+    Dictionary<char, int> K = message.GroupBy(c => c).ToDictionary(g => g.Key, g => g.Count());
+    double EntropyValue = 0;
+    foreach (var character in K)
+    {
+        double PR = character.Value / (double) message.Length;
+        EntropyValue -= PR * Math.Log(PR, 2);
+    }
+    return EntropyValue;
+}
+
+#!markdown
+
+# Prepare input data
+
+#!csharp
+
+var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactHttp)));
+artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
+var artifactServices = artifactServiceCollection.Build();
+artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display();
+
+var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>();                        
+var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>();
+var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>();
+var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>();
+
+display($"Flow count = {GetList(flowStream, e=>e.IsData).Count}");
+display($"Dns count = {GetList(dnsStream, e=>e.IsData).Count}");
+display($"Http count = {GetList(httpStream, e=>e.IsData).Count}");
+display($"Tls count = {GetList(tlsStream, e=>e.IsData).Count}");
+
+#!markdown
+
+# Process input flows
+
+#!markdown
+
+## Identify probable TOR exit node
+
+Some TOR nodes provide SNI string. This string changes for different sessions. Thus we may try to identify the endpoint with varying SNI. First, we collect TLS and corresponding domain queries. 
+
+#!csharp
+
+var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJoin(
+    dnsStream.AlterEventDuration(t => t + TimeSpan.FromMinutes(30).Ticks),  
+    f => new { HOST = f.SrcIp, DA = f.DstIp },
+    f => new { HOST = f.DstIp, DA = f.DnsResponseData }, 
+    l => new { TlsFlow = l, HasDns = false, Domain = l.TlsServerName,  Entropy = ComputeEntropy(l.TlsServerName) }, 
+    (l,r) => new { TlsFlow = l, HasDns = true, Domain = l.TlsServerName, Entropy = ComputeEntropy(l.TlsServerName)}); 
+
+GetList(tlsDomain, e=>e.IsInterval || e.IsEnd).OrderByDescending(e=>e.Payload.Entropy).Display()
+
+#!csharp
+
+var exitNodeCandidates = tlsDomain
+    .GroupApply(
+        k => new { DA = k.TlsFlow.DstIp, DP = k.TlsFlow.DstPt }, 
+        g => g.TumblingWindowLifetime(TimeSpan.FromHours(1).Ticks).Aggregate(x => x.Collect(f => new { Domain = f.Domain, Dns = f.HasDns })),  
+        (c, v) => new { FlowKey = c.Key, Domains = v.ToArray() });
+
+GetList(exitNodeCandidates, e=>e.IsData).Display();

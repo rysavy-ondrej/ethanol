@@ -60,13 +60,8 @@ namespace Ethanol.Providers
             {
                 using (var csv = new CsvReader(reader, config))
                 {
-                    csv.ReadHeader();
-                    _artifacts = csv.GetRecords<TArtifact>().ToList();                    
+                    _artifacts = csv.GetRecords<TArtifact>().Select((x,i) => { x.Id =$"{i + 1}"; return x; } ).ToList();                    
                 }
-            }
-            for(int i = 0; i < _artifacts.Count; i++)
-            {
-                _artifacts[i].Id = $"{i+1}";
             }
         }
 

@@ -11,7 +11,15 @@ namespace Ethanol.Streaming
         /// </summary>
         public static IStreamable<Empty, TArtifact> GetStreamable<TArtifact>(this IArtifactProvider<TArtifact> artifactProvider) where TArtifact : Artifact
         {
-            return artifactProvider.GetObservable<TArtifact>().ToTemporalStreamable(x => x.StartTime, x => x.EndTime);
+            return artifactProvider.GetObservable<TArtifact>().ToTemporalStreamable(x => x.StartTime, x => x.EndTime, disorderPolicy: DisorderPolicy.Drop());
+        }
+
+        /// <summary>
+        /// Gets the data as streamable collection to be processed by TRILL query.
+        /// </summary>
+        public static IStreamable<Empty, TArtifact> GetStreamable<TArtifact>(this IArtifactProvider artifactProvider) where TArtifact : Artifact
+        {
+            return artifactProvider.GetObservable<TArtifact>().ToTemporalStreamable(x => x.StartTime, x => x.EndTime, disorderPolicy: DisorderPolicy.Drop());
         }
     }
 }

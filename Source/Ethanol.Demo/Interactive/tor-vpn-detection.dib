@@ -174,15 +174,15 @@ As we have identified TOR exit nodes, we can match the corresponding TCP flows.
 
 record Tor(string Client, string ExitNode);
 
-var allTorFlowStream = flowStream.LeftOuterJoin(allExitNodes,
+var contextFlowStream = flowStream.LeftOuterJoin(allExitNodes,
         l => new { DA = l.DstIp, DP = l.DstPt },
         r => new { DA = r.DA, DP = r.DP },       
-        l => new { Flow = l, Tor = (Tor)null },
-        (l,r) => new { Flow = l, Tor  = new Tor(l.SrcIp, l.DstIp) } 
+        l => new { Flow = l,  Tor = (Tor)null  },
+        (l,r) => new { Flow = l,  Tor  = new Tor(l.SrcIp, l.DstIp) } 
     );
 
    
-GetList(allTorFlowStream.Where(f => f.Flow.SrcIp =="192.168.111.18" && f.Flow.DstIp == "188.114.140.233" ), e=>e.IsEnd).Display();  
+GetList(contextFlowStream.Where(f => f.Flow.SrcIp =="192.168.111.18" && f.Flow.DstIp == "188.114.140.233" ), e=>e.IsEnd || e.IsInterval).Display();  
     
 
 #!markdown
@@ -200,3 +200,20 @@ The TOR analyzer outputs on every closing of the hopping window the following:
 * list of active TOR clients
 * list of used TOR exit nodes
 * aggregated data on TOR traffic, up/down for clients, exist nodes, etc.
+
+#!csharp
+
+var torClientsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.Client, 
+    g => g.Count(), 
+    g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), 
+    g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)),
+    g => g.Collect(f => f.Tor.ExitNode), 
+    (k,g1,g2,g3,g4) => new {TorClient = k.Key, Flows = g1, Packets = g2, Bytes = g3, ExitNodes = g4.Distinct().OrderBy(x=>x).ToArray()});
+
+"TOR CLIENTS".Display();
+GetList(torClientsStream, e=>e.IsEnd || e.IsInterval).Display(); 
+
+var torExitsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.ExitNode, g => g.Count(), g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)), (k,g1,g2,g3) => new {TorExit = k.Key, Flows = g1, Packets = g2, Bytes = g3});
+
+"TOR EXITS".Display();
+GetList(torExitsStream, e=>e.IsEnd || e.IsInterval).Display(); 

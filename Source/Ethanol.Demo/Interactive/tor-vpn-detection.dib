@@ -67,18 +67,27 @@ IList<StreamEvent<V>> GetList<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V
     return stream.ToStreamEventObservable().Where(predicate).ToList().FirstAsync().Wait();    
 }
 
+#!markdown
+
+# Functions used in the analysis
+
+In the analysis, some functions are used to compute various values:
+
+* Entropy gives as the randomness of the string computed as $H = - \sum p(x) log(p(x))$
+ 
+
 #!csharp
 
 public double ComputeEntropy(string message)
 {
     Dictionary<char, int> K = message.GroupBy(c => c).ToDictionary(g => g.Key, g => g.Count());
-    double EntropyValue = 0;
+    double entropyValue = 0;
     foreach (var character in K)
     {
         double PR = character.Value / (double) message.Length;
-        EntropyValue -= PR * Math.Log(PR, 2);
+        entropyValue -= PR * Math.Log(PR, 2);
     }
-    return EntropyValue;
+    return entropyValue;
 }
 
 #!markdown
@@ -108,9 +117,9 @@ display($"Tls count = {GetList(tlsStream, e=>e.IsData).Count}");
 
 #!markdown
 
-## Identify probable TOR exit node
+## Pair TLS and DNS records 
 
-Some TOR nodes provide SNI string. This string changes for different sessions. Thus we may try to identify the endpoint with varying SNI. First, we collect TLS and corresponding domain queries. 
+For TLS records, the cadidate DNS records are identified. The rationale behind this reasoning is that most the TLS connections starts by querying domain name of the destination endpoint. However this is not always the case. For instance, some queries may be locally cached, or the application connects directly to IP address as their use their own resolution mechanism or directory, e.g., TOR and some system services.   
 
 #!csharp
 
@@ -118,17 +127,72 @@ var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJo
     dnsStream.AlterEventDuration(t => t + TimeSpan.FromMinutes(30).Ticks),  
     f => new { HOST = f.SrcIp, DA = f.DstIp },
     f => new { HOST = f.DstIp, DA = f.DnsResponseData }, 
-    l => new { TlsFlow = l, HasDns = false, Domain = l.TlsServerName,  Entropy = ComputeEntropy(l.TlsServerName) }, 
-    (l,r) => new { TlsFlow = l, HasDns = true, Domain = l.TlsServerName, Entropy = ComputeEntropy(l.TlsServerName)}); 
+    l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeEntropy(l.TlsServerName) }, 
+    (l,r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeEntropy(l.TlsServerName)}); 
 
-GetList(tlsDomain, e=>e.IsInterval || e.IsEnd).OrderByDescending(e=>e.Payload.Entropy).Display()
+GetList(tlsDomain.GroupApply(t =>"Flows", g=>g.HoppingWindowLifetime(TimeSpan.FromMinutes(5).Ticks, TimeSpan.FromMinutes(5).Ticks).Count(), (k,v) => new {Flows = v} ), e=>e.IsInterval || e.IsEnd).TakeLast(10).Display()
 
 #!csharp
 
-var exitNodeCandidates = tlsDomain
-    .GroupApply(
-        k => new { DA = k.TlsFlow.DstIp, DP = k.TlsFlow.DstPt }, 
-        g => g.TumblingWindowLifetime(TimeSpan.FromHours(1).Ticks).Aggregate(x => x.Collect(f => new { Domain = f.Domain, Dns = f.HasDns })),  
-        (c, v) => new { FlowKey = c.Key, Domains = v.ToArray() });
+GetList(tlsStream.Where(f => f.TlsServerName.Contains("zvy")), e=>e.IsData).Display()
 
-GetList(exitNodeCandidates, e=>e.IsData).Display();
+#!markdown
+
+## TOR handshakes
+
+Using a simple (heuristic) rules we try to identify the TOR related TLS handshakes:
+
+* Generated server name, which means that Entropy is rather high (TODO: here we can also use ngrams for improve the precision) as some regular names can also have quite high entropy
+* TLS Common name is missing, which is not the case for all TOR connections but a significat amount of exit nodes just does not provide this information.
+* Empty domain name, as there is not DNS resolution associated with this connection
+
+#!csharp
+
+var torHandshakes = tlsDomain.Where(e=> String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.Entropy > 3);
+// GetList(torHandshakes, e=>e.IsInterval || e.IsEnd).OrderByDescending(e=>e.Payload.Entropy).Display();
+var exitNodes = torHandshakes.Select(f => new { DA = f.TlsFlow.DstIp, DP = f.TlsFlow.DstPt, ServerName = f.ServerName, JA3 = f.TlsFlow.Ja3Fingerprint } ).HoppingWindowLifetime(TimeSpan.FromMinutes(30).Ticks, (TimeSpan.FromMinutes(10).Ticks));
+GetList(exitNodes, e=>e.IsData).Display();
+
+#!markdown
+
+## Identify other TOR exit nodes
+
+As a Tor client still uses the same cipher suites in the handshake with all end points, it is possible to identify other exit nodes. 
+ 
+
+#!csharp
+
+var allExitNodes  = exitNodes.AlterEventDuration(d => TimeSpan.FromMinutes(60).Ticks).Join(tlsStream.AlterEventDuration(d => TimeSpan.FromMinutes(60).Ticks).Where(f=>f.SourcePort > f.DestinationPort),
+    l => l.JA3,
+    r => r.Ja3Fingerprint,
+    (l,r) => new { DA = r.DstIp, DP = r.DstPt, JA3 = l.JA3, TS = r.FirstSeen }
+);
+GetList(allExitNodes, e=>e.IsInterval).Display()
+
+#!markdown
+
+## Identify the individual flows as TOR
+
+As we have identified TOR exit nodes, we can match the corresponding TCP flows.
+
+#!csharp
+
+var allTorFlowStream = allExitNodes.Join(flowStream.AlterEventDuration(TimeSpan.FromMinutes(60).Ticks),
+        l => new { DA = l.DA, DP = l.DP },
+        r => new { DA = r.DstIp, DP = r.DstPt },
+        (l,r) => new { Flow = r, Class  = "TOR" } 
+    );
+
+   
+GetList(allTorFlowStream.Distinct(), e=>e.IsEnd).Display()  
+    
+
+#!markdown
+
+# Issues
+
+Handling time!
+
+the problem is with the validity of the events:
+
+- when searching for surrounding TOR flows, we need to define the temproal window large enough to include the relevant flows!

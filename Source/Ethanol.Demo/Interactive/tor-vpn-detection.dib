@@ -101,10 +101,12 @@ artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
 var artifactServices = artifactServiceCollection.Build();
 artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display();
 
-var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>();                        
-var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>();
-var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>();
-var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>();
+var windowSize = TimeSpan.FromMinutes(15);
+var windowHop = TimeSpan.FromMinutes(5);
+var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);                        
+var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
 
 display($"Flow count = {GetList(flowStream, e=>e.IsData).Count}");
 display($"Dns count = {GetList(dnsStream, e=>e.IsData).Count}");
@@ -130,15 +132,9 @@ var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJo
     l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeEntropy(l.TlsServerName) }, 
     (l,r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeEntropy(l.TlsServerName)}); 
 
-GetList(tlsDomain.GroupApply(t =>"Flows", g=>g.HoppingWindowLifetime(TimeSpan.FromMinutes(5).Ticks, TimeSpan.FromMinutes(5).Ticks).Count(), (k,v) => new {Flows = v} ), e=>e.IsInterval || e.IsEnd).TakeLast(10).Display()
-
-#!csharp
-
-GetList(tlsStream.Where(f => f.TlsServerName.Contains("zvy")), e=>e.IsData).Display()
-
 #!markdown
 
-## TOR handshakes
+## Primary TOR connections
 
 Using a simple (heuristic) rules we try to identify the TOR related TLS handshakes:
 
@@ -149,8 +145,7 @@ Using a simple (heuristic) rules we try to identify the TOR related TLS handshak
 #!csharp
 
 var torHandshakes = tlsDomain.Where(e=> String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.Entropy > 3);
-// GetList(torHandshakes, e=>e.IsInterval || e.IsEnd).OrderByDescending(e=>e.Payload.Entropy).Display();
-var exitNodes = torHandshakes.Select(f => new { DA = f.TlsFlow.DstIp, DP = f.TlsFlow.DstPt, ServerName = f.ServerName, JA3 = f.TlsFlow.Ja3Fingerprint } ).HoppingWindowLifetime(TimeSpan.FromMinutes(30).Ticks, (TimeSpan.FromMinutes(10).Ticks));
+var exitNodes = torHandshakes.Select(f => new { DA = f.TlsFlow.DstIp, DP = f.TlsFlow.DstPt, ServerName = f.ServerName, JA3 = f.TlsFlow.Ja3Fingerprint } );
 GetList(exitNodes, e=>e.IsData).Display();
 
 #!markdown
@@ -162,12 +157,12 @@ As a Tor client still uses the same cipher suites in the handshake with all end 
 
 #!csharp
 
-var allExitNodes  = exitNodes.AlterEventDuration(d => TimeSpan.FromMinutes(60).Ticks).Join(tlsStream.AlterEventDuration(d => TimeSpan.FromMinutes(60).Ticks).Where(f=>f.SourcePort > f.DestinationPort),
+var allExitNodes  = exitNodes.Join(tlsStream.Where(f=>f.SourcePort > f.DestinationPort),
     l => l.JA3,
     r => r.Ja3Fingerprint,
-    (l,r) => new { DA = r.DstIp, DP = r.DstPt, JA3 = l.JA3, TS = r.FirstSeen }
-);
-GetList(allExitNodes, e=>e.IsInterval).Display()
+    (l,r) => new { DA = r.DstIp, DP = r.DstPt, JA3 = l.JA3 }
+).Distinct();
+GetList(allExitNodes, e=>e.IsEnd).Display()
 
 #!markdown
 
@@ -177,22 +172,31 @@ As we have identified TOR exit nodes, we can match the corresponding TCP flows.
 
 #!csharp
 
-var allTorFlowStream = allExitNodes.Join(flowStream.AlterEventDuration(TimeSpan.FromMinutes(60).Ticks),
-        l => new { DA = l.DA, DP = l.DP },
-        r => new { DA = r.DstIp, DP = r.DstPt },
-        (l,r) => new { Flow = r, Class  = "TOR" } 
+record Tor(string Client, string ExitNode);
+
+var allTorFlowStream = flowStream.LeftOuterJoin(allExitNodes,
+        l => new { DA = l.DstIp, DP = l.DstPt },
+        r => new { DA = r.DA, DP = r.DP },       
+        l => new { Flow = l, Tor = (Tor)null },
+        (l,r) => new { Flow = l, Tor  = new Tor(l.SrcIp, l.DstIp) } 
     );
 
    
-GetList(allTorFlowStream.Distinct(), e=>e.IsEnd).Display()  
+GetList(allTorFlowStream.Where(f => f.Flow.SrcIp =="192.168.111.18" && f.Flow.DstIp == "188.114.140.233" ), e=>e.IsEnd).Display();  
     
 
 #!markdown
 
-# Issues
+# Notes on time 
 
-Handling time!
+The simplified approach was taken to handle the temporal information. Lifetime of each flow does not corresponds to the exact duration of the flow but it is aligned by hopping window.  This enables to correlate flows in that appears in the hopping window without the necessaity to adjust lifetime of individual flows. Still, it is possible to test if two flows are simultaneous by comparing their time information fields. 
 
-the problem is with the validity of the events:
+#!markdown
 
-- when searching for surrounding TOR flows, we need to define the temproal window large enough to include the relevant flows!
+# TOR Analyzer Output
+
+The TOR analyzer outputs on every closing of the hopping window the following:
+
+* list of active TOR clients
+* list of used TOR exit nodes
+* aggregated data on TOR traffic, up/down for clients, exist nodes, etc.

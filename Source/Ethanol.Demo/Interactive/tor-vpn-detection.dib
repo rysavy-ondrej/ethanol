@@ -208,12 +208,19 @@ var torClientsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(
     g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), 
     g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)),
     g => g.Collect(f => f.Tor.ExitNode), 
-    (k,g1,g2,g3,g4) => new {TorClient = k.Key, Flows = g1, Packets = g2, Bytes = g3, ExitNodes = g4.Distinct().OrderBy(x=>x).ToArray()});
+    g => g.Collect(f => f.Flow.Id),
+    (k,g1,g2,g3,g4,g5) => new {TorClient = k.Key, Flows = g1, Packets = g2, Bytes = g3, ExitNodes = g4.Distinct().OrderBy(x=>x).ToArray(), FlowRefs =  g5.Distinct().OrderBy(x=>x).ToArray() });
 
 "TOR CLIENTS".Display();
 GetList(torClientsStream, e=>e.IsEnd || e.IsInterval).Display(); 
 
-var torExitsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.ExitNode, g => g.Count(), g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)), (k,g1,g2,g3) => new {TorExit = k.Key, Flows = g1, Packets = g2, Bytes = g3});
+var torExitsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.ExitNode, 
+    g => g.Count(), 
+    g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), 
+    g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)), 
+    g => g.Collect(f => f.Tor.Client), 
+    g => g.Collect(f => f.Flow.Id),
+    (k,g1,g2,g3,g4,g5) => new {TorExit = k.Key, Flows = g1, Packets = g2, Bytes = g3, Clients = g4.Distinct().OrderBy(x=>x).ToArray(), FlowRefs =  g5.Distinct().OrderBy(x=>x).ToArray() });
 
 "TOR EXITS".Display();
 GetList(torExitsStream, e=>e.IsEnd || e.IsInterval).Display(); 

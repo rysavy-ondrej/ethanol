@@ -138,7 +138,7 @@ var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJo
 
 Using a simple (heuristic) rules we try to identify the TOR related TLS handshakes:
 
-* Generated server name, which means that Entropy is rather high (TODO: here we can also use ngrams for improve the precision) as some regular names can also have quite high entropy
+* Generated server name, which means that Entropy is rather high (TODO: here we can also use ngrams for improving precision) as some regular names can also have quite high entropy
 * TLS Common name is missing, which is not the case for all TOR connections but a significat amount of exit nodes just does not provide this information.
 * Empty domain name, as there is not DNS resolution associated with this connection
 

@@ -2,7 +2,7 @@
   "profiles": {
     "Ethanol.Demo": {
       "commandName": "Project",
-      "commandLineArgs": "create -p .\\Data\\ -t tls -i 10"
+      "commandLineArgs": "monitor-tor -p .\\Data\\ -c .\\Csv\\"
     }
   }
 }

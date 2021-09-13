@@ -65,7 +65,35 @@ namespace Ethanol.Providers
             }
         }
 
-        private void OnMissingField(MissingFieldFoundArgs args)
+
+        public static IEnumerable<TArtifact> LoadFrom(string filename)
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,
+                TrimOptions = TrimOptions.Trim,
+                MissingFieldFound = OnMissingField,
+            };
+
+            using (var reader = new StreamReader(filename))
+            {
+                using (var csv = new CsvReader(reader, config))
+                {
+                    int id = 0;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = csv.GetRecord<TArtifact>();
+                        record.Id = (++id).ToString();
+                        yield return record;
+                    }
+                }
+            }
+        }
+
+
+        private static void OnMissingField(MissingFieldFoundArgs args)
         {
             /* Do nothing */
         }

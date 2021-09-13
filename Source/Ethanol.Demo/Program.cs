@@ -1,7 +1,6 @@
 ﻿using ConsoleAppFramework;
 using Ethanol.Artifacts;
 using Ethanol.Context;
-using Ethanol.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NRules;
@@ -9,8 +8,6 @@ using NRules.Fluent;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
@@ -19,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Ethanol.Demo
 {
-    class Program : ConsoleAppBase
+    partial class Program : ConsoleAppBase
     {
         static readonly CancellationTokenSource _cts = new CancellationTokenSource();
         readonly ArtifactServiceCollection _artifactServiceCollection;
@@ -35,6 +32,10 @@ namespace Ethanol.Demo
             await Host.CreateDefaultBuilder().ConfigureServices(ConfigureServices).RunConsoleAppFrameworkAsync<Program>(args);
         }
 
+        private static void ConfigureServices(HostBuilderContext context, IServiceCollection collection)
+        {
+        }
+
         private static void cancelHandler(object sender, ConsoleCancelEventArgs e)
         {
             Console.WriteLine("Cancel key pressed. Exiting...");
@@ -42,12 +43,8 @@ namespace Ethanol.Demo
             System.Environment.Exit(0);
         }
 
-        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
-        {                     
-        }
-
         [Command("monitor-tor", "Monitor flows and provide near real-time information on TOR communication in etwork traffic.")]
-        public async Task CreateContext(
+        public async Task MonitorTor(
             [Option("p", "path to data folder with source nfdump files.")]
             string dataPath,
             [Option("c", "path to a folder where csv files will be created.")]
@@ -55,8 +52,8 @@ namespace Ethanol.Demo
         {
             var cancellRequested = _cts.Token;
             Console.WriteLine($"Monitor source folder: {dataPath}");
-            var fileProvider = new SourceFileProvider(dataPath, csvPath,
-                new SourceRecipe<ArtifactLong>("flow", "ipv4", new ArtifactSource<ArtifactLong>()),
+            var fileProvider = new NetflowDumpMonitor(dataPath, csvPath,
+                new SourceRecipe<ArtifactLong>("flow", "proto tcp", new ArtifactSource<ArtifactLong>()),
                 new SourceRecipe<ArtifactDns>("dns", "proto udp and port 53", new ArtifactSource<ArtifactDns>()), 
                 new SourceRecipe<ArtifactTls>("tls", "not tls-cver \"N/A\"", new ArtifactSource<ArtifactTls>()));
 
@@ -76,142 +73,34 @@ namespace Ethanol.Demo
             Console.WriteLine("Finished.");
         }
 
-   
-
-        public abstract record SourceRecipe(string ArtifactName, string FilterExpression)
+        [Command("detect-tor", "Detect Tor in existing network traffic.")]
+        public async Task DetectTor(
+        [Option("p", "path to data folder with source nfdump files.")]
+                string dataPath,
+        [Option("c", "path to a folder where csv files will be created.")]
+            string csvPath)
         {
-            public abstract Type ArtifactType { get; }
+            var cancellRequested = _cts.Token;
+            Console.WriteLine($"Monitor source folder: {dataPath}");
+            var fileProvider = new NetflowDumpProcessor(dataPath, csvPath,
+                new SourceRecipe<ArtifactLong>("flow", "proto tcp", new ArtifactSource<ArtifactLong>()),
+                new SourceRecipe<ArtifactDns>("dns", "proto udp and port 53", new ArtifactSource<ArtifactDns>()),
+                new SourceRecipe<ArtifactTls>("tls", "not tls-cver \"N/A\"", new ArtifactSource<ArtifactTls>()));
 
-            public abstract void LoadFrom(string filename);
-        }
-        public record SourceRecipe<T>(string ArtifactName, string FilterExpression, ArtifactSource<T> ArtifactSource) : SourceRecipe(ArtifactName, FilterExpression) where T : IpfixArtifact
-        {
-            public override void LoadFrom(string filename)
+            try
             {
-                ArtifactSource.LoadFrom(filename);
+                // how and where to process objects in observables above?
+                await fileProvider.ForEachAsync(x => x.Source.LoadFrom(x.Filename), cancellRequested);
             }
-
-            public override Type ArtifactType => typeof(T);
-        }
-
-        public record CsvSourceFile(SourceRecipe Source, string Filename);
-        
-        public class ArtifactSource<T> : IObservable<T> where T : IpfixArtifact
-        {
-            IObservable<T> _observable;
-
-            public ArtifactSource()
+            catch (TaskCanceledException)
             {
-                _observable = Observable.FromEvent<T>(
-                    fsHandler => RecordFetched += fsHandler,
-                    fsHandler => RecordFetched -= fsHandler);
+                Console.WriteLine("Terminating the process.");
             }
-
-            event Action<T> RecordFetched;
-
-            public void LoadFrom(string filename)
-            {
-                foreach(var obj in CsvArtifactProvider<T>.LoadFrom(filename))
-                {
-                    RecordFetched?.Invoke(obj);
-                }
-            }
-            public IDisposable Subscribe(IObserver<T> observer)
-            {
-                return _observable.Subscribe(observer);
-            }
+            // all is event-driven, so we can suspend this threat.
+            cancellRequested.WaitHandle.WaitOne();
+            Console.WriteLine("Finished.");
         }
 
-        public delegate void ArtifactHandler<T>(T value) where T : IpfixArtifact;
-
-
-        public class SourceFileProvider : IObservable<CsvSourceFile>
-        {
-            FileSystemWatcher _watcher;
-            string _inPath;
-            private readonly string _outPath;
-            SourceRecipe[] _recipes;
-            private IObservable<CsvSourceFile> _observable;
-
-            /// <summary>
-            /// Creates a new instance watching the specified folder for newly created files.
-            /// </summary>
-            /// <param name="inPath"></param>
-            public SourceFileProvider(string inPath, string outPath, params SourceRecipe[] recipes)
-            {
-                _inPath = inPath ?? throw new ArgumentNullException(nameof(inPath));
-                this._outPath = outPath;
-                _recipes = recipes;
-                _watcher = new FileSystemWatcher
-                {
-                    Path = _inPath,
-                    Filter = "*.*",
-                    EnableRaisingEvents = true
-                };
-                _watcher.Created += new FileSystemEventHandler(OnCreated);
-
-                _observable = Observable.FromEvent<CsvSourceFile>(
-                    fsHandler => _SourceFileCreated += fsHandler,
-                    fsHandler => _SourceFileCreated -= fsHandler);
-
-            }
-
-            private event Action<CsvSourceFile> _SourceFileCreated;
-
-            /// <summary>
-            /// Called when a new file was created in the given folder.
-            /// </summary>
-            /// <param name="source"></param>
-            /// <param name="e"></param>
-            private void OnCreated(object source, FileSystemEventArgs e)
-            {
-                Console.WriteLine($"New flow dump observed: {e.FullPath}.");
-               
-                foreach (var filter in _recipes)
-                {
-                    var filename = Path.GetFileName(e.FullPath);
-                    var outputFile = Path.Combine(_outPath, $"{filename}.{filter.ArtifactName}");
-                    var success = ExecuteNfdump(e.FullPath, outputFile, filter.FilterExpression);
-                    if (success)
-                    {
-                        Console.WriteLine($"  Source file converted to CSV: {e.FullPath} -> {outputFile}");
-                    }
-                    _SourceFileCreated?.Invoke(new CsvSourceFile(filter, outputFile));
-                }                
-            }
-
-            private bool ExecuteNfdump(string sourceFile, string targetFile, string filter)
-            {
-                return ShellExecute(Path.GetTempPath(), "nfdump", $"-R {sourceFile}", "-o csv", $"'{filter}' > {targetFile}") == 0;
-            }
-            private int ShellExecute(string path, string command, params string[] arguments)
-            {
-                var argumentString = string.Join(" ", arguments);
-                Console.WriteLine($"{command} {argumentString}");
-                try
-                {
-                    using (var process = Process.Start(new ProcessStartInfo { WorkingDirectory = path, FileName = command, Arguments = argumentString, UseShellExecute = false }))
-                    {
-                        process.WaitForExit(10000);
-                        if (!process.HasExited)
-                        {
-                            process.Kill();
-                        }
-                        return process.ExitCode;
-                    }
-                }
-                catch(Exception e)
-                {
-                    Console.Error.WriteLine($"Error executing nfdump {e.Message}");
-                    return -1;
-                }
-            }
-
-            public IDisposable Subscribe(IObserver<CsvSourceFile> observer)
-            {
-                return _observable.Subscribe(observer);
-            }
-        }
 
         public double ComputeEntropy(string message)
         {

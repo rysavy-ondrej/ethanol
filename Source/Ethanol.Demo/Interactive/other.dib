@@ -1,0 +1,13 @@
+#!csharp
+
+using System.IO;
+using System.Diagnostics;
+
+var command = @"C:\windows\py.exe";
+var arguments = "-?";
+var targetPath = "help.txt";
+using (var process = Process.Start(new ProcessStartInfo(command, arguments) { UseShellExecute = false, RedirectStandardOutput = true }))
+{
+    File.WriteAllText(targetPath, process.StandardOutput.ReadToEnd());
+    process.Close();
+}

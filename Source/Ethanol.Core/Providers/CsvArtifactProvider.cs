@@ -65,8 +65,7 @@ namespace Ethanol.Providers
             }
         }
 
-
-        public static IEnumerable<TArtifact> LoadFrom(string filename)
+        public static IEnumerable<TArtifact> LoadFrom(Stream stream)
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -74,8 +73,7 @@ namespace Ethanol.Providers
                 TrimOptions = TrimOptions.Trim,
                 MissingFieldFound = OnMissingField,
             };
-
-            using (var reader = new StreamReader(filename))
+            using (var reader = new StreamReader(stream))
             {
                 using (var csv = new CsvReader(reader, config))
                 {

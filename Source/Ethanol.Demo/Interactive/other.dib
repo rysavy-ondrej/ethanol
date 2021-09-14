@@ -1,13 +1,42 @@
 #!csharp
 
+#r "..\bin\Debug\net5.0\Ethanol.Core.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+
 using System.IO;
 using System.Diagnostics;
+using System.Globalization;
+using CsvHelper;
+using CsvHelper.Configuration;
+using Ethanol.Demo;
 
-var command = @"C:\windows\py.exe";
-var arguments = "-?";
-var targetPath = "help.txt";
-using (var process = Process.Start(new ProcessStartInfo(command, arguments) { UseShellExecute = false, RedirectStandardOutput = true }))
+private static void OnMissingField(MissingFieldFoundArgs args)
 {
-    File.WriteAllText(targetPath, process.StandardOutput.ReadToEnd());
-    process.Close();
+    /* Do nothing */
 }
+
+var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+{
+    HasHeaderRecord = true,
+    TrimOptions = TrimOptions.Trim,
+    MissingFieldFound = OnMissingField
+};
+var count = 0;
+using (var reader = new StreamReader(@"..\Data\dns.csv"))
+{
+    using (var csv = new CsvReader(reader, config))
+    {
+        int id = 0;
+        csv.Read();
+        csv.ReadHeader();
+        while (csv.Read())
+        {
+            var record = csv.GetRecord<ArtifactDns>();
+            record.Id = (++id).ToString();
+            count++;
+            record.Display();
+        }
+    }
+}
+count.Display();

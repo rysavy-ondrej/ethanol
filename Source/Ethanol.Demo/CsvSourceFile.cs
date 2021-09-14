@@ -1,4 +1,6 @@
-﻿namespace Ethanol.Demo
+﻿using System.IO;
+
+namespace Ethanol.Demo
 {
-    public record CsvSourceFile(SourceRecipe Source, string Filename);
+    public record CsvSourceFile(ArtifactDataSource Source, string Filename, MemoryStream Stream);
 }

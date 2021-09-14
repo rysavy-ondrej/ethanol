@@ -96,6 +96,12 @@ namespace Ethanol.Demo
         async Task DetectTorInFiles(IObservable<FileInfo> sourceFiles, TorDetectorConfiguration configuration)
         {
 
+            //
+            // This tweak is to force Trill to output the results during the processing, see more:
+            //
+            // https://github.com/microsoft/Trill/issues/129
+            //
+
             Microsoft.StreamProcessing.Config.ForceRowBasedExecution = true;
             Microsoft.StreamProcessing.Config.DataBatchSize = 100;
 

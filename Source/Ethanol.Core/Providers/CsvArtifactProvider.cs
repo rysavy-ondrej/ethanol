@@ -77,13 +77,11 @@ namespace Ethanol.Providers
             {
                 using (var csv = new CsvReader(reader, config))
                 {
-                    int id = 0;
                     csv.Read();
                     csv.ReadHeader();
                     while (csv.Read())
                     {
                         var record = csv.GetRecord<TArtifact>();
-                        record.Id = (++id).ToString();
                         yield return record;
                     }
                 }

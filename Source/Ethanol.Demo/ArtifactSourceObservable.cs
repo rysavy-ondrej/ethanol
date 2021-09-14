@@ -1,6 +1,8 @@
 ﻿using Ethanol.Providers;
+using Microsoft.StreamProcessing;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -13,12 +15,13 @@ namespace Ethanol.Demo
     /// from a source CSV file by using <see cref="LoadFrom(string, CancellationToken)"/>.
     /// </summary>
     /// <typeparam name="T">The type of artifacts.</typeparam>
-    public class ArtifactSourceObservable<T> : IObservable<T> where T : IpfixArtifact
+    public class ArtifactSourceObservable<T> : IObservable<StreamEvent<T>> where T : IpfixArtifact
     {
-        private readonly Subject<T> _observable;
+        private readonly Subject<StreamEvent<T>> _observable;
+        private int batchCount = 0;
         public ArtifactSourceObservable()
         {
-            _observable = new Subject<T>();
+            _observable = new Subject<StreamEvent<T>>();
         }
 
         /// <summary>
@@ -31,13 +34,18 @@ namespace Ethanol.Demo
         {
             try
             {
+                long lastTimestamp = 0;
                 var count = 0;
                 foreach (var obj in CsvArtifactProvider<T>.LoadFrom(stream))
                 {
                     if (cancellationToken.IsCancellationRequested) break;
-                    _observable.OnNext(obj);
+                    var recordTimeStamp = AddRecord(obj);
+                    lastTimestamp = Math.Max(lastTimestamp, recordTimeStamp);
                     count++;
                 }
+                batchCount++;
+                //Console.WriteLine($"{typeof(T)}: batch = {batchCount}, new = {count}, ts = {new DateTime(lastTimestamp+1)}");
+                _observable.OnNext(StreamEvent.CreatePunctuation<T>(lastTimestamp + 1));    // This does not work, why?
                 return count;
             }
             catch(Exception e)
@@ -51,9 +59,12 @@ namespace Ethanol.Demo
         /// Adds a record to the current observable.
         /// </summary>
         /// <param name="obj">The new record.</param>
-        public void AddRecord(T obj)
+        public long AddRecord(T obj)
         {
-            _observable.OnNext(obj);
+            // Console.Write(typeof(T).Name[8]);  // DEBUG: to see what is being pushed trhough the observable
+            var timestamp = obj.StartTime;
+            _observable.OnNext(StreamEvent.CreatePoint<T>(timestamp, obj));
+            return timestamp;
         }
          
         /// <summary>
@@ -65,7 +76,7 @@ namespace Ethanol.Demo
         }
 
         /// <inheritdoc/>>
-        public IDisposable Subscribe(IObserver<T> observer)
+        public IDisposable Subscribe(IObserver<StreamEvent<T>> observer)
         {
             return _observable.Subscribe(observer);
         }

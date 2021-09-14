@@ -21,6 +21,11 @@ void PrintStreams<V>(IStreamable<Empty,V>[] streams, Func<StreamEvent<V>, bool> 
 
 #!csharp
 
+new DateTime(637671744000000000).Display();
+new DateTime(637671743400000000).Display()
+
+#!csharp
+
 record Artifact (string Id, long Start, long Duration, string value);
 
 var events = new Artifact[]

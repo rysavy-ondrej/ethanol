@@ -89,6 +89,16 @@ public double ComputeEntropy(string message)
     }
     return entropyValue;
 }
+public double ComputeDnsEntropy(string domain)
+{
+    var parts = domain.Split('.');
+    return parts.Select(ComputeEntropy).Max();
+}
+
+#!csharp
+
+ComputeDnsEntropy("imap.gmail.com").Display();
+ComputeDnsEntropy("www.6b6fpspfv2ngcv654f5r.com").Display();
 
 #!markdown
 

@@ -47,5 +47,8 @@ namespace Ethanol.Demo
         public int SourcePort => Int32.TryParse(SrcPt, out var result) ? result : 0;
         [Ignore]
         public int DestinationPort => Int32.TryParse(DstPt, out var result) ? result : 0;
+
+        [Ignore]
+        public string Key => $"{Protocol}#{SrcIp}:{SrcPt}->{DstIp}:{DstPt}";
     }
 }

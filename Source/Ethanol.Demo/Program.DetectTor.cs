@@ -14,7 +14,7 @@ namespace Ethanol.Demo
     partial class Program
     {
         record DetectTorConfiguration(double DomainNameEntropy);
-        async Task DetectTor(IObservable<FileInfo> sourceFiles, DetectTorConfiguration configuration)
+        async Task DetectTor1(IObservable<FileInfo> sourceFiles, DetectTorConfiguration configuration)
         {
             //
             // This tweak is to force Trill to output the results during the processing, see more:
@@ -26,31 +26,15 @@ namespace Ethanol.Demo
             Microsoft.StreamProcessing.Config.DataBatchSize = 100;
 
             var cancellationToken = _cancellationTokenSource.Token;
+            var convertor = InitializeStreams(new ArtifactSourceObservable<ArtifactLong>(), new ArtifactSourceObservable<ArtifactDns>(), new ArtifactSourceObservable<ArtifactTls>(), out var streamOfFlow, out var streamOfDns, out var tlsStream);
+            var streamOfTls = tlsStream.Multicast(2);
 
-            var artifactSourceLong = new ArtifactSourceObservable<ArtifactLong>();
-            var artifactSourceDns = new ArtifactSourceObservable<ArtifactDns>();
-            var artifactSourceTls = new ArtifactSourceObservable<ArtifactTls>();
-
-
-            var convertor = new NetFlowCsvConvertor(_services.GetRequiredService<ILogger<NetFlowCsvConvertor>>(),
-                new ArtifactDataSource<ArtifactLong>("flow", "proto tcp", artifactSourceLong),
-                new ArtifactDataSource<ArtifactDns>("dns", "proto udp and port 53", artifactSourceDns),
-                new ArtifactDataSource<ArtifactTls>("tls", "not tls-cver \"N/A\"", artifactSourceTls));
-
-            var windowSize = TimeSpan.FromMinutes(15);
-            var windowHop = TimeSpan.FromMinutes(5);
-
-            var streamOfFlow = GetStreamOfFlows(artifactSourceLong, windowSize, windowHop);
-            var streamOfDns = GetStreamOfFlows(artifactSourceDns, windowSize, windowHop);
-            var streamOfTls = GetStreamOfFlows(artifactSourceTls.Where(f => f.Payload?.SourcePort > f.Payload?.DestinationPort), windowSize, windowHop).Multicast(2);
-
-
-            var tlsWithDomainStream = streamOfTls[0].LeftOuterJoin(
-                streamOfDns,
-                f => new { HOST = f.SrcIp, DA = f.DstIp },
-                f => new { HOST = f.DstIp, DA = f.DnsResponseData },
-                l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeDnsEntropy(l.TlsServerName) },
-                (l, r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeDnsEntropy(l.TlsServerName) });
+            var tlsWithDomainStream = streamOfTls[0]
+                .LeftOuterJoin(streamOfDns,
+                    f => new { HOST = f.SrcIp, DA = f.DstIp },
+                    f => new { HOST = f.DstIp, DA = f.DnsResponseData },
+                    l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeDnsEntropy(l.TlsServerName) },
+                    (l, r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeDnsEntropy(l.TlsServerName) });
 
 
 
@@ -58,10 +42,11 @@ namespace Ethanol.Demo
                 .Where(e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.Entropy > configuration.DomainNameEntropy && e.TlsFlow.DestinationPort > 443)
                 .Select(f => new { DA = f.TlsFlow.DstIp, DP = f.TlsFlow.DstPt, ServerName = f.ServerName, JA3 = f.TlsFlow.Ja3Fingerprint });
 
-            var allTorExitNodesStream = identifiedExitNodesStream.Join(streamOfTls[1],
-                l => l.JA3,
-                r => r.Ja3Fingerprint,
-                (l, r) => new { DA = r.DstIp, DP = r.DstPt, Sni = r.TlsServerName, JA3 = l.JA3 }
+            var allTorExitNodesStream = identifiedExitNodesStream
+                .Join(streamOfTls[1],
+                    l => l.JA3,
+                    r => r.Ja3Fingerprint,
+                    (l, r) => new { DA = r.DstIp, DP = r.DstPt, Sni = r.TlsServerName, JA3 = l.JA3 }
             ).Distinct();
 
             var torClientsStream = streamOfFlow
@@ -105,6 +90,31 @@ namespace Ethanol.Demo
                 _logger.LogInformation("Termination requested by the user.");
             }
             _logger.LogTrace("Program finished.");
+        }
+
+        /// <summary>
+        /// Creates and bind the input streams.
+        /// </summary>
+        /// <param name="artifactSourceLong"></param>
+        /// <param name="artifactSourceDns"></param>
+        /// <param name="artifactSourceTls"></param>
+        /// <param name="streamOfFlow"></param>
+        /// <param name="streamOfDns"></param>
+        /// <param name="streamOfTls"></param>
+        /// <returns></returns>
+        private static NetFlowCsvConvertor InitializeStreams(ArtifactSourceObservable<ArtifactLong> artifactSourceLong, ArtifactSourceObservable<ArtifactDns> artifactSourceDns, ArtifactSourceObservable<ArtifactTls> artifactSourceTls, out IStreamable<Empty, ArtifactLong> streamOfFlow, out IStreamable<Empty, ArtifactDns> streamOfDns, out IStreamable<Empty, ArtifactTls> streamOfTls)
+        {
+            var convertor = new NetFlowCsvConvertor(_services.GetRequiredService<ILogger<NetFlowCsvConvertor>>(),
+                new ArtifactDataSource<ArtifactLong>("flow", "proto tcp", artifactSourceLong),
+                new ArtifactDataSource<ArtifactDns>("dns", "proto udp and port 53", artifactSourceDns),
+                new ArtifactDataSource<ArtifactTls>("tls", "not tls-cver \"N/A\"", artifactSourceTls));
+            var windowSize = TimeSpan.FromMinutes(15);
+            var windowHop = TimeSpan.FromMinutes(5);
+
+            streamOfFlow = GetStreamOfFlows(artifactSourceLong, windowSize, windowHop);
+            streamOfDns = GetStreamOfFlows(artifactSourceDns, windowSize, windowHop);
+            streamOfTls = GetStreamOfFlows(artifactSourceTls.Where(f => f.Payload?.SourcePort > f.Payload?.DestinationPort), windowSize, windowHop);
+            return convertor;
         }
 
         private void PrintRecords(StreamEvent<TorClient> obj)
@@ -162,6 +172,43 @@ namespace Ethanol.Demo
             if (string.IsNullOrWhiteSpace(domain)) return 0;
             var parts = domain.Split('.');
             return parts.Select(ComputeEntropy).Max();
+        }
+
+        async Task DetectTor2(IObservable<FileInfo> sourceFiles, DetectTorConfiguration configuration)
+        {
+            Config.ForceRowBasedExecution = true;
+            Config.DataBatchSize = 100;
+
+            var cancellationToken = _cancellationTokenSource.Token;
+            var convertor = InitializeStreams(new ArtifactSourceObservable<ArtifactLong>(), new ArtifactSourceObservable<ArtifactDns>(), new ArtifactSourceObservable<ArtifactTls>(), out var flowStream, out var dnsStream, out var tlsStream);
+            var contextStream = BuildFlowContext(flowStream, dnsStream, tlsStream, new BuildFlowContextConfiguration());
+            var torClientsObservable = contextStream.Where(f => f.Context.Any(e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > configuration.DomainNameEntropy && e.DstPt != "443")).ToStreamEventObservable();
+
+
+            async Task FetchRecords(CsvSourceFile obj)
+            {
+                _logger.LogTrace($"Loading flows from {obj.Filename} to {obj.Source.ArtifactName} observable.");
+                await obj.Source.LoadFromAsync(obj.Stream, cancellationToken).ContinueWith(x => _logger.LogTrace($"Loaded {x.Result} flows from {obj.Filename}."));
+            }
+            void PrintTorFlowRecords(StreamEvent<FlowAndContext<TlsHandshake>> obj)
+            {
+                if (obj.IsInterval || obj.IsEnd)
+                {
+                    Console.WriteLine($"- event: tor-flow-detected");
+                    Console.WriteLine($"  kind: {obj.Kind}");
+                    Console.WriteLine($"  time: {new DateTime(obj.StartTime)}");
+                    Console.WriteLine(obj.Payload.ToYaml("  "));
+                }
+            }
+
+
+            var processingTask = torClientsObservable.ForEachAsync(PrintTorFlowRecords, cancellationToken);
+            await sourceFiles
+                .Do(f => Console.WriteLine($"source: {f.Name}"))
+                .SelectMany(convertor.Generate)
+                .ForEachAsync(async f => await FetchRecords(f), cancellationToken)
+                .ContinueWith((t) => { convertor.Close(); });
+            Task.WaitAll(new[] { processingTask }, cancellationToken);
         }
     }
 }

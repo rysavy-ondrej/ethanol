@@ -48,7 +48,7 @@ namespace Ethanol.Demo
             _cancellationTokenSource.Cancel();
         }
 
-        [Command("monitor-tor", "Monitor flows and provide near real-time information on TOR communication in etwork traffic.")]
+        [Command("monitor-tor", "Monitor flows and provide near real-time information on TOR communication in network traffic.")]
         public async Task MonitorTorCommand(
             [Option("p", "path to data folder with source nfdump files.")]
             string dataPath
@@ -69,7 +69,7 @@ namespace Ethanol.Demo
                 },
                 fsHandler => fsw.Created += fsHandler,
                 fsHandler => fsw.Created -= fsHandler);
-            await DetectTor(sourceFiles, new DetectTorConfiguration(3));
+            await DetectTor1(sourceFiles, new DetectTorConfiguration(3));
         }
 
         /// <summary>
@@ -87,9 +87,26 @@ namespace Ethanol.Demo
         )
         {
             _logger.LogTrace($"Start processing source folder: {dataPath}");
-
             var sourceFiles = Directory.GetFiles(dataPath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            await DetectTor(sourceFiles, new DetectTorConfiguration(entropy));
+            await DetectTor1(sourceFiles, new DetectTorConfiguration(entropy));
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dataPath"></param>
+        /// <param name="csvPath"></param>
+        /// <returns></returns>
+        [Command("detect-tor2", "Detect Tor in existing network traffic.")]
+        public async Task DetectTorCommand2(
+        [Option("p", "path to data folder with source nfdump files.")]
+                string dataPath,
+        [Option("e", "minimum entropy of server name")]
+                double entropy = 3.0
+        )
+        {
+            _logger.LogTrace($"Start processing source folder: {dataPath}");
+            var sourceFiles = Directory.GetFiles(dataPath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+            await DetectTor2(sourceFiles, new DetectTorConfiguration(entropy));
         }
     }
 }

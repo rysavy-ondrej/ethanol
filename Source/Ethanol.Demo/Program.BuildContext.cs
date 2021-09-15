@@ -15,48 +15,32 @@ namespace Ethanol.Demo
     {
         record BuildFlowContextConfiguration();
         record TlsHandshake(string SrcIp, string SrcPt, string DstIp, string DstPt, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
-
-        record FlowAndContext<T>(string SrcIp, string SrcPt, string DstIp, string DstPt, T[] Context);
-        async Task BuildFlowContext(IObservable<FileInfo> sourceFiles, BuildFlowContextConfiguration configuration)
+        record FlowAndContext<T>(string SrcIp, string SrcPt, string DstIp, string DstPt, T[] Context)
         {
+            internal string ToYaml(string space)
+            {
+                var contextString = String.Join($",\n{space}  ", Context.Select(c => c.ToString()));
+                return $"{space}Flow: {SrcIp}:{SrcPt}-{DstIp}:{DstPt}\n" +
+                       $"{space}Context: [{contextString}]\n";
+            }
+        }
 
-            Microsoft.StreamProcessing.Config.ForceRowBasedExecution = true;
-            Microsoft.StreamProcessing.Config.DataBatchSize = 100;
-
-            var cancellationToken = _cancellationTokenSource.Token;
-
-            var artifactSourceLong = new ArtifactSourceObservable<ArtifactLong>();
-            var artifactSourceDns = new ArtifactSourceObservable<ArtifactDns>();
-            var artifactSourceTls = new ArtifactSourceObservable<ArtifactTls>();
-
-            var convertor = new NetFlowCsvConvertor(_services.GetRequiredService<ILogger<NetFlowCsvConvertor>>(),
-                new ArtifactDataSource<ArtifactLong>("flow", "proto tcp", artifactSourceLong),
-                new ArtifactDataSource<ArtifactDns>("dns", "proto udp and port 53", artifactSourceDns),
-                new ArtifactDataSource<ArtifactTls>("tls", "not tls-cver \"N/A\"", artifactSourceTls));
-
-
-            var windowSize = TimeSpan.FromMinutes(15);
-            var windowHop = TimeSpan.FromMinutes(5);
-
-            var streamOfFlow = GetStreamOfFlows(artifactSourceLong, windowSize, windowHop);
-            var streamOfDns = GetStreamOfFlows(artifactSourceDns, windowSize, windowHop);
-            var streamOfTls = GetStreamOfFlows(artifactSourceTls.Where(f => f.Payload?.SourcePort > f.Payload?.DestinationPort), windowSize, windowHop).Multicast(2);
-
-            var tlsHandshakeStream = streamOfTls[0].Where(f => f.SourcePort > f.DestinationPort).LeftOuterJoin(streamOfDns,
-                f => new { HOST = f.SrcIp, DA = f.DstIp },
-                f => new { HOST = f.DstIp, DA = f.DnsResponseData },
-                l => new TlsHandshake(l.SrcIp, l.SrcPt, l.DstIp, l.DstPt, l.Ja3Fingerprint, l.TlsServerName, l.TlsSubjectCommonName, string.Empty, ComputeDnsEntropy(l.TlsServerName), 0),
-                (l, r) => new TlsHandshake(l.SrcIp, l.SrcPt, l.DstIp, l.DstPt, l.Ja3Fingerprint, l.TlsServerName, l.TlsSubjectCommonName, r.DnsQuestionName, ComputeDnsEntropy(l.TlsServerName), ComputeDnsEntropy(r.DnsQuestionName))).Distinct();
+        IStreamable<Empty, FlowAndContext<TlsHandshake>> BuildFlowContext(IStreamable<Empty, ArtifactLong> flowStream, IStreamable<Empty, ArtifactDns> dnsStream, IStreamable<Empty, ArtifactTls> tlsStream, BuildFlowContextConfiguration configuration)
+        {
+            var tlsDomainStream = tlsStream.LeftOuterJoin(dnsStream,
+                flow => new { HOST = flow.SrcIp, DA = flow.DstIp },
+                flow => new { HOST = flow.DstIp, DA = flow.DnsResponseData },
+                left => new TlsHandshake(left.SrcIp, left.SrcPt, left.DstIp, left.DstPt, left.Ja3Fingerprint, left.TlsServerName, left.TlsSubjectCommonName, string.Empty, ComputeDnsEntropy(left.TlsServerName), 0),
+                (left, right) => new TlsHandshake(left.SrcIp, left.SrcPt, left.DstIp, left.DstPt, left.Ja3Fingerprint, left.TlsServerName, left.TlsSubjectCommonName, right.DnsQuestionName, ComputeDnsEntropy(left.TlsServerName), ComputeDnsEntropy(right.DnsQuestionName))).Distinct();
 
             // collect all flows with the same JA3:
-            var ja3groups = tlsHandshakeStream.GroupApply(f => new { SrcIp = f.SrcIp, Fingerprint = f.Ja3Fingerprint },
-                g => g.Aggregate(a => a.Collect(f => f)),
-                (k, v) => new { Key = k.Key, Value = v.Distinct().ToArray() });
+            var ja3ClientStream = tlsDomainStream.GroupApply(
+                flow => new { SrcIp = flow.SrcIp, Fingerprint = flow.Ja3Fingerprint },
+                group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
+                (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
 
-            // conpute the context for each flow, i.e., (flow, ja3flows, 
-            var flowAndContext = ja3groups.SelectMany(x => x.Value.Select(f => new FlowAndContext<TlsHandshake>(f.SrcIp, f.SrcPt, f.DstIp, f.DstPt, x.Value)));
-
-            var torStreams = flowAndContext.Where(f => f.Context.Any((e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > 3)));
+            var flowAndContext = ja3ClientStream.SelectMany(x => x.Value.Select(f => new FlowAndContext<TlsHandshake>(f.SrcIp, f.SrcPt, f.DstIp, f.DstPt, x.Value)));
+            return flowAndContext;
         }
     }
 }

@@ -142,6 +142,19 @@ var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJo
     l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeEntropy(l.TlsServerName) }, 
     (l,r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeEntropy(l.TlsServerName)}); 
 
+#!csharp
+
+var tlsWithDomain = from t in tlsStream
+                    join q in dnsStream 
+                    on new {SA = t.SrcIp, DA = t.DstIp} equals new { SA = q.DstIp, DA = q.DnsResponseData} 
+                    select new { FlowKey = t.Key, 
+                                 ServerName = t.TlsServerName, 
+                                 DomainName =  q.DnsQuestionName, 
+                                 Entropy = ComputeEntropy(t.TlsServerName)}; 
+                     
+
+                                 
+
 #!markdown
 
 ## Primary TOR connections

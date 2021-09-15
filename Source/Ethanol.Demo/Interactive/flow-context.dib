@@ -1,0 +1,99 @@
+#!csharp
+
+#r "nuget:System.Reactive"
+#r "nuget:Trill"
+
+#r "..\bin\Debug\net5.0\Ethanol.Core.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+
+using System.Reactive;
+using System.Reactive.Linq;
+using Microsoft.StreamProcessing;
+using System.Reflection;
+using System.CodeDom.Compiler;
+
+using Ethanol.Demo;
+using Ethanol.Streaming;
+using Ethanol.Artifacts;
+using Ethanol.Context;
+using Ethanol.Providers;
+
+
+void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
+{
+    stream.ToStreamEventObservable().Where(predicate).Take(count).ForEachAsync(e=>Console.WriteLine($"[{e.StartTime},{e.EndTime}):{e.Payload}")).Wait();
+}
+
+IList<StreamEvent<V>> GetList<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
+{
+    return stream.ToStreamEventObservable().Where(predicate).ToList().FirstAsync().Wait();    
+}
+
+#!csharp
+
+public double ComputeEntropy(string message)
+{
+    Dictionary<char, int> K = message.GroupBy(c => c).ToDictionary(g => g.Key, g => g.Count());
+    double entropyValue = 0;
+    foreach (var character in K)
+    {
+        double PR = character.Value / (double) message.Length;
+        entropyValue -= PR * Math.Log(PR, 2);
+    }
+    return entropyValue;
+}
+public double ComputeDnsEntropy(string domain)
+{
+    var parts = domain.Split('.');
+    return parts.Select(ComputeEntropy).Max();
+}
+
+#!csharp
+
+var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactHttp)));
+artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
+var artifactServices = artifactServiceCollection.Build();
+artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display();
+
+var windowSize = TimeSpan.FromMinutes(15);
+var windowHop = TimeSpan.FromMinutes(5);
+var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);                        
+var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+
+display($"Flow count = {GetList(flowStream, e=>e.IsData).Count}");
+display($"Dns count = {GetList(dnsStream, e=>e.IsData).Count}");
+display($"Http count = {GetList(httpStream, e=>e.IsData).Count}");
+display($"Tls count = {GetList(tlsStream, e=>e.IsData).Count}");
+
+#!markdown
+
+# Compute a general flow context
+
+#!csharp
+
+record TlsHandshake(string SrcIp, string SrcPt, string DstIp, string DstPt, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
+record FlowAndContext<T>(string SrcIp, string SrcPt, string DstIp, string DstPt, T[] Context);
+var tlsHandshakeStream = tlsStream.Where(f => f.SourcePort > f.DestinationPort).LeftOuterJoin(dnsStream,  
+    f => new { HOST = f.SrcIp, DA = f.DstIp },
+    f => new { HOST = f.DstIp, DA = f.DnsResponseData }, 
+    l => new TlsHandshake(l.SrcIp, l.SrcPt, l.DstIp, l.DstPt, l.Ja3Fingerprint, l.TlsServerName, l.TlsSubjectCommonName,  string.Empty,  ComputeDnsEntropy(l.TlsServerName), 0 ), 
+    (l,r) => new TlsHandshake( l.SrcIp, l.SrcPt, l.DstIp, l.DstPt, l.Ja3Fingerprint,  l.TlsServerName,  l.TlsSubjectCommonName, r.DnsQuestionName,  ComputeDnsEntropy(l.TlsServerName),  ComputeDnsEntropy(r.DnsQuestionName))).Distinct();
+
+// collect all flows with the same JA3:
+var ja3groups = tlsHandshakeStream.GroupApply(f => new { SrcIp = f.SrcIp, Fingerprint = f.Ja3Fingerprint}, 
+    g => g.Aggregate(a => a.Collect(f => f)),
+    (k,v) => new { Key = k.Key, Value = v.Distinct().ToArray() });
+
+
+var flowAndContext = ja3groups.SelectMany(x => x.Value.Select(f => new FlowAndContext<TlsHandshake>(f.SrcIp, f.SrcPt, f.DstIp, f.DstPt, x.Value)));
+var torStreams = flowAndContext.Where(f => f.Context.Any((e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > 3)));
+
+
+
+
+
+
+GetList(torStreams, e=>e.IsEnd || e.IsInterval).Display(); 

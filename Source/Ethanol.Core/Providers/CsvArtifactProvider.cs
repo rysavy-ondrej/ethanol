@@ -1,12 +1,16 @@
-﻿using CsvHelper;
+﻿using AutoMapper;
+using CsvHelper;
 using CsvHelper.Configuration;
 using Ethanol.Artifacts;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Threading.Tasks;
 
 namespace Ethanol.Providers
 {
@@ -114,5 +118,147 @@ namespace Ethanol.Providers
         public Type ArtifactType => typeof(TArtifact);
 
         public string Source => $"file://{Path.GetFullPath(this._filename)}";
+    }
+
+    public class ArtifactsLoader
+    {
+        public record Record(int Number, dynamic Fields);
+
+        public event EventHandler<Record> OnReadRecord;
+        /// <summary>
+        /// Loads CSV lines from the given stream and for each record calls the registered callbacks.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public Task LoadFromCsvAsync(Stream stream)
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,
+                TrimOptions = TrimOptions.Trim,
+                MissingFieldFound = OnMissingField,
+            };
+            return Task.Run(() =>
+            {
+                using (var reader = new StreamReader(stream))
+                using (var csv = new CsvReader(reader, config))
+                {
+                    var recordNumber = 0;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = csv.GetRecord<dynamic>();
+                        OnReadRecord?.Invoke(this, new Record(recordNumber++, record)); 
+                    }
+                }
+            });
+        }
+
+        private void OnMissingField(MissingFieldFoundArgs args)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Loads different artifacts from a single source file and push them to provided observables.
+    /// It test filter provided by each artifact type on every record. 
+    /// If the record passes the filter it is loaded using the specified mapper.
+    /// </summary>
+    public class ArtifactsMultiloader
+    {
+        private readonly ArtifactsLoader _loader;
+        private readonly IArtifactObservableProvider[] observables;
+
+        public ArtifactsMultiloader(params IArtifactObservableProvider[] observables)
+        {
+            _loader = new ArtifactsLoader();
+            _loader.OnReadRecord += _loader_OnReadRecord;
+            this.observables = observables;
+        }
+
+        private void _loader_OnReadRecord(object sender, ArtifactsLoader.Record record)
+        {
+            foreach(var observable in observables)
+            {
+                if (observable.Match(record))
+                {
+                    observable.Push(record);
+                }
+            }
+        }
+
+        public Task LoadFromCsvAsync(Stream stream)
+        {
+            return _loader.LoadFromCsvAsync(stream);
+        }
+    }
+
+    public interface IArtifactObservableProvider
+    {
+        public bool Match(dynamic src);
+        public void Push(dynamic src);
+        public Type ArtifactType { get; }
+    }
+    public class ArtifactObservableProvider<TArtifact> : IArtifactObservableProvider, IObservable<TArtifact>
+    {
+        IArtifactMapper<TArtifact> _mapper;
+        private readonly Func<dynamic, bool> _filter;
+        Subject<TArtifact> _subject;
+
+        public ArtifactObservableProvider(IArtifactMapper<TArtifact> mapper, Func<dynamic, bool> filter)
+        {
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _filter = filter ?? throw new ArgumentNullException(nameof(_filter));
+            _subject = new Subject<TArtifact>();
+        }
+
+        public Type ArtifactType => typeof(TArtifact);
+
+        public bool Match(dynamic src)
+        {
+            return _filter(src);
+        }
+
+        public void Push(dynamic src)
+        {
+            var artifact = _mapper.Map(src);
+            _subject.OnNext(artifact);    
+        }
+
+        public IDisposable Subscribe(IObserver<TArtifact> observer)
+        {
+            return ((IObservable<TArtifact>)_subject).Subscribe(observer);
+        }
+    }
+    public interface IArtifactMapper<TArtifact>
+    { 
+        public TArtifact Map(dynamic src);
+    }
+    public class ArtifactMapper<TArtifact> : IArtifactMapper<TArtifact>
+    {
+        private Func<dynamic, TArtifact> _mapper;
+        public ArtifactMapper(Func<dynamic, TArtifact> mapper)
+        {
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        }
+
+        public TArtifact Map(dynamic src)
+        {
+            return _mapper(src);
+        }
+    }
+    public class IpfixArtifactMapper<TArtifact> : ArtifactMapper<TArtifact> where TArtifact : Artifact
+    {
+        public IpfixArtifactMapper() : base(GetMapper())
+        {
+        }
+
+        private static Func<dynamic, TArtifact> GetMapper()
+        {
+            var config = new MapperConfiguration(cfg => { cfg.AddMaps(typeof(TArtifact).Assembly); });
+            var mapper = new Mapper(config);
+            return (src) => mapper.Map<TArtifact>(src);
+        }
     }
 }

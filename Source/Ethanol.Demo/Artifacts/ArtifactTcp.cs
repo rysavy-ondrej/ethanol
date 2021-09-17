@@ -1,4 +1,5 @@
-﻿using AutoMapper.Configuration.Annotations;
+﻿using AutoMapper;
+using AutoMapper.Configuration.Annotations;
 using CsvHelper.Configuration.Attributes;
 using Ethanol.Artifacts;
 using System;
@@ -8,6 +9,7 @@ using System.Net;
 namespace Ethanol.Demo
 {
     [ArtifactName("Tcp")]
+    [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactTcp : IpfixArtifact
     {
         [SourceMember("flg")]

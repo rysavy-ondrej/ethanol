@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace Ethanol.Demo
 {
+
+    
     /// <summary>
     /// Observers the source folder with nfdump files and triggers processing of newly added files.
     /// </summary>
@@ -36,16 +38,27 @@ namespace Ethanol.Demo
             _logger.LogTrace($"New flow dump observed: {value.FullName}.");
             foreach (var filter in _sources)
             {
-                var ms = new MemoryStream(4096);
-                using var outputWriter = new StreamWriter(ms, leaveOpen: true);
-                var success = Execute(value.FullName, outputWriter, filter.FilterExpression);
-                if (success)
-                {
-                    _logger.LogTrace($"Csv file generated and available in memory stream.");
-                    outputWriter.Close();
-                    ms.Seek(0, SeekOrigin.Begin);
-                    yield return new CsvSourceFile(filter, value.FullName, ms);
-                }
+                var ms = GetCsvStreamForDumpFile(value, filter.FilterExpression);
+                yield return new CsvSourceFile(filter, value.FullName, ms);
+                
+            }
+        }
+        public Stream GetCsvStreamForDumpFile(FileInfo value, string filter)
+        {
+            var ms = new MemoryStream(4096);
+            using var outputWriter = new StreamWriter(ms, leaveOpen: true);
+            var success = Execute(value.FullName, outputWriter, filter);
+            if (success)
+            {
+                _logger.LogTrace($"Csv file generated and available in memory stream.");
+                outputWriter.Close();
+                ms.Seek(0, SeekOrigin.Begin);
+                return ms;
+            }
+            else
+            {
+                ms.Close();
+                return null;
             }
         }
 
@@ -75,9 +88,16 @@ namespace Ethanol.Demo
             };
             _logger.LogTrace($"Executing command: {startInfo.FileName} {string.Join(" ", startInfo.ArgumentList)}");
 
+            bool consumeOutput = true;
+
             process.OutputDataReceived += (sender, data) =>
             {
-                targetWriter.WriteLine(data.Data);
+                if (data.Data?.StartsWith("Summary") ?? false) consumeOutput = false;
+
+                if (consumeOutput)
+                {
+                    targetWriter.WriteLine(data.Data);
+                }
             };
             process.ErrorDataReceived += (sender, data) =>
             {

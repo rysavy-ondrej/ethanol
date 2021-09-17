@@ -1,4 +1,5 @@
-﻿using Ethanol.Streaming;
+﻿using Ethanol.Providers;
+using Ethanol.Streaming;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.StreamProcessing;
@@ -176,19 +177,33 @@ namespace Ethanol.Demo
 
         async Task DetectTor2(IObservable<FileInfo> sourceFiles, DetectTorConfiguration configuration)
         {
+            var cancellationToken = _cancellationTokenSource.Token;
             Config.ForceRowBasedExecution = true;
             Config.DataBatchSize = 100;
 
-            var cancellationToken = _cancellationTokenSource.Token;
-            var convertor = InitializeStreams(new ArtifactSourceObservable<ArtifactLong>(), new ArtifactSourceObservable<ArtifactDns>(), new ArtifactSourceObservable<ArtifactTls>(), out var flowStream, out var dnsStream, out var tlsStream);
+            var artifactLongObservableProvider = new ArtifactObservableProvider<RawIpfixRecord, ArtifactLong>(new ArtifactMapper<RawIpfixRecord, ArtifactLong>(), x => x.pr == "TCP" || x.pr == "UDP");
+            var artifactDnsObservableProvider = new ArtifactObservableProvider<RawIpfixRecord, ArtifactDns>(new ArtifactMapper<RawIpfixRecord, ArtifactDns>(), x => x.pr == "UDP" && x.dp == "53");
+            var artifactTlsObservableProvider = new ArtifactObservableProvider<RawIpfixRecord, ArtifactTls>(new ArtifactMapper<RawIpfixRecord, ArtifactTls>(), x => x.pr == "TCP" && x.tlscver != "N/A");
+
+            var convertor = new NetFlowCsvConvertor(_services.GetRequiredService<ILogger<NetFlowCsvConvertor>>());
+            var loader = new ArtifactsMultiloader<RawIpfixRecord>(artifactLongObservableProvider, artifactDnsObservableProvider, artifactTlsObservableProvider);
+
+
+            var windowSize = TimeSpan.FromMinutes(15);
+            var windowHop = TimeSpan.FromMinutes(5);
+
+            var flowStream = GetStreamOfFlows2(artifactLongObservableProvider, windowSize, windowHop);
+            var dnsStream = GetStreamOfFlows2(artifactDnsObservableProvider, windowSize, windowHop);
+            var tlsStream = GetStreamOfFlows2(artifactTlsObservableProvider.Where(f => f.SourcePort > f.DestinationPort), windowSize, windowHop);
+           
             var contextStream = BuildFlowContext(flowStream, dnsStream, tlsStream, new BuildFlowContextConfiguration());
             var torClientsObservable = contextStream.Where(f => f.Context.Any(e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > configuration.DomainNameEntropy && e.DstPt != "443")).ToStreamEventObservable();
 
-
-            async Task FetchRecords(CsvSourceFile obj)
+            async Task LoadRecordsFromFile(FileInfo fileInfo)
             {
-                _logger.LogTrace($"Loading flows from {obj.Filename} to {obj.Source.ArtifactName} observable.");
-                await obj.Source.LoadFromAsync(obj.Stream, cancellationToken).ContinueWith(x => _logger.LogTrace($"Loaded {x.Result} flows from {obj.Filename}."));
+                _logger.LogTrace($"Loading flows from {fileInfo.Name}...");
+                using var stream = convertor.GetCsvStreamForDumpFile(fileInfo, "ipv4");
+                await loader.LoadFromCsvAsync(stream);
             }
             void PrintTorFlowRecords(StreamEvent<FlowAndContext<TlsHandshake>> obj)
             {
@@ -200,15 +215,30 @@ namespace Ethanol.Demo
                     Console.WriteLine(obj.Payload.ToYaml("  "));
                 }
             }
+            void CloseObservables(Task taks)
+            {
+                artifactLongObservableProvider.Close();
+                artifactDnsObservableProvider.Close();
+                artifactTlsObservableProvider.Close();
+            }
 
 
             var processingTask = torClientsObservable.ForEachAsync(PrintTorFlowRecords, cancellationToken);
             await sourceFiles
                 .Do(f => Console.WriteLine($"source: {f.Name}"))
-                .SelectMany(convertor.Generate)
-                .ForEachAsync(async f => await FetchRecords(f), cancellationToken)
-                .ContinueWith((t) => { convertor.Close(); });
+                .ForEachAsync(async f => await LoadRecordsFromFile(f), cancellationToken)
+                .ContinueWith(CloseObservables);
             Task.WaitAll(new[] { processingTask }, cancellationToken);
+        }
+                                                                                  
+        private IStreamable<Empty, T> GetStreamOfFlows2<T>(IObservable<T> observable, TimeSpan windowSize, TimeSpan windowHop) where T : IpfixArtifact 
+        {
+            bool ValidRecord(T record)
+            {
+                return record.StartTime > DateTime.MinValue.Ticks && record.StartTime < DateTime.MaxValue.Ticks;
+            }
+
+            return GetStreamOfFlows(observable.Where(ValidRecord).Select(x => StreamEvent.CreatePoint(x.StartTime, x)), windowSize, windowHop);
         }
     }
 }

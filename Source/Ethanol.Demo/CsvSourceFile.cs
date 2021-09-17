@@ -2,5 +2,5 @@
 
 namespace Ethanol.Demo
 {
-    public record CsvSourceFile(ArtifactDataSource Source, string Filename, MemoryStream Stream);
+    public record CsvSourceFile(ArtifactDataSource Source, string Filename, Stream Stream);
 }

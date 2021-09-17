@@ -1,4 +1,5 @@
-﻿using Ethanol.Providers;
+﻿using Ethanol.Artifacts;
+using Ethanol.Providers;
 using Microsoft.StreamProcessing;
 using System;
 using System.IO;
@@ -7,7 +8,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 
-namespace Ethanol.Demo
+namespace Ethanol.Providers
 {
     /// <summary>
     /// An observable that represents artifact source.
@@ -15,7 +16,7 @@ namespace Ethanol.Demo
     /// from a source CSV file by using <see cref="LoadFrom(string, CancellationToken)"/>.
     /// </summary>
     /// <typeparam name="T">The type of artifacts.</typeparam>
-    public class ArtifactSourceObservable<T> : IObservable<StreamEvent<T>> where T : IpfixArtifact
+    public class ArtifactSourceObservable<T> : IObservable<StreamEvent<T>> where T : Artifact
     {
         private readonly Subject<StreamEvent<T>> _observable;
         private int batchCount = 0;
@@ -30,7 +31,7 @@ namespace Ethanol.Demo
         /// <param name="filename">The source filename.</param>
         /// <param name="cancellationToken">The cancellation token to stop the operation.</param>
         /// <returns>A number of record loaded.</returns>
-        public int LoadFrom(Stream stream, CancellationToken cancellationToken)
+        public int LoadFromCsv(Stream stream, CancellationToken cancellationToken)
         {
             try
             {
@@ -44,7 +45,6 @@ namespace Ethanol.Demo
                     count++;
                 }
                 batchCount++;
-                //Console.WriteLine($"{typeof(T)}: batch = {batchCount}, new = {count}, ts = {new DateTime(lastTimestamp+1)}");
                 _observable.OnNext(StreamEvent.CreatePunctuation<T>(lastTimestamp + 1));    // This does not work, why?
                 return count;
             }
@@ -61,7 +61,6 @@ namespace Ethanol.Demo
         /// <param name="obj">The new record.</param>
         public long AddRecord(T obj)
         {
-            // Console.Write(typeof(T).Name[8]);  // DEBUG: to see what is being pushed trhough the observable
             var timestamp = obj.StartTime;
             _observable.OnNext(StreamEvent.CreatePoint<T>(timestamp, obj));
             return timestamp;

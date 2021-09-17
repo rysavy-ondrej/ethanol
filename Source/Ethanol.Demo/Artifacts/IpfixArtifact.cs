@@ -1,13 +1,16 @@
-﻿using AutoMapper.Configuration.Annotations;
+﻿using AutoMapper;
+using AutoMapper.Configuration.Annotations;
 using CsvHelper.Configuration.Attributes;
 using Ethanol.Artifacts;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Ethanol.Demo
 {
     /// <summary>
     /// Base class for all IPFIX artifacts.
     /// </summary>
+    [AutoMap(typeof(RawIpfixRecord))]
     public abstract class IpfixArtifact : Artifact
     {
         [SourceMember("ts")]

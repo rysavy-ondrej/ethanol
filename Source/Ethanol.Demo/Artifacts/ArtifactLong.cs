@@ -1,4 +1,5 @@
-﻿using AutoMapper.Configuration.Annotations;
+﻿using AutoMapper;
+using AutoMapper.Configuration.Annotations;
 using CsvHelper.Configuration.Attributes;
 using Ethanol.Artifacts;
 using System;
@@ -13,6 +14,7 @@ namespace Ethanol.Demo
     /// This corresponds to Flowmon "long" template.
     /// </summary>
     [ArtifactName("Flow")]
+    [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactLong : IpfixArtifact
     {
         [SourceMember("bpp")]

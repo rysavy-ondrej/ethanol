@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ethanol.Providers;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +35,7 @@ namespace Ethanol.Demo
     {
         public override Task<int> LoadFromAsync(Stream stream, CancellationToken cancellationToken)
         {
-            return Task.Run(() => ArtifactSource.LoadFrom(stream, cancellationToken));
+            return Task.Run(() => ArtifactSource.LoadFromCsv(stream, cancellationToken));
         }
 
         public override void Close()

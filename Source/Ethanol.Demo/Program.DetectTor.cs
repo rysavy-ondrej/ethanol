@@ -191,11 +191,14 @@ namespace Ethanol.Demo
 
 
 
-            var flowStream = GetFlowStreamFromObservable(flowObservable, x=> DateTime.Parse(x.ts).Ticks, windowSize, windowHop);
+            var flowStream = GetEventStreamFromObservable(flowObservable, x=> DateTime.Parse(x.ts).Ticks, windowSize, windowHop);
             var contextStream = BuildFlowContext(flowStream, new BuildFlowContextConfiguration());
             var torFlowsStream = contextStream.Where(f => f.Context.Any(e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > configuration.DomainNameEntropy && e.DstPt >  443));
 
 
+            // TODO: simplify loading from dump/csv file!!!
+            // 1. enable to store dump file(s) to csv
+            // 2. enable to load directly from csv
 
             void LoadRecordsFromFile(FileInfo fileInfo)
             {
@@ -223,16 +226,25 @@ namespace Ethanol.Demo
             Task.WaitAll(new[] { processingTask }, cancellationToken);
         }
 
-        private IStreamable<Empty, T> GetFlowStreamFromObservable<T>(IObservable<T> observable, Func<T,long> getStartTime, TimeSpan windowSize, TimeSpan windowHop)
+        /// <summary>
+        /// Gets the stream from the given observable. It uses <paramref name="getStartTime"/> to retrieve 
+        /// start time timestamp of observable records to produce stream events. It also performs 
+        /// hopping window time adjustement on all ingested events.
+        /// </summary>
+        /// <typeparam name="T">The type of event payloads.</typeparam>
+        /// <param name="observable">The input observable.</param>
+        /// <param name="getStartTime">The function to get start time of a record.</param>
+        /// <param name="windowSize">Size of the hopping window.</param>
+        /// <param name="windowHop">Hop size in ticks.</param>
+        /// <returns>A stream of events with defined start times adjusted to hopping windows.</returns>
+        private IStreamable<Empty, T> GetEventStreamFromObservable<T>(IObservable<T> observable, Func<T,long> getStartTime, TimeSpan windowSize, TimeSpan windowHop)
         {
-            bool ValidRecord((T Record,long StartTime) record)
-            {
-                return record.StartTime > DateTime.MinValue.Ticks && record.StartTime < DateTime.MaxValue.Ticks;
-            }
+            bool ValidateTimestamp((T Record,long StartTime) record) =>
+                record.StartTime > DateTime.MinValue.Ticks && record.StartTime < DateTime.MaxValue.Ticks;            
 
             var source = observable
                 .Select(x=> (Record:x,StartTime:getStartTime(x)))
-                .Where(ValidRecord)
+                .Where(ValidateTimestamp)
                 .Select(x => StreamEvent.CreatePoint(x.StartTime, x.Record));
             return source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(TimeSpan.FromMinutes(5).Ticks), FlushPolicy.FlushOnBatchBoundary).HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
         }

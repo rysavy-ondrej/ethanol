@@ -11,12 +11,12 @@ namespace Ethanol.Providers
     /// </summary>
     public class ArtifactsMultiloader<TRawRecord>
     {
-        private readonly ArtifactsLoader<TRawRecord> _loader;
+        private readonly CsvLoader<TRawRecord> _loader;
         private readonly IArtifactObservableProvider<TRawRecord>[] observables;
 
         public ArtifactsMultiloader(params IArtifactObservableProvider<TRawRecord>[] observables)
         {
-            _loader = new ArtifactsLoader<TRawRecord>();
+            _loader = new CsvLoader<TRawRecord>();
             _loader.OnReadRecord += _loader_OnReadRecord;
             this.observables = observables;
         }
@@ -34,7 +34,7 @@ namespace Ethanol.Providers
 
         public Task LoadFromCsvAsync(Stream stream)
         {
-            return _loader.LoadFromCsvAsync(stream);
+            return _loader.Load(stream);
         }
     }
 }

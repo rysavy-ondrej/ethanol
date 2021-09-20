@@ -1,18 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Ethanol.Demo
 {
 
-    
+
     /// <summary>
     /// Observers the source folder with nfdump files and triggers processing of newly added files.
     /// </summary>

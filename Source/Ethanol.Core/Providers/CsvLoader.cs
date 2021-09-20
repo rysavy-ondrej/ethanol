@@ -11,7 +11,7 @@ namespace Ethanol.Providers
     /// The class can be used to load individual records from CSV files.
     /// </summary>
     /// <typeparam name="TRecord">The type of record to load. Input CSV files should have corresponding columns to the fields of this type.</typeparam>
-    public class ArtifactsLoader<TRecord>
+    public class CsvLoader<TRecord>
     {
         public int FlowCount { get; set; }
 
@@ -21,7 +21,7 @@ namespace Ethanol.Providers
         /// </summary>
         /// <param name="stream">An input stream to load CSV records from. The first line of this stream must be a CSV header.</param>
         /// <returns>A completion task as this method performs async loading with a callback called for every loaded record.</returns>
-        public Task LoadFromCsvAsync(Stream stream)
+        public Task Load(Stream stream)
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -31,7 +31,7 @@ namespace Ethanol.Providers
             };
             return Task.Run(() =>
             {
-                using (var reader = new StreamReader(stream))
+                using (var reader = new StreamReader(stream, leaveOpen:true))
                 using (var csv = new CsvReader(reader, config))
                 {
                     csv.Read();
@@ -40,7 +40,7 @@ namespace Ethanol.Providers
                     {
                         var record = csv.GetRecord<TRecord>();
                         FlowCount++;
-                        OnReadRecord?.Invoke(this, record); 
+                        OnReadRecord?.Invoke(this, record);
                     }
                 }
             });

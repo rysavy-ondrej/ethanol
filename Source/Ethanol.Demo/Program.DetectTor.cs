@@ -184,14 +184,14 @@ namespace Ethanol.Demo
             var windowSize = TimeSpan.FromMinutes(15);
             var windowHop = TimeSpan.FromMinutes(5);
 
-            var convertor = new NetFlowCsvConvertor(_services.GetRequiredService<ILogger<NetFlowCsvConvertor>>());
-            var loader = new ArtifactsLoader<RawIpfixRecord>();            
-            var flowObservable = new Subject<RawIpfixRecord>();           
-            loader.OnReadRecord += (object _, RawIpfixRecord value) => { flowObservable.OnNext(value); };
+            var nfdump = new NfDumpExec();
+            var loader = new CsvLoader<RawIpfixRecord>();            
+            var subject = new Subject<RawIpfixRecord>();           
+            loader.OnReadRecord += (object _, RawIpfixRecord value) => { subject.OnNext(value); };
 
 
 
-            var flowStream = GetEventStreamFromObservable(flowObservable, x=> DateTime.Parse(x.ts).Ticks, windowSize, windowHop);
+            var flowStream = GetEventStreamFromObservable(subject, x=> DateTime.Parse(x.ts).Ticks, windowSize, windowHop);
             var contextStream = BuildFlowContext(flowStream, new BuildFlowContextConfiguration());
             var torFlowsStream = contextStream.Where(f => f.Context.Any(e => String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.ServerNameEntropy > configuration.DomainNameEntropy && e.DstPt >  443));
 
@@ -200,30 +200,33 @@ namespace Ethanol.Demo
             // 1. enable to store dump file(s) to csv
             // 2. enable to load directly from csv
 
-            void LoadRecordsFromFile(FileInfo fileInfo)
+            async Task LoadRecordsFromFile(FileInfo fileInfo)
             {
-                _logger.LogTrace($"Loading flows from {fileInfo.Name}...");
-                using var stream = convertor.GetCsvStreamForDumpFile(fileInfo, "ipv4");
-                loader.LoadFromCsvAsync(stream).Wait();
-                Console.WriteLine($"Inserted flows: {loader.FlowCount}");
+                Console.WriteLine($"- info: ingesting-flows");
+                Console.WriteLine($"  source:  {fileInfo.Name}");
+                loader.FlowCount = 0;
+                await nfdump.ProcessInputAsync(fileInfo.FullName, "ipv4", async reader => await loader.Load(reader));
+                Console.WriteLine($"  flow-count: {loader.FlowCount}");
             }
-            void PrintTorFlowRecords(StreamEvent<FlowAndContext<TlsHandshake>> obj)
-            {
-                if (obj.IsInterval || obj.IsEnd)
-                {
-                    Console.WriteLine($"- event: tor-flow-detected");
-                    Console.WriteLine($"  kind: {obj.Kind}");
-                    Console.WriteLine($"  time: {new DateTime(obj.StartTime)}");
-                    Console.WriteLine(obj.Payload.ToYaml("  "));
-                }
-            }
-            var processingTask = torFlowsStream.ToStreamEventObservable().ForEachAsync(PrintTorFlowRecords, cancellationToken);
+
+            // consumer:
+            var consumer = torFlowsStream.ToStreamEventObservable().ForEachAsync(PrintTorFlowRecords, cancellationToken);
             
+            // producer:
             await sourceFiles
-                .Do(f => Console.WriteLine($"source: {f.Name}"))
-                .ForEachAsync(f => LoadRecordsFromFile(f), cancellationToken)
-                .ContinueWith(_ => flowObservable.OnCompleted());
-            Task.WaitAll(new[] { processingTask }, cancellationToken);
+                .ForEachAsync(f => LoadRecordsFromFile(f).Wait(), cancellationToken)
+                .ContinueWith(_ => subject.OnCompleted());
+            Task.WaitAll(new[] { consumer }, cancellationToken);
+        }
+        void PrintTorFlowRecords(StreamEvent<FlowAndContext<TlsHandshake>> obj)
+        {
+            if (obj.IsInterval || obj.IsEnd)
+            {
+                Console.WriteLine($"- event: tor-flow-detected");
+                Console.WriteLine($"  kind: {obj.Kind}");
+                Console.WriteLine($"  time: {new DateTime(obj.StartTime)}");
+                Console.WriteLine(obj.Payload.ToYaml("  "));
+            }
         }
 
         /// <summary>

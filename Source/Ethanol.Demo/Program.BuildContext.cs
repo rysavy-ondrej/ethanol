@@ -1,4 +1,5 @@
 ﻿using Ethanol.Streaming;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.StreamProcessing;
@@ -11,17 +12,39 @@ using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.Demo
 {
+
+    public interface IYamlOutput
+    {
+        string ToYaml(string space);
+    }
     partial class Program
     {
+
+
         record BuildFlowContextConfiguration();
-        record TlsHandshake(string SrcIp, int SrcPt, string DstIp, int DstPt, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
-        record FlowAndContext<T>(string SrcIp, int SrcPt, string DstIp, int DstPt, T[] Context)
+        record TlsHandshake(string SrcIp, int SrcPt, string DstIp, int DstPt, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy) : IYamlOutput
+        {
+            public string ToYaml(string space)
+            {
+                return $"{space}Flow: {SrcIp}:{SrcPt}-{DstIp}:{DstPt}\n" +
+                       $"{space}Ja3Fingerprint: {Ja3Fingerprint}\n" +
+                       $"{space}ServerName: {ServerName}\n" +
+                       $"{space}CommonName: {CommonName}\n" +
+                       $"{space}DomainName: {DomainName}\n" +
+                       $"{space}ServerNameEntropy: {ServerNameEntropy}\n" +
+                       $"{space}DomainNameEntropy: {DomainNameEntropy}\n";
+            }
+        }
+
+
+        record FlowAndContext<T>(string SrcIp, int SrcPt, string DstIp, int DstPt, T[] Context) where T : IYamlOutput
         {
             internal string ToYaml(string space)
             {
-                var contextString = String.Join($",\n{space}  ", Context.Select(c => c.ToString()));
+                var contextString = String.Join($"\n", Context.Select(c => c.ToYaml($"{space}  ")));
                 return $"{space}Flow: {SrcIp}:{SrcPt}-{DstIp}:{DstPt}\n" +
-                       $"{space}Context: [{contextString}]\n";
+                       $"{space}Context:\n" + 
+                       $"{contextString}\n";
             }
         }
 

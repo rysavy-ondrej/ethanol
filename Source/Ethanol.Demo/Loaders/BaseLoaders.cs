@@ -7,29 +7,6 @@ using System.Reactive.Linq;
 namespace Ethanol.Demo
 {
 
-    public static class ArtifactLoader
-    {
-        /// <summary>
-        /// Loads the relevant facts of this artifact to the context.
-        /// </summary>
-        /// <param name="ctx">The target context to be enriched.</param>
-        /// <param name="artifactServiceProvider">The artifact service provider.</param>
-        public static void LoadToContext(this Artifact artifact, ContextSet ctx, ArtifactServiceProvider artifactServiceProvider, params FactLoader[] loaders)
-        {
-            foreach (var builder in loaders)
-            {
-                var provider = artifactServiceProvider.GetService(builder.InputType);
-                if (provider != null)
-                {
-                    foreach (var fact in builder.Query(artifact, provider.GetObservable<Artifact>().ToEnumerable().AsQueryable()))
-                    {
-                        ctx.Add(fact.Label, fact.Artifact);
-                    }
-                }
-            }
-        }
-    }
-
     public static partial class LoaderFunctions
     {
         /// <summary>

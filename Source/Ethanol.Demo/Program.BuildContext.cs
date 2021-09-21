@@ -15,8 +15,6 @@ namespace Ethanol.Demo
 
     record ContextFlow<T>(Flow Flow, T Context);
 
-
-
     partial class Program
     {
 

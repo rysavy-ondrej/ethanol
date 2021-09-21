@@ -52,8 +52,8 @@ namespace Ethanol.Demo
         /// <param name="dataPath"></param>
         /// <param name="csvPath"></param>
         /// <returns></returns>
-        [Command("detect-tor2", "Detect Tor in existing network traffic.")]
-        public async Task DetectTorCommand2(
+        [Command("detect-tor", "Detect Tor in existing network traffic.")]
+        public async Task DetectTorCommand(
         [Option("p", "path to data folder with source nfdump files.")]
                 string dataPath,
         [Option("e", "minimum entropy of server name")]

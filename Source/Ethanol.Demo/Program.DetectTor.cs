@@ -20,6 +20,12 @@ namespace Ethanol.Demo
         readonly ISerializer yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
         record DetectTorConfiguration(double DomainNameEntropy, OutputFormat OutputFormat);
       
+        /// <summary>
+        /// Detects TOR communication from context in the collection of <paramref name="sourceFiles"/>.
+        /// </summary>
+        /// <param name="sourceFiles">The observable collection of source files.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <returns>Task that completes when the processing is done.</returns>
         async Task DetectTor(IObservable<FileInfo> sourceFiles, DetectTorConfiguration configuration)
         {
             var cancellationToken = _cancellationTokenSource.Token;

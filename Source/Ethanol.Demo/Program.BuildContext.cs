@@ -12,64 +12,63 @@ using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.Demo
 {
+    record Flow(string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
 
-    public interface IYamlOutput
-    {
-        string ToYaml(string space);
-    }
+    record TlsInfo(Flow Flow, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
+
+
+    record TlsContext(TlsInfo[] ClientFlows, TlsInfo[] ServiceFlows); 
+
+    record ContextFlow<T>(Flow Flow, T Context);
+
+
+
     partial class Program
     {
 
-
         record BuildFlowContextConfiguration();
-        record TlsHandshake(string SrcIp, int SrcPt, string DstIp, int DstPt, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy) : IYamlOutput
-        {
-            public string ToYaml(string space)
-            {
-                return $"{space}Flow: {SrcIp}:{SrcPt}-{DstIp}:{DstPt}\n" +
-                       $"{space}Ja3Fingerprint: {Ja3Fingerprint}\n" +
-                       $"{space}ServerName: {ServerName}\n" +
-                       $"{space}CommonName: {CommonName}\n" +
-                       $"{space}DomainName: {DomainName}\n" +
-                       $"{space}ServerNameEntropy: {ServerNameEntropy}\n" +
-                       $"{space}DomainNameEntropy: {DomainNameEntropy}\n";
-            }
-        }
-
-
-        record FlowAndContext<T>(string SrcIp, int SrcPt, string DstIp, int DstPt, T[] Context) where T : IYamlOutput
-        {
-            internal string ToYaml(string space)
-            {
-                var contextString = String.Join($"\n", Context.Select(c => c.ToYaml($"{space}  ")));
-                return $"{space}Flow: {SrcIp}:{SrcPt}-{DstIp}:{DstPt}\n" +
-                       $"{space}Context:\n" + 
-                       $"{contextString}\n";
-            }
-        }
-
-        IStreamable<Empty, FlowAndContext<TlsHandshake>> BuildFlowContext(IStreamable<Empty, RawIpfixRecord> flowStream, BuildFlowContextConfiguration configuration)
+        /// <summary>
+        /// Creates a TLS facts related to the given flow.
+        /// </summary>
+        /// <param name="flowStream">Flow stream.</param>
+        /// <param name="configuration">Configuration.</param>
+        /// <returns>A stream of flow context.</returns>
+        IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(IStreamable<Empty, RawIpfixRecord> flowStream, BuildFlowContextConfiguration configuration)
         {
             var flowStreams = flowStream.Multicast(2);
-
             var tlsStream = flowStreams[0].Where(x => x.tlscver != "N/A" && Int32.Parse(x.sp) > Int32.Parse(x.dp));
             var dnsStream = flowStreams[1].Where(x => x.pr == "UDP" && x.sp == "53");
 
-
+            // enrich TLS with associated DNS queries
             var tlsDomainStream = tlsStream.LeftOuterJoin(dnsStream,
                 flow => new { HOST = flow.sa, DA = flow.da },
                 flow => new { HOST = flow.da, DA = flow.dnsrdata },
-                left => new TlsHandshake(left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp), left.tlsja3, left.tlssni, left.tlsscn, string.Empty, ComputeDnsEntropy(left.tlssni), 0),
-                (left, right) => new TlsHandshake(left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp), left.tlsja3, left.tlssni, left.tlsscn, right.dnsqname, ComputeDnsEntropy(left.tlssni), ComputeDnsEntropy(right.tlssni))).Distinct();
+                left => new TlsInfo(new Flow("TCP", left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp)), left.tlsja3, left.tlssni, left.tlsscn, string.Empty, ComputeDnsEntropy(left.tlssni).Max(), 0),
+                (left, right) => new TlsInfo(new Flow("TCP", left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp)), left.tlsja3, left.tlssni, left.tlsscn, right.dnsqname, ComputeDnsEntropy(left.tlssni).Max(), ComputeDnsEntropy(right.tlssni).Max()))
+                .Distinct().Multicast(2);
 
-            // collect all flows with the same JA3:
-            var ja3ClientStream = tlsDomainStream.GroupApply(
-                flow => new { SrcIp = flow.SrcIp, Fingerprint = flow.Ja3Fingerprint },
+            // collect all flows from the same source host with the same JA3:
+            var ja3ClientStream = tlsDomainStream[0].GroupApply(
+                flow => new { SrcIp = flow.Flow.SrcIp, Fingerprint = flow.Ja3Fingerprint },
                 group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
                 (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
 
-            var flowAndContext = ja3ClientStream.SelectMany(x => x.Value.Select(f => new FlowAndContext<TlsHandshake>(f.SrcIp, f.SrcPt, f.DstIp, f.DstPt, x.Value)));
-            return flowAndContext;
+            // collect a bag of flows:
+            var bagOfFlows = tlsDomainStream[1].GroupApply(
+                flow => new { DstIp = flow.Flow.DstIp, DstPt = flow.Flow.DstPt },
+                group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
+                (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
+        
+            var clientCtx = ja3ClientStream.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
+            var serviceCtx = bagOfFlows.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
+            var flowCtx = clientCtx.FullOuterJoin(serviceCtx,
+                left => left.Flow,
+                right => right.Flow,
+                left => new ContextFlow<TlsContext>(left.Flow, new TlsContext(left.Context, Array.Empty<TlsInfo>())),
+                right => new ContextFlow<TlsContext>(right.Flow, new TlsContext(Array.Empty<TlsInfo>(), right.Context)),
+                (left, right) => new ContextFlow<TlsContext>(left.Flow, new TlsContext(left.Context, right.Context))
+                );
+            return flowCtx;
         }
     }
 }

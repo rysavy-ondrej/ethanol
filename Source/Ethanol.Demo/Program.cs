@@ -48,48 +48,7 @@ namespace Ethanol.Demo
             _cancellationTokenSource.Cancel();
         }
 
-        [Command("monitor-tor", "Monitor flows and provide near real-time information on TOR communication in network traffic.")]
-        public async Task MonitorTorCommand(
-            [Option("p", "path to data folder with source nfdump files.")]
-            string dataPath
-            )
-        {
-            var fsw = new FileSystemWatcher(dataPath, "*.*")
-            {
-                EnableRaisingEvents = true
-            };
-            var sourceFiles = Observable.FromEvent<FileSystemEventHandler, FileInfo>(handler =>
-                {
-                    void fsHandler(object sender, FileSystemEventArgs e)
-                    {
-                        handler(new FileInfo(e.FullPath));
-                    }
-
-                    return fsHandler;
-                },
-                fsHandler => fsw.Created += fsHandler,
-                fsHandler => fsw.Created -= fsHandler);
-            await DetectTor1(sourceFiles, new DetectTorConfiguration(3));
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="dataPath"></param>
-        /// <param name="csvPath"></param>
-        /// <returns></returns>
-        [Command("detect-tor", "Detect Tor in existing network traffic.")]
-        public async Task DetectTorCommand(
-        [Option("p", "path to data folder with source nfdump files.")]
-                string dataPath,
-        [Option("e", "minimum entropy of server name")]
-                double entropy = 3.0
-        )
-        {
-            _logger.LogTrace($"Start processing source folder: {dataPath}");
-            var sourceFiles = Directory.GetFiles(dataPath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            await DetectTor1(sourceFiles, new DetectTorConfiguration(entropy));
-        }
+        public enum OutputFormat { Json, Yaml }
         /// <summary>
         /// 
         /// </summary>
@@ -101,12 +60,14 @@ namespace Ethanol.Demo
         [Option("p", "path to data folder with source nfdump files.")]
                 string dataPath,
         [Option("e", "minimum entropy of server name")]
-                double entropy = 3.0
+                double entropy = 3.0,
+        [Option("o", "output format, can be 'Yaml' or 'Json'")]
+                OutputFormat outputFormat = OutputFormat.Yaml
         )
         {
             _logger.LogTrace($"Start processing source folder: {dataPath}");
             var sourceFiles = Directory.GetFiles(dataPath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            await DetectTor2(sourceFiles, new DetectTorConfiguration(entropy));
+            await DetectTor(sourceFiles, new DetectTorConfiguration(entropy, outputFormat));
         }
     }
 }

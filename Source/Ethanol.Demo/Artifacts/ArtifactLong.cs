@@ -13,7 +13,6 @@ namespace Ethanol.Demo
     /// <summary>
     /// This corresponds to Flowmon "long" template.
     /// </summary>
-    [ArtifactName("Flow")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactLong : IpfixArtifact
     {

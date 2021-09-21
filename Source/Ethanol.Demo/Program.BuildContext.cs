@@ -1,14 +1,8 @@
 ﻿using Ethanol.Streaming;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.StreamProcessing;
 using System;
-using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
-using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.Demo
 {

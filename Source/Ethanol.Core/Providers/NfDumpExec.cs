@@ -1,16 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipelines;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ethanol.Demo
+namespace Ethanol.Providers
 {
     public class NfDumpExec
     {

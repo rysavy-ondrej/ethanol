@@ -8,7 +8,6 @@ using System.Net;
 
 namespace Ethanol.Demo
 {
-    [ArtifactName("Samba")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactSamba : IpfixArtifact
     {

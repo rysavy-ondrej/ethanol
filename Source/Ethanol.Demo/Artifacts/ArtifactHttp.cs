@@ -4,7 +4,6 @@ using Ethanol.Artifacts;
 
 namespace Ethanol.Demo
 {
-    [ArtifactName("Http")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactHttp : IpfixArtifact
     {     

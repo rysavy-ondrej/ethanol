@@ -6,7 +6,6 @@ using System;
 
 namespace Ethanol.Demo
 {
-    [ArtifactName("Dns")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactDns : IpfixArtifact
     {

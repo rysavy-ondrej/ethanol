@@ -8,7 +8,6 @@ using System.Net;
 
 namespace Ethanol.Demo
 {
-    [ArtifactName("Tcp")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactTcp : IpfixArtifact
     {

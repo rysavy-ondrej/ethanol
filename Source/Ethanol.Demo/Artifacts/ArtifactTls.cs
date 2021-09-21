@@ -9,8 +9,6 @@ using System.Net;
 
 namespace Ethanol.Demo
 {
-
-    [ArtifactName("Tls")]
     [AutoMap(typeof(RawIpfixRecord))]
     public class ArtifactTls : IpfixArtifact
     {

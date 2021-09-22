@@ -15,13 +15,15 @@ namespace Ethanol.Providers
     {
         public int FlowCount { get; set; }
 
+        public event EventHandler<string> OnStartLoading;
+        public event EventHandler<string> OnFinish;
         public event EventHandler<TRecord> OnReadRecord;
         /// <summary>
         /// Loads CSV lines from the given stream and for each record calls the registered callbacks.
         /// </summary>
         /// <param name="stream">An input stream to load CSV records from. The first line of this stream must be a CSV header.</param>
         /// <returns>A completion task as this method performs async loading with a callback called for every loaded record.</returns>
-        public Task Load(Stream stream)
+        public Task Load(string filename, Stream stream)
         {
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -31,6 +33,7 @@ namespace Ethanol.Providers
             };
             return Task.Run(() =>
             {
+                OnStartLoading?.Invoke(this, filename);
                 using (var reader = new StreamReader(stream, leaveOpen:true))
                 using (var csv = new CsvReader(reader, config))
                 {
@@ -43,6 +46,7 @@ namespace Ethanol.Providers
                         OnReadRecord?.Invoke(this, record);
                     }
                 }
+                OnFinish?.Invoke(this,filename);
             });
         }
 

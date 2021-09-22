@@ -2,7 +2,7 @@
   "profiles": {
     "Ethanol.Demo": {
       "commandName": "Project",
-      "commandLineArgs": "monitor-tor -p .\\Data\\ -c .\\Csv\\"
+      "commandLineArgs": " detect-tor -csvSource D:\\Applications\\Ethanol\\Data -entropy 3"
     }
   }
 }

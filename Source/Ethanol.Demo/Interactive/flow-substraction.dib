@@ -1,5 +1,0 @@
-#!markdown
-
-# Flow substraction
-
-The idea of flow substraction is to have an up-to-date  installation of OS with not other applications nor services deployed. The empty OS still generates background traffic and this is collected representing know-traffic for which the model is created and used to classify the OS related traffic on other machines.   

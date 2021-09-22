@@ -54,17 +54,23 @@ namespace Ethanol.Demo
         /// <returns></returns>
         [Command("detect-tor", "Detect Tor in existing network traffic.")]
         public async Task DetectTorCommand(
-        [Option("p", "path to data folder with source nfdump files.")]
-                string dataPath,
-        [Option("e", "minimum entropy of server name")]
+        [Option("dumpSource", "path to data folder with source nfdump files.")]
+                string dumpSource = null,
+        [Option("csvSource", "path to data folder with source nfdump files.")]
+                string csvSource = null,
+        [Option("entropy", "minimum entropy of server name")]
                 double entropy = 3.0,
-        [Option("o", "output format, can be 'Yaml' or 'Json'")]
-                OutputFormat outputFormat = OutputFormat.Yaml
+        [Option("outputFormat", "output format, can be 'Yaml' or 'Json'")]
+                OutputFormat outputFormat = OutputFormat.Yaml,
+        [Option("csvTarget", "write intermediate CSV files to the given folder")]
+                string csvTarget=null
         )
         {
-            _logger.LogTrace($"Start processing source folder: {dataPath}");
-            var sourceFiles = Directory.GetFiles(dataPath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            await DetectTor(sourceFiles, new DetectTorConfiguration(entropy, outputFormat));
+            var dumpInput = dumpSource != null;
+            var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
+            var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+            var configuration = new DetectTorConfiguration(entropy, outputFormat, !dumpInput, csvTarget != null, csvTarget);
+            await DetectTor(sourceFiles, configuration);
         }
     }
 }

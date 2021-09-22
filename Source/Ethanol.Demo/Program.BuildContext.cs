@@ -2,13 +2,16 @@
 using Microsoft.StreamProcessing;
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reactive.Linq;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Ethanol.Demo
 {
     record Flow(string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
 
-    record TlsInfo(Flow Flow, string Ja3Fingerprint, string ServerName, string CommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
+    record TlsInfo(Flow Flow, string TlsJa3, string TlsServerName, string TlsServerCommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
 
 
     record TlsContext(TlsInfo[] ClientFlows, TlsInfo[] ServiceFlows); 
@@ -17,6 +20,10 @@ namespace Ethanol.Demo
 
     partial class Program
     {
+        /// <summary>
+        /// YAML serializer used to produce output.
+        /// </summary>
+        readonly ISerializer yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
 
         record BuildFlowContextConfiguration();
         /// <summary>
@@ -28,20 +35,20 @@ namespace Ethanol.Demo
         IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(IStreamable<Empty, RawIpfixRecord> flowStream, BuildFlowContextConfiguration configuration)
         {
             var flowStreams = flowStream.Multicast(2);
-            var tlsStream = flowStreams[0].Where(x => x.tlscver != "N/A" && Int32.Parse(x.sp) > Int32.Parse(x.dp));
-            var dnsStream = flowStreams[1].Where(x => x.pr == "UDP" && x.sp == "53");
+            var tlsStream = flowStreams[0].Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort);
+            var dnsStream = flowStreams[1].Where(x => x.Protocol == "UDP" && x.SrcPort == 53);
 
             // enrich TLS with associated DNS queries
             var tlsDomainStream = tlsStream.LeftOuterJoin(dnsStream,
-                flow => new { HOST = flow.sa, DA = flow.da },
-                flow => new { HOST = flow.da, DA = flow.dnsrdata },
-                left => new TlsInfo(new Flow("TCP", left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp)), left.tlsja3, left.tlssni, left.tlsscn, string.Empty, ComputeDnsEntropy(left.tlssni).Max(), 0),
-                (left, right) => new TlsInfo(new Flow("TCP", left.sa, Int32.Parse(left.sp), left.da, Int32.Parse(left.dp)), left.tlsja3, left.tlssni, left.tlsscn, right.dnsqname, ComputeDnsEntropy(left.tlssni).Max(), ComputeDnsEntropy(right.tlssni).Max()))
+                flow => new { SrcIp = flow.SrcIp, DstIp = flow.DstIp },
+                flow => new { SrcIp = flow.DstIp, DstIp = flow.DnsResponseData },
+                left => new TlsInfo(new Flow(left.Protocol, left.SrcIp, left.SrcPort, left.DstIp, left.DstPort), left.TlsJa3, left.TlsServerName, left.TlsServerCommonName, string.Empty, ComputeDnsEntropy(left.TlsServerName).Max(), 0),
+                (left, right) => new TlsInfo(new Flow(left.Protocol, left.SrcIp, left.SrcPort, left.DstIp, left.DstPort), left.TlsJa3, left.TlsServerName, left.TlsServerCommonName, right.DnsQueryName, ComputeDnsEntropy(left.TlsServerName).Max(), ComputeDnsEntropy(right.TlsServerName).Max()))
                 .Distinct().Multicast(2);
 
             // collect all flows from the same source host with the same JA3:
-            var ja3ClientStream = tlsDomainStream[0].GroupApply(
-                flow => new { SrcIp = flow.Flow.SrcIp, Fingerprint = flow.Ja3Fingerprint },
+            var ja3Clients = tlsDomainStream[0].GroupApply(
+                flow => new { SrcIp = flow.Flow.SrcIp, Fingerprint = flow.TlsJa3 },
                 group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
                 (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
 
@@ -51,8 +58,11 @@ namespace Ethanol.Demo
                 group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
                 (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
         
-            var clientCtx = ja3ClientStream.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
+            // expand groups to flows, e.g., flow with context
+            var clientCtx = ja3Clients.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
             var serviceCtx = bagOfFlows.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
+            
+            // marge two context facts 
             var flowCtx = clientCtx.FullOuterJoin(serviceCtx,
                 left => left.Flow,
                 right => right.Flow,

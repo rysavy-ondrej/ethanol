@@ -53,7 +53,6 @@ using System.CodeDom.Compiler;
 using Ethanol.Demo;
 using Ethanol.Streaming;
 using Ethanol.Artifacts;
-using Ethanol.Context;
 using Ethanol.Providers;
 
 
@@ -103,25 +102,6 @@ ComputeDnsEntropy("www.6b6fpspfv2ngcv654f5r.com").Display();
 #!markdown
 
 # Prepare input data
-
-#!csharp
-
-var artifactServiceCollection = new ArtifactServiceCollection(Assembly.GetAssembly(typeof(ArtifactHttp)));
-artifactServiceCollection.AddArtifactFromCsvFiles(@"..\Data");
-var artifactServices = artifactServiceCollection.Build();
-artifactServices.Services.Select(r => { var s = artifactServices.GetService(r); return $"{s.ArtifactType} [{s.Source}]"; }).Display();
-
-var windowSize = TimeSpan.FromMinutes(15);
-var windowHop = TimeSpan.FromMinutes(5);
-var flowStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("flow")).GetStreamable<IpfixArtifact>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);                        
-var dnsStream =  artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("dns")).GetStreamable<ArtifactDns>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
-var httpStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("http")).GetStreamable<ArtifactHttp>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
-var tlsStream = artifactServices.GetService(artifactServiceCollection.GetArtifactTypeByName("tls")).GetStreamable<ArtifactTls>().HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
-
-display($"Flow count = {GetList(flowStream, e=>e.IsData).Count}");
-display($"Dns count = {GetList(dnsStream, e=>e.IsData).Count}");
-display($"Http count = {GetList(httpStream, e=>e.IsData).Count}");
-display($"Tls count = {GetList(tlsStream, e=>e.IsData).Count}");
 
 #!markdown
 

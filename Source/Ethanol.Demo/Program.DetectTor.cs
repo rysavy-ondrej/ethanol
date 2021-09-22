@@ -52,7 +52,12 @@ namespace Ethanol.Demo
             
             // simple TOR detection rule:
             // If any flow in the context is TLS with randomly generated server name, without common name and service port > 443:
-            var torFlowsStream = contextStream.Where(f => f.Context.ClientFlows.Any(e => string.IsNullOrWhiteSpace(e.DomainName) && e.TlsServerCommonName == "N/A" && e.ServerNameEntropy > configuration.DomainNameEntropy && e.Flow.DstPt >  443));
+            var torFlowsStream = contextStream.Where(
+                ctxFlow => ctxFlow.Context.ClientFlows.Any(fact => 
+                       string.IsNullOrWhiteSpace(fact.DomainName) 
+                    && fact.TlsServerCommonName == "N/A" 
+                    && fact.ServerNameEntropy > configuration.DomainNameEntropy 
+                    && fact.Flow.DstPt >  443));
 
             async Task LoadRecordsFromFile(FileInfo fileInfo)
             {

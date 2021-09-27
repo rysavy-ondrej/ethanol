@@ -39,11 +39,12 @@ This notebook uses dataset with TOR communication originated only from the singl
 
 #r "nuget:System.Reactive"
 #r "nuget:Trill"
-
+#r "nuget:YamlDotNet"
 #r "..\bin\Debug\net5.0\Ethanol.Core.dll"
 #r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
 #r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
 
+using System.IO;
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.StreamProcessing;
@@ -54,7 +55,8 @@ using Ethanol.Demo;
 using Ethanol.Streaming;
 using Ethanol.Artifacts;
 using Ethanol.Providers;
-
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate, int count = Int32.MaxValue)
 {
@@ -93,6 +95,15 @@ public double ComputeDnsEntropy(string domain)
     var parts = domain.Split('.');
     return parts.Select(ComputeEntropy).Max();
 }
+var yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
+public void PrintStreamEvent<T>(string eventType, StreamEvent<T> obj)
+{
+    if (obj.IsInterval || obj.IsEnd)
+    {
+        var evt = new { Event = eventType, ValidTime = new { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
+        Console.WriteLine(yamlSerializer.Serialize(evt));
+    }
+}
 
 #!csharp
 
@@ -103,127 +114,42 @@ ComputeDnsEntropy("www.6b6fpspfv2ngcv654f5r.com").Display();
 
 # Prepare input data
 
-#!markdown
-
-# Process input flows
-
-#!markdown
-
-## Pair TLS and DNS records 
-
-For TLS records, the cadidate DNS records are identified. The rationale behind this reasoning is that most the TLS connections starts by querying domain name of the destination endpoint. However this is not always the case. For instance, some queries may be locally cached, or the application connects directly to IP address as their use their own resolution mechanism or directory, e.g., TOR and some system services.   
-
 #!csharp
 
-var tlsDomain = tlsStream.Where(f=>f.SourcePort > f.DestinationPort).LeftOuterJoin(
-    dnsStream.AlterEventDuration(t => t + TimeSpan.FromMinutes(30).Ticks),  
-    f => new { HOST = f.SrcIp, DA = f.DstIp },
-    f => new { HOST = f.DstIp, DA = f.DnsResponseData }, 
-    l => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = string.Empty, Entropy = ComputeEntropy(l.TlsServerName) }, 
-    (l,r) => new { TlsFlow = l, ServerName = l.TlsServerName, CommonName = l.TlsSubjectCommonName, DomainName = r.DnsQuestionName, Entropy = ComputeEntropy(l.TlsServerName)}); 
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
-#!csharp
+var windowSize = TimeSpan.FromMinutes(15);
+var windowHop = TimeSpan.FromMinutes(5);
+var files = Directory.GetFiles(@"D:\Applications\Ethanol\Data").ToObservable();
+var subject = new Subject<RawIpfixRecord>();
+var loader = new CsvLoader<RawIpfixRecord>();
+loader.OnReadRecord += (object _, RawIpfixRecord value) => { subject.OnNext(value); };
 
-var tlsWithDomain = from t in tlsStream
-                    join q in dnsStream 
-                    on new {SA = t.SrcIp, DA = t.DstIp} equals new { SA = q.DstIp, DA = q.DnsResponseData} 
-                    select new { FlowKey = t.Key, 
-                                 ServerName = t.TlsServerName, 
-                                 DomainName =  q.DnsQuestionName, 
-                                 Entropy = ComputeEntropy(t.TlsServerName)}; 
-                     
+// input stream:
+var flowStream = subject.GetWindowedEventStream(x=> DateTime.Parse(x.TimeStart).Ticks, windowSize, windowHop).Multicast(2);
 
-                                 
+// producer:
+var producerTask = files.ForEachAsync(f => loader.Load(f, File.OpenRead(f)).Wait())
+           .ContinueWith(_ => subject.OnCompleted());
+                      
 
-#!markdown
+var sshScanStream = flowStream[0]
+    .Where(f => f.Protocol == "TCP" && f.InPackets <= 2)
+    .GroupApply(f => new { f.SrcIp }, 
+                group => group.Aggregate(aggregate => aggregate.Collect(flow => new Flow(flow.Protocol, flow.SrcIp, flow.SrcPort, flow.DstIp, flow.DstPort))),
+                (key,value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
+    .Where(g => g.Value.Count() > 2);
 
-## Primary TOR connections
+var sshBruteForceStream = flowStream[1]
+    .Where(f => f.Protocol == "TCP" && f.InPackets >= 8 && f.InPackets <= 14)
+    .GroupApply(f => new { f.SrcIp }, 
+        group => group.Aggregate(aggregate => aggregate.Collect(flow =>  new Flow(flow.Protocol, flow.SrcIp, flow.SrcPort, flow.DstIp, flow.DstPort))),
+        (key,value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
+    .Where(g => g.Value.Count() > 5);
 
-Using a simple (heuristic) rules we try to identify the TOR related TLS handshakes:
+var sshScanTask = sshScanStream.ToStreamEventObservable().ForEachAsync(x=>PrintStreamEvent("ssh-scan", x));
+var sshBruteForceTask = sshBruteForceStream.ToStreamEventObservable().ForEachAsync(x=>PrintStreamEvent("ssh-brute", x));
 
-* Generated server name, which means that Entropy is rather high (TODO: here we can also use ngrams for improving precision) as some regular names can also have quite high entropy
-* TLS Common name is missing, which is not the case for all TOR connections but a significat amount of exit nodes just does not provide this information.
-* Empty domain name, as there is not DNS resolution associated with this connection
-
-#!csharp
-
-var torHandshakes = tlsDomain.Where(e=> String.IsNullOrWhiteSpace(e.DomainName) && e.CommonName == "N/A" && e.Entropy > 3);
-var exitNodes = torHandshakes.Select(f => new { DA = f.TlsFlow.DstIp, DP = f.TlsFlow.DstPt, ServerName = f.ServerName, JA3 = f.TlsFlow.Ja3Fingerprint } );
-GetList(exitNodes, e=>e.IsData).Display();
-
-#!markdown
-
-## Identify other TOR exit nodes
-
-As a Tor client still uses the same cipher suites in the handshake with all end points, it is possible to identify other exit nodes. 
- 
-
-#!csharp
-
-var allExitNodes  = exitNodes.Join(tlsStream.Where(f=>f.SourcePort > f.DestinationPort),
-    l => l.JA3,
-    r => r.Ja3Fingerprint,
-    (l,r) => new { DA = r.DstIp, DP = r.DstPt, JA3 = l.JA3 }
-).Distinct();
-GetList(allExitNodes, e=>e.IsEnd).Display()
-
-#!markdown
-
-## Identify the individual flows as TOR
-
-As we have identified TOR exit nodes, we can match the corresponding TCP flows.
-
-#!csharp
-
-record Tor(string Client, string ExitNode);
-
-var contextFlowStream = flowStream.LeftOuterJoin(allExitNodes,
-        l => new { DA = l.DstIp, DP = l.DstPt },
-        r => new { DA = r.DA, DP = r.DP },       
-        l => new { Flow = l,  Tor = (Tor)null  },
-        (l,r) => new { Flow = l,  Tor  = new Tor(l.SrcIp, l.DstIp) } 
-    );
-
-   
-GetList(contextFlowStream.Where(f => f.Flow.SrcIp =="192.168.111.18" && f.Flow.DstIp == "188.114.140.233" ), e=>e.IsEnd || e.IsInterval).Display();  
-    
-
-#!markdown
-
-# Notes on time 
-
-The simplified approach was taken to handle the temporal information. Lifetime of each flow does not corresponds to the exact duration of the flow but it is aligned by hopping window.  This enables to correlate flows in that appears in the hopping window without the necessaity to adjust lifetime of individual flows. Still, it is possible to test if two flows are simultaneous by comparing their time information fields. 
-
-#!markdown
-
-# TOR Analyzer Output
-
-The TOR analyzer outputs on every closing of the hopping window the following:
-
-* list of active TOR clients
-* list of used TOR exit nodes
-* aggregated data on TOR traffic, up/down for clients, exist nodes, etc.
-
-#!csharp
-
-var torClientsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.Client, 
-    g => g.Count(), 
-    g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), 
-    g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)),
-    g => g.Collect(f => f.Tor.ExitNode), 
-    g => g.Collect(f => f.Flow.Id),
-    (k,g1,g2,g3,g4,g5) => new {TorClient = k.Key, Flows = g1, Packets = g2, Bytes = g3, ExitNodes = g4.Distinct().OrderBy(x=>x).ToArray(), FlowRefs =  g5.Distinct().OrderBy(x=>x).ToArray() });
-
-"TOR CLIENTS".Display();
-GetList(torClientsStream, e=>e.IsEnd || e.IsInterval).Display(); 
-
-var torExitsStream = contextFlowStream.Where(f=>f.Tor != null).GroupAggregate(f => f.Tor.ExitNode, 
-    g => g.Count(), 
-    g => g.Sum(f=>Int32.Parse(f.Flow.Packets)), 
-    g => g.Sum(f=>Int32.Parse(f.Flow.Bytes)), 
-    g => g.Collect(f => f.Tor.Client), 
-    g => g.Collect(f => f.Flow.Id),
-    (k,g1,g2,g3,g4,g5) => new {TorExit = k.Key, Flows = g1, Packets = g2, Bytes = g3, Clients = g4.Distinct().OrderBy(x=>x).ToArray(), FlowRefs =  g5.Distinct().OrderBy(x=>x).ToArray() });
-
-"TOR EXITS".Display();
-GetList(torExitsStream, e=>e.IsEnd || e.IsInterval).Display(); 
+await Task.WhenAll(producerTask, sshScanTask, sshBruteForceTask);
+loader.FlowCount.Display();

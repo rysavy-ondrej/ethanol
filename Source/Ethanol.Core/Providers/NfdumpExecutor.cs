@@ -8,13 +8,17 @@ using System.Threading.Tasks;
 
 namespace Ethanol.Providers
 {
-    public class NfDumpExec
+    /// <summary>
+    /// Wrapper for nfdump shell command. 
+    /// </summary>
+    public class NfdumpExecutor
     {
-        private readonly ILogger<NfDumpExec> _logger;
-        private readonly string _exePath = "/usr/local/bin/nfdump";
-        public NfDumpExec(ILogger<NfDumpExec> logger = null)
+        private readonly ILogger<NfdumpExecutor> _logger;
+        private readonly string _exePath;
+        public NfdumpExecutor(ILogger<NfdumpExecutor> logger = null, string exePath = null)
         {
             _logger = logger;
+            _exePath = exePath ?? "/usr/local/bin/nfdump";
         }
 
         public async Task ProcessInputAsync(string sourceFile, string filter, Func<Stream, Task> reader)

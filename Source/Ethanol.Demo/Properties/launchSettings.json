@@ -3,6 +3,10 @@
     "Ethanol.Demo": {
       "commandName": "Project",
       "commandLineArgs": " detect-tor -csvSource D:\\Applications\\Ethanol\\Data -entropy 3"
+    },
+    "detect-sshcure": {
+      "commandName": "Project",
+      "commandLineArgs": " detect-sshcure -csvSource D:\\Applications\\Ethanol\\Data"
     }
   }
 }

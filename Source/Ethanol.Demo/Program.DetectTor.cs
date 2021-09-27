@@ -35,7 +35,7 @@ namespace Ethanol.Demo
             var windowHop = TimeSpan.FromMinutes(5);
 
             // used only if reading from nfdump source files
-            var nfdump = new NfDumpExec();
+            var nfdump = new NfdumpExecutor();
             var loader = new CsvLoader<RawIpfixRecord>();            
             var subject = new Subject<RawIpfixRecord>();           
 
@@ -59,29 +59,14 @@ namespace Ethanol.Demo
                     && fact.ServerNameEntropy > configuration.DomainNameEntropy 
                     && fact.Flow.DstPt >  443));
 
-            async Task LoadRecordsFromFile(FileInfo fileInfo)
-            {
-                loader.FlowCount = 0;
-                if (configuration.ReadFromCsvInput)
-                {
-                    await loader.Load(fileInfo.Name, fileInfo.OpenRead());
-                }
-                else
-                {
-                    await nfdump.ProcessInputAsync(fileInfo.FullName, "ipv4", async reader => await loader.Load(fileInfo.Name, reader));
-                }
-                var evt = new { Event = "dump-file-loaded", Time = DateTime.Now, Source = fileInfo.Name, FlowCount = loader.FlowCount };
-                Console.WriteLine(yamlSerializer.Serialize(evt));
-            }
-
             // consumer:
-            var consumer = torFlowsStream.ToStreamEventObservable().ForEachAsync(PrintTorFlowRecords, cancellationToken);
+            var consumer = torFlowsStream.ToStreamEventObservable().ForEachAsync(e => PrintStreamEvent("tor-flow-detected",e), cancellationToken);
             
             // producer:
-            await sourceFiles
-                .ForEachAsync(f => LoadRecordsFromFile(f).Wait(), cancellationToken)
+            var producer = sourceFiles
+                .ForEachAsync(f => LoadRecordsFromFile(loader, nfdump, f, configuration.ReadFromCsvInput).Wait(), cancellationToken)
                 .ContinueWith(_ => subject.OnCompleted());
-            Task.WaitAll(new[] { consumer }, cancellationToken);
+            await Task.WhenAll(producer, consumer);
         }
 
         /// <summary>
@@ -96,48 +81,6 @@ namespace Ethanol.Demo
             {
                 csv.WriteRecords(records);
             }
-        }
-
-        /// <summary>
-        /// Produces an output for the single stream output.
-        /// </summary>
-        /// <typeparam name="T">The type of context.</typeparam>
-        /// <param name="obj">Flow and context.</param>
-        private void PrintTorFlowRecords<T>(StreamEvent<T> obj)
-        {
-            if (obj.IsInterval || obj.IsEnd)
-            {
-                var evt = new { Event = "tor-flow-detected", ValidTime = new { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
-                Console.WriteLine( yamlSerializer.Serialize(evt));
-            }
-        }
-        /// <summary>
-        /// Computes an entropy of the given string.
-        /// </summary>
-        /// <param name="message">A string to compute entropy for.</param>
-        /// <returns>A flow value representing Shannon's entropy for the given string.</returns>
-        private double ComputeEntropy(string message)
-        {
-            if (message == null) return 0;
-            Dictionary<char, int> K = message.GroupBy(c => c).ToDictionary(g => g.Key, g => g.Count());
-            double entropyValue = 0;
-            foreach (var character in K)
-            {
-                double PR = character.Value / (double)message.Length;
-                entropyValue -= PR * Math.Log(PR, 2);
-            }
-            return entropyValue;
-        }
-        /// <summary>
-        /// Computes entropy for individual parts of the domain name.
-        /// </summary>
-        /// <param name="domain">The domain name.</param>
-        /// <returns>An array of entropy values for each domain name.</returns>
-        private double[] ComputeDnsEntropy(string domain)
-        {
-            if (string.IsNullOrWhiteSpace(domain)) return new double[] { 0.0 };
-            var parts = domain.Split('.');
-            return parts.Select(ComputeEntropy).ToArray();
         }
     }
 }

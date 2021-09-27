@@ -9,14 +9,14 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Ethanol.Demo
 {
-    record Flow(string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
+    public record Flow(string Proto, string SrcIp, int SrcPt, string DstIp, int DstPt);
 
-    record TlsInfo(Flow Flow, string TlsJa3, string TlsServerName, string TlsServerCommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
+    public record TlsInfo(Flow Flow, string TlsJa3, string TlsServerName, string TlsServerCommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
 
 
-    record TlsContext(TlsInfo[] ClientFlows, TlsInfo[] ServiceFlows); 
+    public record TlsContext(TlsInfo[] ClientFlows, TlsInfo[] ServiceFlows);
 
-    record ContextFlow<T>(Flow Flow, T Context);
+    public record ContextFlow<T>(Flow Flow, T Context);
 
     partial class Program
     {

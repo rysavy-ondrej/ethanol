@@ -34,11 +34,9 @@ namespace Ethanol.Demo
 
             var windowSize = TimeSpan.FromMinutes(15);
             var windowHop = TimeSpan.FromMinutes(5);
-
-            // used only if reading from nfdump source files
+            var subject = new Subject<RawIpfixRecord>();
             var nfdump = new NfdumpExecutor();
-            var loader = new CsvLoader<RawIpfixRecord>();            
-            var subject = new Subject<RawIpfixRecord>();           
+            var loader = new CsvLoader<RawIpfixRecord>();
 
             loader.OnReadRecord += (object _, RawIpfixRecord value) => { subject.OnNext(value); };
             if (configuration.WriteIntermediateFiles)
@@ -50,12 +48,11 @@ namespace Ethanol.Demo
             }
             var flowStream = subject.GetWindowedEventStream(x=> DateTime.Parse(x.TimeStart).Ticks, windowSize, windowHop).Multicast(2);
 
-            // single source to specific service port
             var portScanStream = flowStream[0]
                 .Where(flow => flow.Protocol == "TCP" && flow.InPackets <= 2)
                 
                 .GroupApply(flow => new Flow("TCP", flow.SrcIp, 0, IPAddress.Any.ToString(), flow.DstPort),
-                            group => group.Aggregate(window => window.Collect(flow => new Flow(flow.Protocol, flow.SrcIp, flow.SrcPort, flow.DstIp, flow.DstPort))),
+                            group => group.Aggregate(window => window.Collect(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
                             (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
                 
                 .Where(group => group.Value.Select(flow => flow.DstIp).Distinct().Count() > 50);
@@ -64,18 +61,17 @@ namespace Ethanol.Demo
                 .Where(flow => flow.Protocol == "TCP" && flow.InPackets >= 8 && flow.InPackets <= 14)
                 
                 .GroupApply(flow => new Flow("TCP", flow.SrcIp, 0, IPAddress.Any.ToString(), flow.DstPort),
-                            group => group.Aggregate(window => window.Collect(flow => new Flow(flow.Protocol, flow.SrcIp, flow.SrcPort, flow.DstIp, flow.DstPort))),
+                            group => group.Aggregate(window => window.Collect(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
                             (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
                 
                 .Where(group => group.Value.Count() > 20);
 
             var sshScanTask = portScanStream.ToStreamEventObservable().ForEachAsync(streamEvent => PrintStreamEvent("port-scan", streamEvent), cancellationToken);
             var sshBruteForceTask = sshBruteForceStream.ToStreamEventObservable().ForEachAsync(streamEvent => PrintStreamEvent("ssh-brute", streamEvent), cancellationToken);
-
-            // producer:
             var loaderTasks = sourceFiles
                 .ForEachAsync(file => LoadRecordsFromFile(loader, nfdump, file, configuration.ReadFromCsvInput).Wait(), cancellationToken)
                 .ContinueWith(_ => subject.OnCompleted());
+
             await Task.WhenAll(loaderTasks, sshScanTask, sshBruteForceTask);
         }
     }

@@ -13,7 +13,6 @@ namespace Ethanol.Demo
 
     public record TlsInfo(Flow Flow, string TlsJa3, string TlsServerName, string TlsServerCommonName, string DomainName, double ServerNameEntropy, double DomainNameEntropy);
 
-
     public record TlsContext(TlsInfo[] ClientFlows, TlsInfo[] ServiceFlows);
 
     public record ContextFlow<T>(Flow Flow, T Context);
@@ -21,18 +20,12 @@ namespace Ethanol.Demo
     partial class Program
     {
         /// <summary>
-        /// YAML serializer used to produce output.
-        /// </summary>
-        readonly ISerializer yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
-
-        record BuildFlowContextConfiguration();
-        /// <summary>
         /// Creates a TLS facts related to the given flow.
         /// </summary>
         /// <param name="flowStream">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flow context.</returns>
-        IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(IStreamable<Empty, RawIpfixRecord> flowStream, BuildFlowContextConfiguration configuration)
+        IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(IStreamable<Empty, RawIpfixRecord> flowStream)
         {
             var flowStreams = flowStream.Multicast(2);
             var tlsStream = flowStreams[0].Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort);
@@ -57,11 +50,11 @@ namespace Ethanol.Demo
                 flow => new { DstIp = flow.Flow.DstIp, DstPt = flow.Flow.DstPt },
                 group => group.Aggregate(aggregate => aggregate.Collect(flow => flow)),
                 (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() });
-        
+
             // expand groups to flows, e.g., flow with context
             var clientCtx = ja3Clients.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
             var serviceCtx = bagOfFlows.SelectMany(x => x.Value.Select(f => new ContextFlow<TlsInfo[]>(f.Flow, x.Value)));
-            
+
             // marge two context facts 
             var flowCtx = clientCtx.FullOuterJoin(serviceCtx,
                 left => left.Flow,
@@ -71,6 +64,10 @@ namespace Ethanol.Demo
                 (left, right) => new ContextFlow<TlsContext>(left.Flow, new TlsContext(left.Context, right.Context))
                 );
             return flowCtx;
+        }
+        IStreamable<Empty, ContextFlow<TlsContext>> BuildFlowContext(IStreamable<Empty, RawIpfixRecord> flowStream)
+        {
+
         }
     }
 }

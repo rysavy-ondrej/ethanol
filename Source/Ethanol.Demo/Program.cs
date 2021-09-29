@@ -46,6 +46,11 @@ namespace Ethanol.Demo
 
         public enum OutputFormat { Json, Yaml }
         /// <summary>
+        /// YAML serializer used to produce output.
+        /// </summary>
+        readonly ISerializer yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="dataPath"></param>

@@ -83,7 +83,7 @@ namespace Ethanol.Artifacts
         public override string ToString()
         {
             var fields = String.Join(", ", this.GetArtifactFields().Select(x => $"{x}={this.GetArtifactFieldValue(x)}"));
-            return $"{this.GetType().Name} {{ Id={this.Id}, {fields} }}";            
+            return $"{this.GetType().Name} {{ Id={this.Id}, {fields} }}";
         }
     }
 }

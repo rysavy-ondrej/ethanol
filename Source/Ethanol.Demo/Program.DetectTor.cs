@@ -48,7 +48,7 @@ namespace Ethanol.Demo
                 loader.OnFinish += (_, filename) => { WriteAllRecords(Path.Combine(configuration.IntermediateFilesPath, $"{filename}.csv"), records); };
             }
             var flowStream = subject.GetWindowedEventStream(x=> DateTime.Parse(x.TimeStart).Ticks, windowSize, windowHop);
-            var contextStream = BuildTlsContext(flowStream, new BuildFlowContextConfiguration());
+            var contextStream = BuildTlsContext(flowStream);
             
             // simple TOR detection rule:
             // If any flow in the context is TLS with randomly generated server name, without common name and service port > 443:

@@ -67,7 +67,7 @@ namespace Ethanol.Demo
         }
         IStreamable<Empty, ContextFlow<TlsContext>> BuildFlowContext(IStreamable<Empty, RawIpfixRecord> flowStream)
         {
-
+            throw new NotImplementedException();
         }
     }
 }

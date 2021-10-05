@@ -13,4 +13,8 @@
     <PackageReference Include="Trill" Version="2021.7.22.1" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Context\" />
+  </ItemGroup>
 </Project>

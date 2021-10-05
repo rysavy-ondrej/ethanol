@@ -2,7 +2,7 @@
   "profiles": {
     "Ethanol.Demo": {
       "commandName": "Project",
-      "commandLineArgs": " detect-tor -csvSource D:\\Applications\\Ethanol\\Data -entropy 3"
+      "commandLineArgs": " detect-tor -csvSource D:\\Applications\\Ethanol\\Data -entropy 3 > result.yaml"
     },
     "detect-sshcure": {
       "commandName": "Project",

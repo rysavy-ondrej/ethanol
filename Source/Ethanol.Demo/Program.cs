@@ -75,8 +75,8 @@ namespace Ethanol.Demo
             var dumpInput = dumpSource != null;
             var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
             var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            var configuration = new DetectTorConfiguration(entropy, outputFormat, !dumpInput, csvTarget != null, csvTarget);
-            await DetectTor(sourceFiles, configuration);
+            var configuration = new DetectConfiguration(outputFormat, !dumpInput, csvTarget != null, csvTarget);
+            await DetectTor(sourceFiles, configuration, entropy);
         }
         [Command("detect-sshcure", "Detect SshCure activities in network traffic.")]
         public async Task DetectSshCureCommand(

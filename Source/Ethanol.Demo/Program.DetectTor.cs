@@ -4,6 +4,7 @@ using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace Ethanol.Demo
                     PrintStreamEvent($"{obj.Payload.Flow.Proto}@{obj.Payload.Flow.SrcIp}:{obj.Payload.Flow.SrcPt}-{obj.Payload.Flow.DstIp}:{obj.Payload.Flow.DstPt} {String.Join(',', obj.Payload.Tags)}", obj);
                 }
             }
-            Task ConsumeTorEvents(IStreamable<Empty, ClassifiedContextFlow<TlsContext>> torFlowsStream, CancellationToken cancellationToken) => torFlowsStream.ToStreamEventObservable().ForEachAsync(PrintEvent, cancellationToken);
+            Task ConsumeTorEvents(IStreamable<Empty, ClassifiedContextFlow<TlsContext>> torFlowsStream, CancellationToken cancellationToken) => torFlowsStream.ToStreamEventObservable().Where(f=>f.IsEnd).ForEachAsync(PrintEvent, cancellationToken);
 
             return Detect(sourceFiles, configuration, PrepareTlsContext, ClassifyTor, ConsumeTorEvents);
         }
@@ -58,7 +59,7 @@ namespace Ethanol.Demo
         }
         static bool IsTorFlow(ContextFlow<TlsContext> flow)
         {
-            return flow.Context.TlsClientFlows?
+            return flow.Context?.TlsClientFlows?.Flows
                 .Any(fact =>   string.IsNullOrWhiteSpace(fact.DomainName)
                             && fact.TlsServerCommonName == "N/A"
                             && fact.ServerNameEntropy > 3
@@ -71,7 +72,7 @@ namespace Ethanol.Demo
         }
         static bool IsWebBrowser(ContextFlow<TlsContext> flow)
         {
-            return flow.Context.TlsClientFlows?
+            return flow.Context?.TlsClientFlows?.Flows
                 .Select(f => f.DomainName).Distinct().Count() > 2;
         }
         /// <summary>
@@ -86,7 +87,11 @@ namespace Ethanol.Demo
             Func<IStreamable<Empty, ClassifiedContextFlow<TContext>>, CancellationToken, Task> contextConsumeFunc) 
         { 
             var cancellationToken = _cancellationTokenSource.Token;
+#if DEBUG
             Config.ForceRowBasedExecution = true;
+            var ts = new Stopwatch();
+            ts.Start();
+#endif
             var ctxBuilder = new ContextBuilder();
             var windowSize = TimeSpan.FromMinutes(15);
             var windowHop = TimeSpan.FromMinutes(5);
@@ -97,12 +102,11 @@ namespace Ethanol.Demo
             var subject = new Subject<RawIpfixRecord>();
 
             var loadedFlows = 0;
-            void LoadedFlowsStatus()
-            {
+            loader.OnReadRecord += (object _, RawIpfixRecord value) => {
                 if (++loadedFlows % 1000 == 0) Console.Error.Write('!');
-            }
-
-            loader.OnReadRecord += (object _, RawIpfixRecord value) => { LoadedFlowsStatus(); subject.OnNext(value); };
+                subject.OnNext(value); 
+            
+            };
             if (configuration.WriteIntermediateFiles)
             {
                 var records = new List<RawIpfixRecord>();
@@ -123,6 +127,10 @@ namespace Ethanol.Demo
                 .ForEachAsync(f => LoadRecordsFromFile(loader, nfdump, f, configuration.ReadFromCsvInput).Wait(), cancellationToken)
                 .ContinueWith(_ => subject.OnCompleted());
             await Task.WhenAll(producer, consumer);
+#if DEBUG
+            ts.Stop();
+            Console.Error.WriteLine($"Processed {loadedFlows} flows in {ts.Elapsed}.");
+#endif
         }
 
         /// <summary>

@@ -19,10 +19,10 @@ namespace Ethanol.Streaming
         /// <typeparam name="T">The type of event payloads.</typeparam>
         /// <param name="observable">The input observable.</param>
         /// <param name="getStartTime">The function to get start time of a record.</param>
-        /// <param name="windowSize">Size of the hopping window.</param>
-        /// <param name="windowHop">Hop size in ticks.</param>
+        /// <param name="windowSize">SWindow size.</param>
+        /// <param name="windowPeriod">Window period.</param>
         /// <returns>A stream of events with defined start times adjusted to hopping windows.</returns>
-        public static IStreamable<Empty, T> GetWindowedEventStream<T>(this IObservable<T> observable, Func<T, long> getStartTime, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Empty, T> GetWindowedEventStream<T>(this IObservable<T> observable, Func<T, long> getStartTime, TimeSpan windowSize, TimeSpan windowPeriod)
         {
             static bool ValidateTimestamp((T Record, long StartTime) record) =>
                 record.StartTime > DateTime.MinValue.Ticks && record.StartTime < DateTime.MaxValue.Ticks;
@@ -31,7 +31,7 @@ namespace Ethanol.Streaming
                 .Select(x => (Record: x, StartTime: getStartTime(x)))
                 .Where(ValidateTimestamp)
                 .Select(x => StreamEvent.CreatePoint(x.StartTime, x.Record));
-            return source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(TimeSpan.FromMinutes(5).Ticks), FlushPolicy.FlushOnBatchBoundary).HoppingWindowLifetime(windowSize.Ticks, windowHop.Ticks);
+            return source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(TimeSpan.FromMinutes(5).Ticks), FlushPolicy.FlushOnPunctuation).QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
         }
     }
 }

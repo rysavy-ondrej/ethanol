@@ -52,7 +52,7 @@ namespace Ethanol.Demo
                 .Where(flow => flow.Protocol == "TCP" && flow.InPackets <= 2)
                 
                 .GroupApply(flow => new Flow("TCP", flow.SrcIp, 0, IPAddress.Any.ToString(), flow.DstPort),
-                            group => group.Aggregate(window => window.Collect(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
+                            group => group.Aggregate(window => window.CollectList(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
                             (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
                 
                 .Where(group => group.Value.Select(flow => flow.DstIp).Distinct().Count() > 50);
@@ -61,7 +61,7 @@ namespace Ethanol.Demo
                 .Where(flow => flow.Protocol == "TCP" && flow.InPackets >= 8 && flow.InPackets <= 14)
                 
                 .GroupApply(flow => new Flow("TCP", flow.SrcIp, 0, IPAddress.Any.ToString(), flow.DstPort),
-                            group => group.Aggregate(window => window.Collect(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
+                            group => group.Aggregate(window => window.CollectList(ipfix => new Flow(ipfix.Protocol, ipfix.SrcIp, ipfix.SrcPort, ipfix.DstIp, ipfix.DstPort))),
                             (key, value) => new { Key = key.Key, Value = value.Distinct().ToArray() })
                 
                 .Where(group => group.Value.Count() > 20);

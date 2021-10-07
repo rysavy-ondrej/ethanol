@@ -2,11 +2,12 @@
 
 #r "System.Reactive"
 #r "nuget:Trill"
+#r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
 
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.StreamProcessing;
-
+using Ethanol.Streaming;
 
 void PrintStream<V>(IStreamable<Empty,V> stream, Func<StreamEvent<V>, bool> predicate)
 {
@@ -21,8 +22,13 @@ void PrintStreams<V>(IStreamable<Empty,V>[] streams, Func<StreamEvent<V>, bool> 
 
 #!csharp
 
-new DateTime(637671744000000000).Display();
-new DateTime(637671743400000000).Display()
+// Records enjoy structural equality!
+record B(int x);
+record A(string S, object I);
+var x = new A("123", new B(1));
+var y = new A("123", new B(1));
+var b = x == y;
+b.Display()
 
 #!csharp
 
@@ -31,35 +37,16 @@ record Artifact (string Id, long Start, long Duration, string value);
 var events = new Artifact[]
 {
     new Artifact("A",10,5, "TCP"),
-    new Artifact("B",20,5, "UDP"),
-    new Artifact("C",30,30, "TCP"),
-    new Artifact("D",40,5, "UDP"),
-    new Artifact("E",50,5, "TCP"),
-    new Artifact("F",60,5, "UDP"),
+    new Artifact("B",12,5, "UDP"),
+    new Artifact("C",14,5, "TCP"),
+    new Artifact("D",16,5, "UDP"),
+    new Artifact("E",18,5, "TCP"),
+    new Artifact("F",20,5, "UDP"),
 
-}.Select(x=> StreamEvent.CreateInterval(x.Start, x.Start+x.Duration, x)).ToObservable();
-var stream = events.ToStreamable();
-
-#!markdown
-
-# Substreams
-
-Stream can be multicasted. It creates a number of substreams.
-
-#!csharp
-
-var substreams = stream.Multicast(2);
-PrintStreams(substreams, e=>e.IsInterval);
-
-#!markdown
-
-# Aggregation
-Operators are applied to events considering their temporal propertires. Thus in [40,45) and [50,55) intervals there are "active" two events, while in the rest always only a single event.
-
-#!csharp
-
-var counts = stream.Count();
-PrintStream(counts, e=>e.IsEnd);
+}.Select(x => StreamEvent.CreatePoint(x.Start, x)).ToObservable();
+var stream = events.ToStreamable().QuantizeLifetime(15,5);
+var array = await stream.ToStreamEventObservable().ToArray();
+array.Display();
 
 #!markdown
 
@@ -72,24 +59,8 @@ Example bellow pairs artifacts based on their values. As can be seen only those 
 #!csharp
 
 var joinStream = stream.LeftOuterJoin(stream, left => left.value, right => right.value, left => new { Left = left, Right = new Artifact(null, 0,0,null)},(left,right) =>  new { Left = left, Right = right});
-PrintStream(joinStream, e=>e.IsData);
-
-#!markdown
-
-LeftOuterJoin has the following signature:
-```
-IStreamable<Empty, T> LeftOuterJoin<L,R,K,T>(
-    this IStreamable<Empty, L> left, 
-    IStreamable<Empty, R> right,
-    Func<L,K> leftKeySelector,
-    Func<R,K> rightKeySelector, 
-    Func<L,T> outerResultSelector,
-    Func<L,R,T> innerResultSelector
-)
-
-```
-where `LeftKeySelector` and `rightKeySelector` are used to produce key values that need to match for the join to be produced, 
-`outerResultSelector` is used to produce a value if not match with left event is found and `innerResultSelector` is to produce a result value if left matches with right. 
+var array = await joinStream.ToStreamEventObservable().ToArray();
+array.Display()
 
 #!markdown
 
@@ -99,8 +70,9 @@ Grouping is combined in apply operation, which means that stream is first partit
 
 #!csharp
 
-var groupStream = joinStream.GroupApply(x=>x.Left, g => g.SessionTimeoutWindow(50,100).Count(), (k,v) => new { Key = k.Key, Value = v });
-PrintStream(groupStream, e => e.IsEnd);
+var groupStream = joinStream.GroupApply(x=>x.Left, g => g.Aggregate(d => d.CollectSet(x=>x.Right)), (k,v) => new { Key = k.Key, Value = v });
+var array = await groupStream.ToStreamEventObservable().Where(e=>e.IsEnd).ToArray();
+array.Display()
 
 #!markdown
 

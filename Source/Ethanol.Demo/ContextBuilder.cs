@@ -1,4 +1,5 @@
-﻿using Microsoft.StreamProcessing;
+﻿using Ethanol.Streaming;
+using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +19,25 @@ namespace Ethanol.Demo
         {
             return new Flow(f.Protocol, f.SrcIp, f.SrcPort, f.DstIp, f.DstPort);
         }
-        public static IStreamable<Empty, ContextFlow<Target>> AsContextFlow<Key, Source, Target>(this IStreamable<Empty, KeyValuePair<Key, IEnumerable<Source>>> source, Func<Source, Flow> toKey, Func<Key, IEnumerable<Source>, Target> toValue)
+        /// <summary>
+        /// Transforms the source stream to a new stream by expanding individual elements of each source event.
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TElement"></typeparam>
+        /// <typeparam name="TTarget"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="getElements"></param>
+        /// <param name="getFlowKey"></param>
+        /// <param name="selector"></param>
+        /// <returns></returns>
+        public static IStreamable<Empty, TTarget> Expand<TSource, TElement, TTarget, TKey>(this IStreamable<Empty, TSource> source, Func<TSource, IEnumerable<TElement>> getElements, Func<TElement, TSource, TTarget> selector, Func<TTarget,TKey> getKey)
         {
-            return source.SelectMany(x => x.Value.Select(f => new ContextFlow<Target>(toKey(f), toValue(x.Key, x.Value))));
+            var target = source.SelectMany(record => getElements(record).Select(item => selector(item, record)));
+            // need to group and select only the first one otherwise we have duplicities, WHY?
+            return target.GroupApply(
+                val => getKey(val),
+                group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
+                (key, value) => value.First());
         }
     }   
 }

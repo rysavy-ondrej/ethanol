@@ -1,42 +1,12 @@
 #!csharp
 
-#r "..\bin\Debug\net5.0\Ethanol.Core.dll"
-#r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
-#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+double MinMaxScale(double X, double X_min, double X_max, double Y_min, double Y_max)
+            {
+                if (X >= X_max) return Y_max;
+                if (X <= X_min) return Y_min; 
+                var X_std = (X - X_min) / (X_max - X_min);
+                return X_std * (Y_max - Y_min) + Y_min;
+            }
 
-using System.IO;
-using System.Diagnostics;
-using System.Globalization;
-using CsvHelper;
-using CsvHelper.Configuration;
-using Ethanol.Demo;
-
-private static void OnMissingField(MissingFieldFoundArgs args)
-{
-    /* Do nothing */
-}
-
-var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-{
-    HasHeaderRecord = true,
-    TrimOptions = TrimOptions.Trim,
-    MissingFieldFound = OnMissingField
-};
-var count = 0;
-using (var reader = new StreamReader(@"..\Data\dns.csv"))
-{
-    using (var csv = new CsvReader(reader, config))
-    {
-        int id = 0;
-        csv.Read();
-        csv.ReadHeader();
-        while (csv.Read())
-        {
-            var record = csv.GetRecord<ArtifactDns>();
-            record.Id = (++id).ToString();
-            count++;
-            record.Display();
-        }
-    }
-}
-count.Display();
+var y = MinMaxScale(1.2,0,5,0,1);
+y.Display();

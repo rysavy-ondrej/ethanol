@@ -58,16 +58,12 @@ namespace Ethanol.Demo
         /// <param name="dataPath"></param>
         /// <param name="csvPath"></param>
         /// <returns></returns>
-        [Command("detect-tor", "Detect Tor in existing network traffic.")]
-        public async Task DetectTorCommand(
+        [Command("analyze-flows", "Create flow context and analyze it.")]
+        public async Task AnalyzeFlowsCommand(
         [Option("dumpSource", "path to data folder with source nfdump files.")]
                 string dumpSource = null,
         [Option("csvSource", "path to data folder with source nfdump files.")]
                 string csvSource = null,
-        [Option("entropy", "minimum entropy of server name")]
-                double entropy = 3.0,
-        [Option("outputFormat", "output format, can be 'Yaml' or 'Json'")]
-                OutputFormat outputFormat = OutputFormat.Yaml,
         [Option("csvTarget", "write intermediate CSV files to the given folder")]
                 string csvTarget=null
         )
@@ -75,26 +71,8 @@ namespace Ethanol.Demo
             var dumpInput = dumpSource != null;
             var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
             var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            var configuration = new DetectConfiguration(outputFormat, !dumpInput, csvTarget != null, csvTarget);
-            await DetectTor(sourceFiles, configuration, entropy);
-        }
-        [Command("detect-sshcure", "Detect SshCure activities in network traffic.")]
-        public async Task DetectSshCureCommand(
-        [Option("dumpSource", "path to data folder with source nfdump files.")]
-                        string dumpSource = null,
-        [Option("csvSource", "path to data folder with source nfdump files.")]
-                        string csvSource = null,
-        [Option("outputFormat", "output format, can be 'Yaml' or 'Json'")]
-                        OutputFormat outputFormat = OutputFormat.Yaml,
-        [Option("csvTarget", "write intermediate CSV files to the given folder")]
-                        string csvTarget=null
-        )
-        {
-            var dumpInput = dumpSource != null;
-            var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
-            var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            var configuration = new DetectSshCureConfiguration(outputFormat, !dumpInput, csvTarget != null, csvTarget);
-            await DetectSshCure(sourceFiles, configuration);
+            var configuration = new FlowProcessor.Configuration(!dumpInput, csvTarget != null, csvTarget);
+            await AnalyzeFlowsInFiles(sourceFiles, configuration);
         }
     }
 }

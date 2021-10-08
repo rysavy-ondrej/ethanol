@@ -2,7 +2,7 @@
 
 namespace Ethanol.Demo
 {
-    public class RawIpfixRecord
+    public class IpfixRecord
     {
         [Name("ts")]
         public string TimeStart { get; set; }

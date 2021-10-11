@@ -16,7 +16,7 @@ namespace Ethanol.Demo
         /// <param name="sourceFiles">The observable collection of source files.</param>
         /// <param name="configuration">The configuration.</param>
         /// <returns>Task that completes when the processing is done.</returns>
-        Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFiles, FlowProcessor.Configuration configuration)
+        Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFiles, FlowProcessor.Configuration configuration, OutputFormat outputFormat)
         {
             var flowProcessor = new FlowProcessor(configuration);
             IStreamable<Empty, ContextFlow<TlsContext>> PrepareTlsContext(ContextBuilder ctxBuilder, IStreamable<Empty, IpfixRecord> flowStream) => ctxBuilder.BuildTlsContext(flowStream);
@@ -30,9 +30,18 @@ namespace Ethanol.Demo
                 if (++flows % 1000 == 0) Console.Error.Write('.');
                 if (obj.IsData)
                 {
-                    PrintStreamEvent($"{obj.Payload.Flow.Proto}@{obj.Payload.Flow.SrcIp}:{obj.Payload.Flow.SrcPt}-{obj.Payload.Flow.DstIp}:{obj.Payload.Flow.DstPt}", obj);
+                    if (outputFormat == OutputFormat.Yaml)
+                    {
+                        PrintStreamEventYaml($"{obj.Payload.Flow.Proto}@{obj.Payload.Flow.SrcIp}:{obj.Payload.Flow.SrcPt}-{obj.Payload.Flow.DstIp}:{obj.Payload.Flow.DstPt}", obj);
+                    }
+                    else
+                    {
+                        PrintStreamEventJson($"{obj.Payload.Flow.Proto}@{obj.Payload.Flow.SrcIp}:{obj.Payload.Flow.SrcPt}-{obj.Payload.Flow.DstIp}:{obj.Payload.Flow.DstPt}", obj);
+                    }
                 }
             }
+
+
             Task ConsumeTorEvents(IStreamable<Empty, ClassifiedContextFlow<TlsContext>> torFlowsStream, CancellationToken cancellationToken) => torFlowsStream.ToStreamEventObservable().Where(f => f.IsEnd).ForEachAsync(PrintEvent, cancellationToken);
 
             return flowProcessor.LoadFromFiles(sourceFiles, PrepareTlsContext, ClassifyTor, ConsumeTorEvents, _cancellationTokenSource.Token);

@@ -9,9 +9,19 @@ using System.Reactive.Linq;
 
 namespace Ethanol.Demo
 {
+    /// <summary>
+    /// Record representing key fields for Flow Burst.
+    /// </summary>
     public record FlowBurstKey(string SrcIp, string DstIp, int DstPort, string Protocol);
+    /// <summary>
+    /// Record representing key fields for Bag of Flows.
+    /// </summary>
     public record BagOfFlowsKey(string DstIp, int DstPort, string Protocol);
-    public record AppClientFlowsKey(string SrcIp, string DstPort, string Protocol);
+
+    /// <summary>
+    /// Record representing key fields for single Client Bag of Flows.
+    /// </summary>
+    public record ClientBagOfFlowsKey(string SrcIp, string DstPort, string Protocol);
 
     /// <summary>
     /// Group of flows with the given common <paramref name="Key"/>.
@@ -73,9 +83,23 @@ namespace Ethanol.Demo
                 new FlowGroup<FlowBurstKey, IpfixRecord>(arg3.FirstOrDefault()?.Key, arg3.SelectMany(v => v.Flows).ToArray()));
     
 
+        /// <summary>
+        /// Gets the flow key for the given IPFIX record.
+        /// </summary>
+        /// <param name="f">The IPFIX record.</param>
+        /// <returns>A flow key provided for the input IPFIX record.</returns>
         public static Flow GetFlow(this IpfixRecord f)
         {
             return new Flow(f.Protocol, f.SrcIp, f.SrcPort, f.DstIp, f.DstPort);
+        }
+        /// <summary>
+        /// Gets various meters for the given IPFIX record.
+        /// </summary>
+        /// <param name="f">The IPFIX record.</param>
+        /// <returns>A collection of meters for the given IPFIX record.</returns>
+        public static FlowMeters GetMeters(this IpfixRecord f)
+        {            
+            return new FlowMeters(f.InPackets, f.InBytes, TimeSpan.FromSeconds(f.TimeDuration));
         }
     }
 }

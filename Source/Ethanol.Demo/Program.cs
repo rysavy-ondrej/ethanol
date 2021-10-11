@@ -65,14 +65,16 @@ namespace Ethanol.Demo
         [Option("csvSource", "path to data folder with source nfdump files.")]
                 string csvSource = null,
         [Option("csvTarget", "write intermediate CSV files to the given folder")]
-                string csvTarget=null
+                string csvTarget=null,
+        [Option("outFormat", "the format for generated output")]
+                OutputFormat outFormat =OutputFormat.Yaml
         )
         {
             var dumpInput = dumpSource != null;
             var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
             var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
             var configuration = new FlowProcessor.Configuration(!dumpInput, csvTarget != null, csvTarget);
-            await AnalyzeFlowsInFiles(sourceFiles, configuration);
+            await AnalyzeFlowsInFiles(sourceFiles, configuration, outFormat);
         }
     }
 }

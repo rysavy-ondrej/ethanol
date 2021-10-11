@@ -9,7 +9,7 @@ namespace Ethanol.Demo
         [Name("te")]
         public string TimeEnd { get; set; }
         [Name("td")]
-        public string TimeDuration { get; set; }
+        public double TimeDuration { get; set; }
         [Name("sa")]
         public string SrcIp { get; set; }
         [Name("da")]

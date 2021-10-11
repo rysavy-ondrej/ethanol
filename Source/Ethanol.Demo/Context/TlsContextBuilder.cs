@@ -6,10 +6,11 @@ using System.Reactive.Linq;
 
 namespace Ethanol.Demo
 {
+    public record FlowMeters(int Packets, int Octets, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
-    public record TlsFlowRecord(Flow Flow, string TlsJa3, string TlsServerName, string TlsServerCommonName, double ServerNameEntropy, double ServerCommonNameEntropy);
-    public record DnsFlowRecord(Flow Flow, string QueryName, string ResponseData);
-    public record HttpFlowRecord(Flow Flow, string Method, string HostName, string Url);
+    public record TlsFlowRecord(Flow Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName);
+    public record DnsFlowRecord(Flow Flow, FlowMeters Meters, string QueryName, string ResponseData);
+    public record HttpFlowRecord(Flow Flow, FlowMeters Meters, string Method, string HostName, string Url);
     public record TlsContext(TlsFlowRecord TlsRecord, FlowGroup<EndpointsKey, DnsFlowRecord> Domains, FlowGroup<TlsClientKey, TlsFlowRecord> TlsClientFlows, FlowGroup<BagOfFlowsKey, TlsFlowRecord> BagOfFlows, FlowGroup<FlowBurstKey, TlsFlowRecord> FlowBurst, FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
     public record TlsClientKey(string SrcIp, string Ja3Fingerprint);
     public static class TlsContextBuilder
@@ -26,9 +27,9 @@ namespace Ethanol.Demo
             {
                 return source.Multicast(flowStream =>
                 {
-                    var tlsStream = flowStream.Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort).Select(f => new TlsFlowRecord(f.GetFlow(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, Statistics.ComputeDnsEntropy(f.TlsServerName).Max(), Statistics.ComputeDnsEntropy(f.TlsServerCommonName).Max()));
-                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SrcPort == 53).Select(f => new DnsFlowRecord(f.GetFlow(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.hurl)).Select(f => new HttpFlowRecord(f.GetFlow(), f.hmethod, f.hhost, f.hurl));
+                    var tlsStream = flowStream.Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort).Select(f => new TlsFlowRecord(f.GetFlow(), f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName));
+                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SrcPort == 53).Select(f => new DnsFlowRecord(f.GetFlow(), f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
+                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.hurl)).Select(f => new HttpFlowRecord(f.GetFlow(), f.GetMeters(), f.hmethod, f.hhost, f.hurl));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {

@@ -60,7 +60,7 @@ namespace Ethanol.Demo
                         flow => ValueTuple.Create(flow.Flow, new TlsClientKey(flow.Flow.SrcIp, flow.TlsJa3)),
                         grouping => new ContextFlow<FlowGroup<TlsClientKey, TlsFlowRecord>>(
                             grouping.Key.Item1,
-                            new FlowGroup<TlsClientKey, TlsFlowRecord>(grouping.Key.Item2, grouping.ToArray())
+                            new FlowGroup<TlsClientKey, TlsFlowRecord>(grouping.Key.Item2, grouping.OrderBy(t=> Math.Abs(grouping.Key.Item1.SrcPt - t.Flow.SrcPt)).ToArray())
                         ));
 
                         var bagOfFlowsStream = stream.MatchGroupApply(

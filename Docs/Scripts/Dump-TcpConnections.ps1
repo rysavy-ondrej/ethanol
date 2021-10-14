@@ -43,7 +43,7 @@ $currentOutputFile = $lastOutputFile = [Helper]::GetCurrent()
 for(;;)
 {  
     $activeConnections = Get-NetTCPConnection -AppliedSetting Internet -LocalAddress $LocalAddress 
-    | Select-Object -Property @{name='FlowKey';expression={[Helper]::GetFlow($_.LocalAddress,$_.LocalPort, $_.RemoteAddress, $_.RemotePort)}}, LocalAddress, LocalPort,RemoteAddress, RemotePort, State,@{name='ProcessName';expression={(Get-Process -Id $_.OwningProcess). Path}},CreationTime         
+    | Select-Object -Property @{name='FlowKey';expression={[Helper]::GetFlow($_.LocalAddress,$_.LocalPort, $_.RemoteAddress, $_.RemotePort)}}, LocalAddress, LocalPort,RemoteAddress, RemotePort, State,@{name='ProcessName';expression={(Get-Process -Id $_.OwningProcess). Path}},CreationTime,@{name='CurrentTime';expression={Get-Date}}         
         
     $connections += $activeConnections
     if (!$currentOutputFile.Equals($lastOutputFile))

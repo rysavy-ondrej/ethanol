@@ -75,12 +75,22 @@ namespace Ethanol.Demo
                 DataFileFormat outputFormat = DataFileFormat.Yaml
         )
         {
-            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
-            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            
+            var sourceFiles = TestAndGetFiles(source);
             await AnalyzeFlowsInFiles(sourceFiles, DataFileFormat.Csv, outputFormat);
         }
 
+        /// <summary>
+        /// Test if the given <paramref name="source"/> path points to the valid directory with source files.
+        /// </summary>
+        /// <param name="source">the source path.</param>
+        /// <returns>An observable collection of files in the given <paramref name="source"/> path.</returns>
+        /// <exception cref="ArgumentException">If the path does not point to the existing directory.</exception>
+        private static IObservable<FileInfo> TestAndGetFiles(string source)
+        {
+            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
+            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+            return sourceFiles;
+        }
 
         [Command("ConvertFrom-Nfd", "Converts nfdump files to the specified format.")]
         public async Task ConvertFromNfd(
@@ -93,11 +103,10 @@ namespace Ethanol.Demo
             )
         {
             if (format == DataFileFormat.Nfd) throw new ArgumentException($"The specified file format ({format}) is not supported in this operation.");
-            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
-            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-
+            var sourceFiles = TestAndGetFiles(source);
+            
+            
             var ethanol = new EthanolEnvironment();
-
             var loader = new CsvLoader<IpfixRecord>();
                 var records = new List<IpfixRecord>();
                 loader.OnStartLoading += (_, filename) => { records.Clear(); };

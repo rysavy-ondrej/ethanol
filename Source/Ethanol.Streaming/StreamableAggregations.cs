@@ -11,7 +11,7 @@ using System.Collections.Immutable;
 namespace Ethanol.Streaming
 {
 
-    public static class AggregateCollect
+    public static class StreamableAggregations
     {
         class _AggregateSet<TElement> : IAggregate<TElement, IImmutableSet<TElement>, TElement[]>
         {

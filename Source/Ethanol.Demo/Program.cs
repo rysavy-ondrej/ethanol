@@ -80,15 +80,15 @@ namespace Ethanol.Demo
         }
 
         /// <summary>
-        /// Test if the given <paramref name="source"/> path points to the valid directory with source files.
+        /// Test if the given <paramref name="path"/> points to the valid directory with source files.
         /// </summary>
-        /// <param name="source">the source path.</param>
-        /// <returns>An observable collection of files in the given <paramref name="source"/> path.</returns>
-        /// <exception cref="ArgumentException">If the path does not point to the existing directory.</exception>
-        private static IObservable<FileInfo> TestAndGetFiles(string source)
+        /// <param name="path">The source folder path.</param>
+        /// <returns>An observable collection of files in the given <paramref name="path"/>.</returns>
+        /// <exception cref="ArgumentException">If the path does not point to existing directory.</exception>
+        private static IObservable<FileInfo> TestAndGetFiles(string path)
         {
-            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
-            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+            if (!Directory.Exists(path)) throw new ArgumentException($"Argument {nameof(path)} must be specified and point to existing folder.");
+            var sourceFiles = Directory.GetFiles(path).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
             return sourceFiles;
         }
 

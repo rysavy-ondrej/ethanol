@@ -6,9 +6,9 @@ Collects and dumps information about current TCP connections.
 
 .DESCRIPTION
 
-The Dump-TcpConnection script regulalry checks the open connections
-and stores this information to dump CSV files. It creates a new 
-file on the defined timeout.  
+The Dump-TcpConnection script regularly checks the open connections
+and dumps this information to CSV files. It creates a new file on every 
+timeout, which is configurable.  
 
 .PARAMETER LocalAddress
 Specifies the local IP address for connections to be monitored and collected.
@@ -20,7 +20,7 @@ Specifies the number of minutes between creation of dump files.
 Specifies the interval as number of seconds between querying the system about active TCP connections.
 
 .PARAMETER Prefix
-The prefix used to create dump files. 
+The prefix used to create dump files. The files are created in the working folder.
 
 .INPUTS
 

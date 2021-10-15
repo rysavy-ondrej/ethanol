@@ -1,19 +1,49 @@
 
 <#
-    Collects and dumps information about current TCP connections.
+.SYNOPSIS
 
-    It runs continuosly until CTRL+C is pressed.
+Collects and dumps information about current TCP connections.
+
+.DESCRIPTION
+
+The Dump-TcpConnection script regulalry checks the open connections
+and stores this information to dump CSV files. It creates a new 
+file on the defined timeout.  
+
+.PARAMETER LocalAddress
+Specifies the local IP address for connections to be monitored and collected.
+
+.PARAMETER DumpTimeout
+Specifies the number of minutes between creation of dump files.
+
+.PARAMETER FetchInterval
+Specifies the interval as number of seconds between querying the system about active TCP connections.
+
+.PARAMETER Prefix
+The prefix used to create dump files. 
+
+.INPUTS
+
+None. You cannot pipe objects to the script.
+
+.OUTPUTS
+
+None. The script does not generate any output.
+
+.EXAMPLE
+
+PS> .\Dump-TcpConnections.ps1 -LocalAddress 192.168.111.11 -Prefix desktop
+
+.EXAMPLE
+
+PS> .\Dump-TcpConnections.ps1 -LocalAddress 192.168.111.11 -Prefix desktop -DumpInterval 10
+
 #>
 param (
-    # Local IP address. This is used to filter flows that appears on the given local interface.
     [Parameter(Mandatory=$true)]
     [string] $LocalAddress,
-    # The interval to dump the collection fo TCP connections to the output CSV file. Time in minutes.
     [int] $DumpTimeout = 5,
-    # The interval to fetch current TCP connections from the OS. Time in seconds.
     [int] $FetchInterval = 10,
-    
-    # Name of the CSV file prefix. The date time information is appended to this prefix.
     [Parameter(Mandatory=$true)]
     [string] $Prefix
 )

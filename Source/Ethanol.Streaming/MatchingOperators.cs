@@ -7,9 +7,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Streaming
 {
-    public static class StremableOperators
+    public static class MatchingOperators
     {
         /// <summary>
         /// Transforms the source stream to a new stream by expanding individual elements of each source event.

@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 
 namespace Ethanol.Streaming
 {
+
     public static class AggregateCollect
     {
         class _AggregateSet<TElement> : IAggregate<TElement, IImmutableSet<TElement>, TElement[]>

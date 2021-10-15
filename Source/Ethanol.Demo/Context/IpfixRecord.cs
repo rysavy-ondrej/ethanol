@@ -1,8 +1,59 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using System;
 
 namespace Ethanol.Demo
 {
-    public class IpfixRecord
+
+    /// <summary>
+    /// Represents a single record in the collection of TCP connection list.
+    /// </summary>
+    public partial class TcpconRecord
+    {
+        [Name("FlowKey")]
+        public string FlowKeyString { get; set; }
+
+        [Ignore]
+        public FlowKey FlowKey => new FlowKey("TCP", LocalAddress, LocalPort, RemoteAddress, RemotePort);
+
+        [Name("LocalAddress")]
+        public string LocalAddress {  get; set; }
+
+        [Name("LocalPort")]
+        public int LocalPort { get; set; }
+
+        [Name("RemoteAddress")]
+        public string RemoteAddress { get; set; }
+
+        [Name("RemotePort")]
+        public int RemotePort { get; set; }
+
+        [Name("State")]
+        public string State { get; set; }
+
+        [Name("ProcessName")]
+        public string ProcessName { get; set; }
+
+        [Name("CreationTime")]
+        public DateTime CreationTime { get; set; }
+
+        [Name("CurrentTime")]
+        public DateTime CurrentTime { get; set; }
+    }
+
+    public partial class IpfixRecord
+    {
+        [Ignore]
+        public FlowKey FlowKey => new FlowKey(Protocol, SrcIp, SrcPort, DstIp, DstPort);
+        
+        [Name("ProcessName")]
+        public string ProcessName { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a single flow record as exported from nfdump. 
+    /// This record contains many properties but only a few are relevant for further processing. 
+    /// </summary>
+    public partial class IpfixRecord
     {
         [Name("ts")]
         public string TimeStart { get; set; }

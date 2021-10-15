@@ -1,11 +1,16 @@
 ﻿using ConsoleAppFramework;
+using CsvHelper;
+using Ethanol.Providers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.StreamProcessing;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
@@ -45,8 +50,12 @@ namespace Ethanol.Demo
         {
             _cancellationTokenSource.Cancel();
         }
+        /// <summary>
+        /// Represents a possible file format of a data file.
+        /// </summary>
+        public enum DataFileFormat { Json, Yaml, Csv, Nfd }
 
-        public enum OutputFormat { Json, Yaml }
+
         /// <summary>
         /// YAML serializer used to produce output.
         /// </summary>
@@ -58,23 +67,70 @@ namespace Ethanol.Demo
         /// <param name="dataPath"></param>
         /// <param name="csvPath"></param>
         /// <returns></returns>
-        [Command("analyze-flows", "Create flow context and analyze it.")]
-        public async Task AnalyzeFlowsCommand(
-        [Option("dumpSource", "path to data folder with source nfdump files.")]
-                string dumpSource = null,
-        [Option("csvSource", "path to data folder with source nfdump files.")]
-                string csvSource = null,
-        [Option("csvTarget", "write intermediate CSV files to the given folder")]
-                string csvTarget=null,
-        [Option("outFormat", "the format for generated output")]
-                OutputFormat outFormat =OutputFormat.Yaml
+        [Command("Test-CsvFlows", "Tests and analyses flows from the given Csv files.")]
+        public async Task TestCsvFlows(
+        [Option("s", "path to data folder with source csv files.")]
+                string source,
+        [Option("f", "the format for generated output")]
+                DataFileFormat outputFormat = DataFileFormat.Yaml
         )
         {
-            var dumpInput = dumpSource != null;
-            var sourcePath = dumpSource ?? csvSource ?? throw new ArgumentException($"One of {nameof(dumpSource)} or {nameof(csvSource)} must be specified.");
-            var sourceFiles = Directory.GetFiles(sourcePath).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
-            var configuration = new FlowProcessor.Configuration(!dumpInput, csvTarget != null, csvTarget);
-            await AnalyzeFlowsInFiles(sourceFiles, configuration, outFormat);
+            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
+            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+            
+            await AnalyzeFlowsInFiles(sourceFiles, DataFileFormat.Csv, outputFormat);
+        }
+
+
+        [Command("ConvertFrom-Nfd", "Converts nfdump files to the specified format.")]
+        public async Task ConvertFromNfd(
+            [Option("s", "a path to source folder with nfdump files.")]
+                string source,
+            [Option("t", "a path to folder where target files will be created.")]
+                string target,
+            [Option("f", "a file format of the target files")]
+                DataFileFormat format = DataFileFormat.Csv
+            )
+        {
+            if (format == DataFileFormat.Nfd) throw new ArgumentException($"The specified file format ({format}) is not supported in this operation.");
+            if (!Directory.Exists(source)) throw new ArgumentException($"Argument {nameof(source)} must be specified and point to existing folder.");
+            var sourceFiles = Directory.GetFiles(source).Select(fileName => new FileInfo(fileName)).OrderBy(f => f.Name).ToObservable();
+
+            var ethanol = new EthanolEnvironment();
+
+            var loader = new CsvLoader<IpfixRecord>();
+                var records = new List<IpfixRecord>();
+                loader.OnStartLoading += (_, filename) => { records.Clear(); };
+                loader.OnReadRecord += (_, record) => { records.Add(record); };
+                loader.OnFinish += (_, filename) => { WriteAllRecords(Path.Combine(target, $"{filename}.{format.ToString().ToLowerInvariant()}"), records); };
+
+            await ethanol.DataLoader.LoadFromNfdFiles(sourceFiles, loader, _cancellationTokenSource.Token);
+
+            void WriteAllRecords(string filename, List<IpfixRecord> records)
+            {
+                switch (format)
+                {
+                    case DataFileFormat.Csv:
+                        using (var writer = new StreamWriter(filename))
+                        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                        {
+                            csv.WriteRecords(records);
+                        }
+                        break;
+                    case DataFileFormat.Yaml:
+                        using (var writer = new StreamWriter(filename))
+                        {
+                            writer.Write(yamlSerializer.Serialize(records));
+                        }
+                        break;
+                    case DataFileFormat.Json:
+                        using (var writer = new StreamWriter(filename))
+                        {
+                            writer.Write(JsonSerializer.Serialize(records));
+                        }
+                        break;
+                }
+            }
         }
     }
 }

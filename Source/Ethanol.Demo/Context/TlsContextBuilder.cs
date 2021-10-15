@@ -8,11 +8,20 @@ namespace Ethanol.Demo
 {
     public record FlowMeters(int Packets, int Octets, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
-    public record TlsFlowRecord(Flow Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName);
-    public record DnsFlowRecord(Flow Flow, FlowMeters Meters, string QueryName, string ResponseData);
-    public record HttpFlowRecord(Flow Flow, FlowMeters Meters, string Method, string HostName, string Url);
-    public record TlsContext(TlsFlowRecord TlsRecord, FlowGroup<EndpointsKey, DnsFlowRecord> Domains, FlowGroup<TlsClientKey, TlsFlowRecord> TlsClientFlows, FlowGroup<BagOfFlowsKey, TlsFlowRecord> BagOfFlows, FlowGroup<FlowBurstKey, TlsFlowRecord> FlowBurst, FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
+    public record TlsFlowRecord(FlowKey Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName, string ProcessName);
+    public record DnsFlowRecord(FlowKey Flow, FlowMeters Meters, string QueryName, string ResponseData);
+    public record HttpFlowRecord(FlowKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
+    public record TlsContext(TlsFlowRecord TlsRecord, 
+        FlowGroup<EndpointsKey, DnsFlowRecord> Domains, 
+        FlowGroup<TlsClientKey, TlsFlowRecord> TlsClientFlows, 
+        FlowGroup<BagOfFlowsKey, TlsFlowRecord> BagOfFlows, 
+        FlowGroup<FlowBurstKey, TlsFlowRecord> FlowBurst, 
+        FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
     public record TlsClientKey(string SrcIp, string Ja3Fingerprint);
+    
+   /// <summary>
+   /// Implements context builder for TLS flows.
+   /// </summary>
     public static class TlsContextBuilder
     {
         /// <summary>
@@ -21,15 +30,15 @@ namespace Ethanol.Demo
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(this ContextBuilder _, IStreamable<Empty, IpfixRecord> source)
+        public static IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
         {
             try
             {
                 return source.Multicast(flowStream =>
                 {
-                    var tlsStream = flowStream.Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort).Select(f => new TlsFlowRecord(f.GetFlow(), f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName));
-                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SrcPort == 53).Select(f => new DnsFlowRecord(f.GetFlow(), f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.hurl)).Select(f => new HttpFlowRecord(f.GetFlow(), f.GetMeters(), f.hmethod, f.hhost, f.hurl));
+                    var tlsStream = flowStream.Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
+                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SrcPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
+                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.hurl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.hmethod, f.hhost, f.hurl,f.ProcessName));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {

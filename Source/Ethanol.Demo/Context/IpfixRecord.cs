@@ -7,7 +7,7 @@ namespace Ethanol.Demo
     /// <summary>
     /// Represents a single record in the collection of TCP connection list.
     /// </summary>
-    public partial class TcpconRecord
+    public partial class SocketRecord
     {
         [Name("FlowKey")]
         public string FlowKeyString { get; set; }

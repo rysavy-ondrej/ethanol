@@ -10,54 +10,33 @@ using System.Threading.Tasks;
 namespace Ethanol.Demo
 {
 
-    public class EthanolEnvironment
-    {
-        private readonly DataLoaderCatalog _dataLoaderCatalog;
-        private readonly ContextBuilderCatalog _contextBuilderCatalog;
-
-        public EthanolEnvironment()
-        {
-            _dataLoaderCatalog = new DataLoaderCatalog(this);
-            _contextBuilderCatalog = new ContextBuilderCatalog(this);
-        }
-
-        public DataLoaderCatalog DataLoader => _dataLoaderCatalog;
-        public ContextBuilderCatalog ContextBuilder => _contextBuilderCatalog;
-    }
-
     partial class Program
     {
         /// <summary>
-        /// Takes the input flow files and input tcp connection dump files and creates the context 
-        /// to be used in the further analysis. 
+        /// Detects TOR communication from context in the collection of <paramref name="sourceFlowFiles"/>.
         /// </summary>
-        /// <param name="sourceFlowFiles"></param>
-        /// <param name="sourceDumpFiles"></param>
-        /// <returns></returns>
-        //Task CollectFlowsInFiles(IObservable<FileInfo> sourceFlowFiles, IObservable<FileInfo> sourceDumpFiles)
-
-        /// <summary>
-        /// Detects TOR communication from context in the collection of <paramref name="sourceFiles"/>.
-        /// </summary>
-        /// <param name="sourceFiles">The observable collection of source files.</param>
+        /// <param name="sourceFlowFiles">The observable collection of source files.</param>
         /// <param name="configuration">The configuration.</param>
         /// <returns>Task that completes when the processing is done.</returns>
-        Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFiles, DataFileFormat inputFormat, DataFileFormat outputFormat)
+        Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFlowFiles, IObservable<FileInfo> sourceDumpFiles,DataFileFormat inputFormat, DataFileFormat outputFormat)
         {
             var ethanol = new EthanolEnvironment();
             var torClassifier = new TorFlowClassifier();
 
-            var entry = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
-            var exitStream = ethanol.ContextBuilder.BuildTlsContext(entry).Select(ContextFlowClassifier<TlsContext>.Classify(torClassifier));
-            var exit = new ObservableEgressStream<ClassifiedContextFlow<TlsContext>>(exitStream);
+            var entryObserver = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
+            var socketObserver = new SocketObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
+            entryObserver.EnrichFrom(socketObserver,
+                left => left.FlowKey,
+                right => right.FlowKey,
+                (rec, grouping) => UpdateProcessName(rec, grouping) 
+                );
             
-            var transformer = new ObservableTransformStream<IpfixRecord, ClassifiedContextFlow<TlsContext>>(entry, exit);
-
-            var flows = 0;
+            var exitStream = ethanol.ContextBuilder.BuildTlsContext(entryObserver).Select(ContextFlowClassifier<TlsContext>.Classify(torClassifier));
+            var exitObservable = new ObservableEgressStream<ClassifiedContextFlow<TlsContext>>(exitStream);
             
-            var consumerTask = exit.ForEachAsync(obj =>
+            var transformer = new ObservableTransformStream<IpfixRecord, ClassifiedContextFlow<TlsContext>>(entryObserver, exitObservable);
+            var consumerTask = exitObservable.ForEachAsync(obj =>
             {
-                if (++flows % 1000 == 0) Console.Error.Write('.');
                 if (outputFormat == DataFileFormat.Yaml)
                 {
                     PrintStreamEventYaml(obj.Payload.Flow.ToString(), obj);
@@ -68,11 +47,27 @@ namespace Ethanol.Demo
                 }
             });
 
-            var producerTask = inputFormat == DataFileFormat.Csv
-                ? ethanol.DataLoader.LoadFromCsvFiles(sourceFiles, entry, _cancellationTokenSource.Token)
-                : ethanol.DataLoader.LoadFromNfdFiles(sourceFiles, entry, _cancellationTokenSource.Token);
-            return Task.WhenAll(consumerTask, producerTask);
+            var flowProducerTask = inputFormat == DataFileFormat.Csv
+                ? ethanol.DataLoader.LoadFromCsvFiles(sourceFlowFiles, entryObserver, _cancellationTokenSource.Token)
+                : ethanol.DataLoader.LoadFromNfdFiles(sourceFlowFiles, entryObserver, _cancellationTokenSource.Token);
+
+            var dumpProducerTask = sourceDumpFiles != null
+                ? ethanol.DataLoader.LoadFromCsvFiles(sourceDumpFiles, socketObserver, _cancellationTokenSource.Token)
+                : CompleteEmptyObservableTask(socketObserver);
+ 
+            return Task.WhenAll(consumerTask, flowProducerTask, dumpProducerTask);
         }
 
+        private IpfixRecord UpdateProcessName(IpfixRecord ipfixRecord, IGrouping<FlowKey ,SocketRecord> socketGrouping)
+        {
+            ipfixRecord.ProcessName = socketGrouping?.FirstOrDefault()?.ProcessName;
+            return ipfixRecord;
+        }
+
+        private static Task CompleteEmptyObservableTask<T>(IObserver<T> socketObserver)
+        {
+            socketObserver.OnCompleted();
+            return Task.CompletedTask;
+        }
     }
 }

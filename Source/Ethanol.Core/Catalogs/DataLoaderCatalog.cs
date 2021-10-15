@@ -1,4 +1,4 @@
-﻿namespace Ethanol.Demo
+﻿namespace Ethanol.Catalogs
 {
     public class DataLoaderCatalog
     {

@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using Ethanol.Catalogs;
 using Ethanol.Providers;
 using Ethanol.Streaming;
 using System;
@@ -19,9 +20,9 @@ namespace Ethanol.Demo
         }
     }
 
-    public class TcpconObservableStream : ObservableIngressStream<TcpconRecord>
+    public class SocketObservableStream : ObservableIngressStream<SocketRecord>
     {
-        public TcpconObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(x => x.CurrentTime.Ticks, windowSize, windowHop)
+        public SocketObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(x => x.CurrentTime.Ticks, windowSize, windowHop)
         {
         }
     }
@@ -43,8 +44,7 @@ namespace Ethanol.Demo
         public static async Task LoadFromNfdFiles(this DataLoaderCatalog _, IObservable<FileInfo> sourceFiles, CsvLoader<IpfixRecord> csvLoader, CancellationToken cancellationToken)
         {
             var nfdump = new NfdumpExecutor();
-            await sourceFiles
-                .ForEachAsync(f => LoadRecordsFromFile(csvLoader, null, f, true).Wait(), cancellationToken);
+            await sourceFiles.ForEachAsync(f => LoadRecordsFromFile(csvLoader, nfdump, f).Wait(), cancellationToken);
         }
         /// <summary>
         /// Detect the custom provided case in the source files. 
@@ -53,17 +53,11 @@ namespace Ethanol.Demo
         /// <param name="ingressStream">An observer to be populated with loaded records.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to stop the loading of the records.</param>
         /// <returns>Task that completes when all source items have been processed. In case of inifinite input observable it ends only by setting the cancellation token.</returns>
-        public static Task LoadFromNfdFiles(this DataLoaderCatalog catalog, IObservable<FileInfo> sourceFiles, ObservableIngressStream<IpfixRecord> ingressStream, CancellationToken cancellationToken)
+        public static Task LoadFromNfdFiles(this DataLoaderCatalog catalog, IObservable<FileInfo> sourceFiles, IObserver<IpfixRecord> ingressStream, CancellationToken cancellationToken)
         {
             var loader = new CsvLoader<IpfixRecord>();
-            var loadedFlows = 0;
-            loader.OnReadRecord += (object _, IpfixRecord value) =>
-            {
-                if (++loadedFlows % 1000 == 0) Console.Error.Write('!');
-                ingressStream.OnNext(value);
-
-            };
-            return catalog.LoadFromNfdFiles(sourceFiles, loader, cancellationToken).ContinueWith(_ => ingressStream.OnCompleted());
+            loader.OnReadRecord += (object _, IpfixRecord value) => ingressStream.OnNext(value);
+            return catalog.LoadFromNfdFiles(sourceFiles, loader, cancellationToken).ContinueWith(_ => ingressStream.OnCompleted(), cancellationToken);
         }
 
 
@@ -74,35 +68,13 @@ namespace Ethanol.Demo
         /// <param name="ingressStream">An observer to be populated with loaded records.</param>
         /// <param name="cancellationToken">A cancellation token that can be used to stop the loading of the records.</param>
         /// <returns>Task that completes when all source items have been processed. In case of inifinite input observable it ends only by setting the cancellation token.</returns>
-        public static async Task LoadFromCsvFiles<TRecord>(this DataLoaderCatalog _, IObservable<FileInfo> sourceFiles, ObservableIngressStream<TRecord> ingressStream, CancellationToken cancellationToken)
+        public static async Task LoadFromCsvFiles<TRecord>(this DataLoaderCatalog _, IObservable<FileInfo> sourceFiles, IObserver<TRecord> ingressStream, CancellationToken cancellationToken)
         {
             var loader = new CsvLoader<TRecord>();
-            var loadedFlows = 0;
-            loader.OnReadRecord += (object _, TRecord value) =>
-            {
-                if (++loadedFlows % 1000 == 0) Console.Error.Write('!');
-                ingressStream.OnNext(value);
-
-            };
-
-            // producer:
+            loader.OnReadRecord += (object _, TRecord value) => ingressStream.OnNext(value);
             await sourceFiles
-                .ForEachAsync(f => LoadRecordsFromFile(loader, null, f, true).Wait(), cancellationToken)
-                .ContinueWith(_ => ingressStream.OnCompleted());
-        }
-
-        /// <summary>
-        /// Writes all records to CSV file.
-        /// </summary>
-        /// <param name="filename">Target filename of the CSV file to be produced.</param>
-        /// <param name="records">A list of records to be written to the output file</param>
-        static void WriteAllRecords<T>(string filename, IEnumerable<T> records)
-        {
-            using (var writer = new StreamWriter(filename))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                csv.WriteRecords(records);
-            }
+                .ForEachAsync(f => LoadRecordsFromFile(loader, null, f).Wait(), cancellationToken)
+                .ContinueWith(_ => ingressStream.OnCompleted(), cancellationToken);
         }
         /// <summary>
         /// Loads records from either nfdump or csv file.
@@ -113,10 +85,9 @@ namespace Ethanol.Demo
         /// <param name="fileInfo">File info to load.</param>
         /// <param name="readFromCsvInput">true for loading from CSV.</param>
         /// <returns>Task that signalizes the completion of loading operation.</returns>
-        static async Task LoadRecordsFromFile<T>(CsvLoader<T> csvLoader, NfdumpExecutor nfdumpExecutor, FileInfo fileInfo, bool readFromCsvInput)
+        static async Task LoadRecordsFromFile<T>(CsvLoader<T> csvLoader, NfdumpExecutor nfdumpExecutor, FileInfo fileInfo)
         {
-            csvLoader.FlowCount = 0;
-            if (readFromCsvInput)
+            if (nfdumpExecutor==null)
             {
                 await csvLoader.Load(fileInfo.Name, fileInfo.OpenRead());
             }

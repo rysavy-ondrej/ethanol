@@ -43,7 +43,7 @@ namespace Ethanol.Demo
         private static void ConfigureLogging(ILoggingBuilder loggingBuilder, LogLevel logLevel)
         {
             loggingBuilder.ClearProviders();
-            loggingBuilder.AddSimpleConsole().SetMinimumLevel(logLevel); 
+            loggingBuilder.AddSimpleConsole().SetMinimumLevel(logLevel);
         }
 
         private static void CancelHandler(object sender, ConsoleCancelEventArgs e)
@@ -68,15 +68,18 @@ namespace Ethanol.Demo
         /// <param name="csvPath"></param>
         /// <returns></returns>
         [Command("Test-CsvFlows", "Tests and analyses flows from the given Csv files.")]
-        public async Task TestCsvFlows(
+        public async Task TestCsvFlowsAsync(
         [Option("s", "path to data folder with source csv files.")]
-                string source,
+                string flowPath,
+        [Option("d", "path to data folder with dump csv files.")]
+                string dumpPath = null,
         [Option("f", "the format for generated output")]
                 DataFileFormat outputFormat = DataFileFormat.Yaml
         )
         {
-            var sourceFiles = TestAndGetFiles(source);
-            await AnalyzeFlowsInFiles(sourceFiles, DataFileFormat.Csv, outputFormat);
+            var sourceFiles = TestAndGetFiles(flowPath);
+            var dumpFiles = dumpPath != null ? TestAndGetFiles(dumpPath) : null ;
+            await AnalyzeFlowsInFiles(sourceFiles, dumpFiles, DataFileFormat.Csv, outputFormat);
         }
 
         /// <summary>
@@ -93,53 +96,53 @@ namespace Ethanol.Demo
         }
 
         [Command("ConvertFrom-Nfd", "Converts nfdump files to the specified format.")]
-        public async Task ConvertFromNfd(
+        public async Task ConvertFromNfdAsync(
             [Option("s", "a path to source folder with nfdump files.")]
-                string source,
+                string sourcePath,
             [Option("t", "a path to folder where target files will be created.")]
-                string target,
+                string targetPath,
             [Option("f", "a file format of the target files")]
                 DataFileFormat format = DataFileFormat.Csv
             )
         {
             if (format == DataFileFormat.Nfd) throw new ArgumentException($"The specified file format ({format}) is not supported in this operation.");
-            var sourceFiles = TestAndGetFiles(source);
-            
-            
+            var sourceFiles = TestAndGetFiles(sourcePath);
+
+
             var ethanol = new EthanolEnvironment();
             var loader = new CsvLoader<IpfixRecord>();
-                var records = new List<IpfixRecord>();
-                loader.OnStartLoading += (_, filename) => { records.Clear(); };
-                loader.OnReadRecord += (_, record) => { records.Add(record); };
-                loader.OnFinish += (_, filename) => { WriteAllRecords(Path.Combine(target, $"{filename}.{format.ToString().ToLowerInvariant()}"), records); };
+            var records = new List<IpfixRecord>();
+            loader.OnStartLoading += (_, filename) => { records.Clear(); };
+            loader.OnReadRecord += (_, record) => { records.Add(record); };
+            loader.OnFinish += (_, filename) => { WriteAllRecords(format, Path.Combine(targetPath, $"{filename}.{format.ToString().ToLowerInvariant()}"), records); };
 
             await ethanol.DataLoader.LoadFromNfdFiles(sourceFiles, loader, _cancellationTokenSource.Token);
-
-            void WriteAllRecords(string filename, List<IpfixRecord> records)
+        }
+        void WriteAllRecords(DataFileFormat format, string filename, List<IpfixRecord> records)
+        {
+            switch (format)
             {
-                switch (format)
-                {
-                    case DataFileFormat.Csv:
-                        using (var writer = new StreamWriter(filename))
-                        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                        {
-                            csv.WriteRecords(records);
-                        }
-                        break;
-                    case DataFileFormat.Yaml:
-                        using (var writer = new StreamWriter(filename))
-                        {
-                            writer.Write(yamlSerializer.Serialize(records));
-                        }
-                        break;
-                    case DataFileFormat.Json:
-                        using (var writer = new StreamWriter(filename))
-                        {
-                            writer.Write(JsonSerializer.Serialize(records));
-                        }
-                        break;
-                }
+                case DataFileFormat.Csv:
+                    using (var writer = new StreamWriter(filename))
+                    using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                    {
+                        csv.WriteRecords(records);
+                    }
+                    break;
+                case DataFileFormat.Yaml:
+                    using (var writer = new StreamWriter(filename))
+                    {
+                        writer.Write(yamlSerializer.Serialize(records));
+                    }
+                    break;
+                case DataFileFormat.Json:
+                    using (var writer = new StreamWriter(filename))
+                    {
+                        writer.Write(JsonSerializer.Serialize(records));
+                    }
+                    break;
             }
         }
+
     }
 }

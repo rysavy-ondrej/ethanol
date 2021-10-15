@@ -83,16 +83,17 @@ namespace Ethanol.Streaming
         public static IStreamable<Empty, TResultPayload> EnrichFrom<TKey, TPayload, TOtherPayload, TResultPayload>(
             this IStreamable<Empty, TPayload> source,
             IStreamable<Empty, TOtherPayload> other,
-            System.Linq.Expressions.Expression<System.Func<TPayload, TKey>> leftKeySelector,
-            System.Linq.Expressions.Expression<System.Func<TOtherPayload, TKey>> rightKeySelector,
-            System.Linq.Expressions.Expression<System.Func<TPayload, IGrouping<TKey, TOtherPayload>, TResultPayload>> enrichSelector)
+            Expression<Func<TPayload, TKey>> leftKeySelector,
+            Expression<Func<TOtherPayload, TKey>> rightKeySelector,
+            Expression<Func<TPayload, IGrouping<TKey, TOtherPayload>, TResultPayload>> enrichSelector)
         {
             var otherGrouped = other.GroupApply(rightKeySelector,
                 group => group.Aggregate(aggregate => aggregate.CollectList(item => item)),
                 (key, value) => new Grouping<TKey, TOtherPayload>(key.Key, value) as IGrouping<TKey, TOtherPayload>);
 
             var arg = Expression.Parameter(typeof(TPayload), "arg");
-            var leftOnlySelectorExpr = Expression.Lambda<Func<TPayload, TResultPayload>>(Expression.Invoke(enrichSelector, arg, Expression.Constant(null, typeof(IGrouping<TKey, TOtherPayload>))));
+            var nullGrouping = Expression.Constant(null, typeof(IGrouping<TKey, TOtherPayload>));
+            var leftOnlySelectorExpr = Expression.Lambda<Func<TPayload, TResultPayload>>(Expression.Invoke(enrichSelector, arg, nullGrouping), arg);
 
             return source.LeftOuterJoin(otherGrouped,
                 leftKeySelector,

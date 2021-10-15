@@ -2,7 +2,7 @@
   "profiles": {
     "Ethanol.Demo": {
       "commandName": "Project",
-      "commandLineArgs": "test-csvflows -source D:\\Applications\\Ethanol\\Data > result.yaml"
+      "commandLineArgs": "test-csvflows -flowPath D:\\Applications\\Ethanol\\Data > result.yaml"
     },
     "detect-sshcure": {
       "commandName": "Project",

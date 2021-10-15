@@ -1,4 +1,5 @@
-﻿using Ethanol.Streaming;
+﻿using Ethanol.Catalogs;
+using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections;

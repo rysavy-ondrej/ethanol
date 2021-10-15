@@ -66,17 +66,6 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class
         {
-            /*
-             *             
-            // The problem here is that it JOIN generates a lot of intermediate results :(
-            var merged = source1.Multicast(master =>
-            {
-                var left = master.Join(source2, left => left.Flow, right => right.Flow, (left, right) => new ContextPair<Source1, Source2>(left.Flow, left.Context, right.Context));
-                var right = master.Join(source3, left => left.Flow, right => right.Flow, (left, right) => new ContextPair<Source1, Source3>(left.Flow, left.Context, right.Context));
-                return left.Join(right, left => left.Flow, right => right.Flow,(left, right) => new ContextFlow<Target>(left.Flow, mergeFunc(left.Left, left.Right, right.Right)));
-            });
-            */
-            // the workaround is to use union and group:
             var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3) })
                  .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3) }))
                  .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context }));
@@ -143,11 +132,11 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TSource6[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source4.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source5.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context, Item6 = default(TSource6) }))
+            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context,         Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
+                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context,         Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context,         Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source4.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context,         Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source5.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context,         Item6 = default(TSource6) }))
                  .Union(source6.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Context }));
 
             return union.GroupAggregate(

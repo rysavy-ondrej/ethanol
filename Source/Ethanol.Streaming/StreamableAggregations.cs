@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.StreamProcessing;
 using Microsoft.StreamProcessing.Aggregates;
-using System.Linq.Expressions;
-using Microsoft.StreamProcessing;
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Ethanol.Streaming
 {

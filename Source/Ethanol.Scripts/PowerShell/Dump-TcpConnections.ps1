@@ -13,14 +13,20 @@ timeout, which is configurable.
 .PARAMETER LocalAddress
 Specifies the local IP address for connections to be monitored and collected.
 
+.PARAMETER Prefix
+The prefix used to create dump files. 
+
+.PARAMETER Path
+The root path used to create files in.
+
 .PARAMETER DumpTimeout
 Specifies the number of minutes between creation of dump files.
 
 .PARAMETER FetchInterval
 Specifies the interval as number of seconds between querying the system about active TCP connections.
 
-.PARAMETER Prefix
-The prefix used to create dump files. The files are created in the working folder.
+.PARAMETER Nested
+If set, the tool creates a structure output similarly to nfdump. Otherwise all dump files are wirtten in the target folder.
 
 .INPUTS
 
@@ -42,21 +48,33 @@ PS> .\Dump-TcpConnections.ps1 -LocalAddress 192.168.111.11 -Prefix desktop -Dump
 param (
     [Parameter(Mandatory=$true)]
     [string] $LocalAddress,
+    [Parameter(Mandatory=$true)]
+    [string] $Prefix,
+    [Parameter(Mandatory=$true)]
+    [string] $Path,
     [int] $DumpTimeout = 5,
     [int] $FetchInterval = 10,
-    [Parameter(Mandatory=$true)]
-    [string] $Prefix
+    [bool] $Nested = $true
 )
 
-
 class Helper {
-    static [int] $Interval = 5;
-    static [string] $Prefix = "tcpcon";
+    static [int] $Interval = 5
+    static [string] $Prefix = "tcpcon"
+    static [string] $FolderPath = "."
+    static [bool] $Nested = $true
+
     static [string] GetCurrent () {
         $current = Get-Date
         $curMinutes = [int][Math]::Floor($current.Minute / [Helper]::Interval) * [Helper]::Interval
         $currentName = [string]::Format("{0}.{1:0000}{2:00}{3:00}{4:00}{5:00}.csv",[Helper]::Prefix, $current.Year, $current.Month, $current.Day, $current.Hour,$curMinutes);
-        return $currentName
+        
+        if ([Helper]::Nested.Equals($true))
+        {
+            return [System.IO.Path]::Join([Helper]::FolderPath,[string]::Format("{0:0000}", $current.Year), [string]::Format("{0:00}", $current.Month), [string]::Format("{0:00}", $current.Day), $currentName)
+        }
+        else {
+            return [System.IO.Path]::Join([Helper]::FolderPath,$currentName)    
+        }        
     }
     static [string]GetFlow([string]$localAddress, [int]$localPort, [string]$remoteAddress, [int] $remotePort)
     {
@@ -67,6 +85,8 @@ class Helper {
 
 [Helper]::Interval = $DumpTimeout 
 [Helper]::Prefix = $Prefix
+[Helper]::FolderPath = $Path
+[Helper]::Nested = $Nested
 $recordCount = 0;
 $connections = @()
 $currentOutputFile = $lastOutputFile = [Helper]::GetCurrent()
@@ -82,6 +102,7 @@ for(;;)
         $connectionsCount = $uniqueConnections.Count
         Write-Progress -Activity "Writing dump" -Status "Writing $connectionsCount connections to dump: $currentOutputFile"
         $lastOutputFile = $currentOutputFile
+        [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($currentOutputFile))
         $uniqueConnections | Export-Csv -Path $currentOutputFile -NoTypeInformation 
         $connections = @()
     }

@@ -10,3 +10,5 @@ double MinMaxScale(double X, double X_min, double X_max, double Y_min, double Y_
 
 var y = MinMaxScale(1.2,0,5,0,1);
 y.Display();
+
+System.IO.Path.GetDirectoryName(@"C:\GitHub\ethanol\Source\Ethanol.Scripts\PowerShell").Display()

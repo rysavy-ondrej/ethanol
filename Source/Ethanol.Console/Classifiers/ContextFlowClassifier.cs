@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     /// <summary>
     /// Result of the classification. 
@@ -48,7 +48,7 @@ namespace Ethanol.Demo
         public static Expression<Func<ContextFlow<TContext>, ClassifiedContextFlow<TContext>>> Classify(params IContextFlowClassifier<TContext>[] classifiers)
         {
             return (arg) =>
-              new ClassifiedContextFlow<TContext>(arg.Flow, classifiers.Select(classifier => new ClassificationResult(classifier.Label, classifier.Score(arg))).ToArray(), arg.Context);
+              new ClassifiedContextFlow<TContext>(arg.FlowKey, classifiers.Select(classifier => new ClassificationResult(classifier.Label, classifier.Score(arg))).ToArray(), arg.Context);
         }
         /// <summary>
         /// Provides an expression that can be used to compute the score of the context flow.

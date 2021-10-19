@@ -2,11 +2,11 @@
 
 #r "nuget:System.Reactive"
 #r "nuget:Trill"
-#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Console.dll"
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.StreamProcessing;
-using Ethanol.Demo.Streaming;
+using Ethanol.Console.Streaming;
 using System.Linq;
 
 #!csharp

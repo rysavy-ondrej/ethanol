@@ -4,10 +4,11 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
 
     partial class Program
@@ -25,48 +26,60 @@ namespace Ethanol.Demo
 
             var entryObserver = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             var socketObserver = new SocketObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
-            entryObserver.EnrichFrom(socketObserver,
+            /*
+            var ipfixStream = entryObserver.Join(socketObserver,
                 left => left.FlowKey,
                 right => right.FlowKey,
-                (rec, grouping) => UpdateProcessName(rec, grouping) 
-                );
-            
-            var exitStream = ethanol.ContextBuilder.BuildTlsContext(entryObserver).Select(ContextFlowClassifier<TlsContext>.Classify(torClassifier));
-            var exitObservable = new ObservableEgressStream<ClassifiedContextFlow<TlsContext>>(exitStream);
-            
-            var transformer = new ObservableTransformStream<IpfixRecord, ClassifiedContextFlow<TlsContext>>(entryObserver, exitObservable);
+                (left, right) => UpdateWith(left, right.ProcessName)); 
+            */
+            var ipfixStream = entryObserver.EnrichFrom(socketObserver,
+                left => left.FlowKey,
+                right => right.FlowKey,
+                (left, right) => UpdateWith(left, right));
+
+            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);//.Select(ContextFlowClassifier<TlsContext>.Classify(torClassifier));
+            var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
             var consumerTask = exitObservable.ForEachAsync(obj =>
             {
                 if (outputFormat == DataFileFormat.Yaml)
                 {
-                    PrintStreamEventYaml(obj.Payload.Flow.ToString(), obj);
+                    PrintStreamEventYaml(obj.Payload.FlowKey.ToString(), obj);
                 }
                 else
                 {
-                    PrintStreamEventJson(obj.Payload.Flow.ToString(), obj);
+                    PrintStreamEventJson(obj.Payload.FlowKey.ToString(), obj);
                 }
             });
 
             var flowProducerTask = inputFormat == DataFileFormat.Csv
-                ? ethanol.DataLoader.LoadFromCsvFiles(sourceFlowFiles, entryObserver, _cancellationTokenSource.Token)
+                ? ethanol.DataLoader.LoadFromCsvFiles(sourceFlowFiles, entryObserver, _cancellationTokenSource.Token).ContinueWith(_=> entryObserver.OnCompleted())
                 : ethanol.DataLoader.LoadFromNfdFiles(sourceFlowFiles, entryObserver, _cancellationTokenSource.Token);
 
+            var proxyObserver = new Subject<SocketRecord>();
+            proxyObserver.Do(DumpsItems).Subscribe(socketObserver);
+
             var dumpProducerTask = sourceDumpFiles != null
-                ? ethanol.DataLoader.LoadFromCsvFiles(sourceDumpFiles, socketObserver, _cancellationTokenSource.Token)
+                ? ethanol.DataLoader.LoadFromCsvFiles(sourceDumpFiles, proxyObserver, _cancellationTokenSource.Token).ContinueWith(_ => proxyObserver.OnCompleted())
                 : CompleteEmptyObservableTask(socketObserver);
  
             return Task.WhenAll(consumerTask, flowProducerTask, dumpProducerTask);
         }
 
-        private IpfixRecord UpdateProcessName(IpfixRecord ipfixRecord, IGrouping<FlowKey ,SocketRecord> socketGrouping)
+        private void DumpsItems<T>(T obj)
         {
-            ipfixRecord.ProcessName = socketGrouping?.FirstOrDefault()?.ProcessName;
-            return ipfixRecord;
+            File.AppendAllText($"{typeof(T)}.dump", yamlSerializer.Serialize(obj));
         }
 
-        private static Task CompleteEmptyObservableTask<T>(IObserver<T> socketObserver)
+        private IpfixRecord UpdateWith(IpfixRecord left, IGrouping<FlowKey, SocketRecord> sockRecords)
         {
-            socketObserver.OnCompleted();
+            if (sockRecords == null) return left;
+            var newIpfix = (IpfixRecord)left.Clone();
+            newIpfix.ProcessName = sockRecords.FirstOrDefault()?.ProcessName;
+            return newIpfix;
+        }
+        private static Task CompleteEmptyObservableTask<T>(IObserver<T> observer)
+        {
+            observer.OnCompleted();
             return Task.CompletedTask;
         }
     }

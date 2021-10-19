@@ -1,12 +1,12 @@
 {
   "profiles": {
-    "Ethanol.Demo": {
+    "Ethanol.Console": {
       "commandName": "Project",
       "commandLineArgs": "test-csvflows -flowPath D:\\Applications\\Ethanol\\Data > result.yaml"
     },
-    "detect-sshcure": {
+    "Test-CsvFlows": {
       "commandName": "Project",
-      "commandLineArgs": " detect-sshcure -csvSource D:\\Applications\\Ethanol\\Data"
+      "commandLineArgs": "test-csvflows -flowPath D:\\Ethanol\\ipfix -dumpPath D:\\Ethanol\\supermicro > D:\\Ethanol\\output.yaml"
     }
   }
 }

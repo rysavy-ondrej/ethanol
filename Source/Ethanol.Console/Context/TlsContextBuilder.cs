@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     public record FlowMeters(int Packets, int Octets, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
@@ -97,7 +97,7 @@ namespace Ethanol.Demo
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e);
+                System.Console.Error.WriteLine(e);
                 throw;
             }
         }

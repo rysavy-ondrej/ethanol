@@ -42,7 +42,7 @@ This notebook uses dataset with TOR communication originated only from the singl
 #r "nuget:YamlDotNet"
 #r "..\bin\Debug\net5.0\Ethanol.Core.dll"
 #r "..\bin\Debug\net5.0\Ethanol.Streaming.dll"
-#r "..\bin\Debug\net5.0\Ethanol.Demo.dll"
+#r "..\bin\Debug\net5.0\Ethanol.Console.dll"
 
 using System.IO;
 using System.Reactive;
@@ -51,7 +51,7 @@ using Microsoft.StreamProcessing;
 using System.Reflection;
 using System.CodeDom.Compiler;
 
-using Ethanol.Demo;
+using Ethanol.Console;
 using Ethanol.Streaming;
 using Ethanol.Artifacts;
 using Ethanol.Providers;

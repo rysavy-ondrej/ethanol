@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,14 +25,19 @@ namespace Ethanol.Streaming
         /// <returns>A stream of events with defined start times adjusted to hopping windows.</returns>
         public static IStreamable<Empty, T> GetWindowedEventStream<T>(this IObservable<T> observable, Func<T, long> getStartTime, TimeSpan windowSize, TimeSpan windowPeriod)
         {
-            static bool ValidateTimestamp((T Record, long StartTime) record) =>
-                record.StartTime > DateTime.MinValue.Ticks && record.StartTime < DateTime.MaxValue.Ticks;
+            
+            var source = observable.Select(x => StreamEvent.CreatePoint(RoundMinutes(getStartTime(x), windowPeriod.Ticks).Ticks, x));
+            var stream = source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(windowSize.Ticks), FlushPolicy.FlushOnPunctuation);
 
-            var source = observable
-                .Select(x => (Record: x, StartTime: getStartTime(x)))
-                .Where(ValidateTimestamp)
-                .Select(x => StreamEvent.CreatePoint(x.StartTime, x.Record));
-            return source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(TimeSpan.FromMinutes(5).Ticks), FlushPolicy.FlushOnPunctuation).QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
+            return stream.AlterEventDuration(windowPeriod.Ticks);
+            return stream.QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
+        }
+        private static DateTime RoundMinutes(long arg, long roundTicks)
+        {
+            var dt = new DateTime(arg);
+            var sub = arg % roundTicks;
+            var newDt = new DateTime(arg - sub);
+            return newDt;
         }
     }
 }

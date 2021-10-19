@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     public static class ContextAggregator
     {
@@ -33,8 +33,8 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -66,9 +66,9 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3) }))
-                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3) }))
+                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -85,10 +85,10 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TTarget> aggregator)
         where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4) }))
-                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4) }))
-                 .Union(source4.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4) }))
+                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4) }))
+                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -107,11 +107,11 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) }))
-                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5) }))
-                 .Union(source4.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5) }))
-                 .Union(source5.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) }))
+                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5) }))
+                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5) }))
+                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -132,12 +132,12 @@ namespace Ethanol.Demo
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TSource6[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.Flow, Item1 = m.Context,         Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
-                 .Union(source2.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = m.Context,         Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source3.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context,         Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source4.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context,         Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source5.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context,         Item6 = default(TSource6) }))
-                 .Union(source6.Select(m => new { Flow = m.Flow, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context,         Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context,         Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context,         Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context,         Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context,         Item6 = default(TSource6) }))
+                 .Union(source6.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Context }));
 
             return union.GroupAggregate(
                 key => key.Flow,

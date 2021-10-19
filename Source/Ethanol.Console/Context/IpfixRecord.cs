@@ -1,7 +1,7 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
 
     /// <summary>
@@ -40,20 +40,25 @@ namespace Ethanol.Demo
         public DateTime CurrentTime { get; set; }
     }
 
-    public partial class IpfixRecord
+    public partial class IpfixRecord : ICloneable
     {
         [Ignore]
         public FlowKey FlowKey => new FlowKey(Protocol, SrcIp, SrcPort, DstIp, DstPort);
-        
+
         [Name("ProcessName")]
         public string ProcessName { get; set; }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     /// <summary>
     /// Represents a single flow record as exported from nfdump. 
     /// This record contains many properties but only a few are relevant for further processing. 
     /// </summary>
-    public partial class IpfixRecord
+    public partial class IpfixRecord : ICloneable
     {
         [Name("ts")]
         public string TimeStart { get; set; }

@@ -5,7 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     partial class Program
     {
@@ -19,9 +19,9 @@ namespace Ethanol.Demo
             if (obj.IsInterval || obj.IsEnd)
             {
                 var evt = new { Event = eventType, ValidTime = new { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
-                Console.WriteLine("---");
-                Console.Write(yamlSerializer.Serialize(evt));
-                Console.WriteLine("...");
+                System.Console.WriteLine("---");
+                System.Console.Write(yamlSerializer.Serialize(evt));
+                System.Console.WriteLine("...");
             }
         }
         private void PrintStreamEventJson<T>(string eventType, StreamEvent<T> obj)
@@ -29,7 +29,7 @@ namespace Ethanol.Demo
             if (obj.IsInterval || obj.IsEnd)
             {
                 var evt = new { Event = eventType, ValidTime = new { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
-                Console.WriteLine(JsonSerializer.Serialize(evt));
+                System.Console.WriteLine(JsonSerializer.Serialize(evt));
             }
         }
     }

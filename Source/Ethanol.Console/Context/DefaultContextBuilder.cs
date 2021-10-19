@@ -8,7 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     /// <summary>
     /// Record representing key fields for Flow Burst.
@@ -63,7 +63,7 @@ namespace Ethanol.Demo
                     key => new BagOfFlowsKey (key.DstIp,  key.DstPort, key.Protocol),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f => f.Value, (k,v) => new ContextFlow<FlowGroup<BagOfFlowsKey, IpfixRecord>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.Flow);
+                .Expand(f => f.Value, (k,v) => new ContextFlow<FlowGroup<BagOfFlowsKey, IpfixRecord>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
                 
 
             var flowBurstStream = source[1]
@@ -71,7 +71,7 @@ namespace Ethanol.Demo
                     key => new FlowBurstKey (key.SrcIp, key.DstIp, key.DstPort, key.Protocol),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f=>f.Value,(k,v) => new ContextFlow<FlowGroup<FlowBurstKey, IpfixRecord>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.Flow);
+                .Expand(f=>f.Value,(k,v) => new ContextFlow<FlowGroup<FlowBurstKey, IpfixRecord>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
 
             var sourceFlowsStream = source[2].Select(f => new ContextFlow<IpfixRecord>(f.FlowKey, f));
 

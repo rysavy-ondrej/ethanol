@@ -10,7 +10,7 @@ namespace Ethanol.Streaming
     /// It can be used as ingress stream for providing data to a complex stream pipeline.
     /// </summary>
     /// <typeparam name="TPayload">The type of payload./typeparam>
-    public class ObservableIngressStream<TPayload> : IObserver<TPayload>, IStreamable<Empty, TPayload> 
+    public class ObservableIngressStream<TPayload> : IObserver<TPayload>, IStreamable<Empty, TPayload>, IDisposable 
     {
         Subject<TPayload> _subject;
         IStreamable<Empty, TPayload> _stream;
@@ -24,8 +24,13 @@ namespace Ethanol.Streaming
 
         public string ErrorMessages => _stream.ErrorMessages;
 
-        public void OnCompleted()
+        public void Dispose()
         {
+            ((IDisposable)_subject).Dispose();
+        }
+
+        public void OnCompleted()
+        { 
             ((IObserver<TPayload>)_subject).OnCompleted();
         }
 

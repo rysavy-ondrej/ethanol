@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
     /// <summary>
     /// An example fo tor classifier, which uses a simple heuristic for classification.

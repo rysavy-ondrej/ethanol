@@ -12,9 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.Console", "Source\Ethanol.Console\Ethanol.Console.csproj", "{FA617194-F415-41C7-BB55-2800DC2E5F51}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.Demo", "Source\Ethanol.Demo\Ethanol.Demo.csproj", "{55A2F8E5-2DA3-4F34-9A1B-33AD0712D18E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.Console", "Source\Ethanol.Console\Ethanol.Console.csproj", "{55A2F8E5-2DA3-4F34-9A1B-33AD0712D18E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{178FF7A9-31E1-4C4D-8D31-F69F1776B791}"
 EndProject

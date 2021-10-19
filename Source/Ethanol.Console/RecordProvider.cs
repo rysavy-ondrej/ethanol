@@ -1,28 +1,41 @@
-﻿using CsvHelper;
-using Ethanol.Catalogs;
+﻿using Ethanol.Catalogs;
 using Ethanol.Providers;
 using Ethanol.Streaming;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Ethanol.Demo
+namespace Ethanol.Console
 {
 
     public class IpfixObservableStream : ObservableIngressStream<IpfixRecord>
     {
-        public IpfixObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(x => DateTime.Parse(x.TimeStart).Ticks, windowSize, windowHop)
+        static long GetTimestamp(IpfixRecord ipfixRecord)
+        {
+            if(DateTime.TryParse(ipfixRecord?.TimeStart, out var dateTime))
+            {
+                return dateTime.Ticks;
+            }
+            else
+            {
+                return DateTime.MinValue.Ticks;
+            }
+        }
+        public IpfixObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(GetTimestamp, windowSize, windowHop)
         {
         }
     }
 
     public class SocketObservableStream : ObservableIngressStream<SocketRecord>
     {
-        public SocketObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(x => x.CurrentTime.Ticks, windowSize, windowHop)
+        static long GetTimestamp(SocketRecord socketRecord)
+        {
+            var dateTime = socketRecord?.CurrentTime ?? DateTime.MinValue;
+            return dateTime.Ticks;
+        }
+        public SocketObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(GetTimestamp, windowSize, windowHop)
         {
         }
     }
@@ -57,7 +70,7 @@ namespace Ethanol.Demo
         {
             var loader = new CsvLoader<IpfixRecord>();
             loader.OnReadRecord += (object _, IpfixRecord value) => ingressStream.OnNext(value);
-            return catalog.LoadFromNfdFiles(sourceFiles, loader, cancellationToken).ContinueWith(_ => ingressStream.OnCompleted(), cancellationToken);
+            return catalog.LoadFromNfdFiles(sourceFiles, loader, cancellationToken);
         }
 
 
@@ -73,8 +86,7 @@ namespace Ethanol.Demo
             var loader = new CsvLoader<TRecord>();
             loader.OnReadRecord += (object _, TRecord value) => ingressStream.OnNext(value);
             await sourceFiles
-                .ForEachAsync(f => LoadRecordsFromFile(loader, null, f).Wait(), cancellationToken)
-                .ContinueWith(_ => ingressStream.OnCompleted(), cancellationToken);
+                .ForEachAsync(f => LoadRecordsFromFile(loader, null, f).Wait(), cancellationToken);
         }
         /// <summary>
         /// Loads records from either nfdump or csv file.

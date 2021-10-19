@@ -7,7 +7,7 @@
     "Test-CsvFlows": {
       "commandName": "Project",
       "commandLineArgs": "test-csvflows -flowPath ipfix -dumpPath supermicro > output.yaml",
-      "workingDirectory": "$(Solution)..\\..\\..\\..\\TestData"
+      "workingDirectory": "..\\..\\TestData"
     }
   }
 }

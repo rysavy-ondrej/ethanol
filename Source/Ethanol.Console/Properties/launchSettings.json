@@ -2,11 +2,12 @@
   "profiles": {
     "Ethanol.Console": {
       "commandName": "Project",
-      "commandLineArgs": "test-csvflows -flowPath D:\\Applications\\Ethanol\\Data > result.yaml"
+      "commandLineArgs": "help"
     },
     "Test-CsvFlows": {
       "commandName": "Project",
-      "commandLineArgs": "test-csvflows -flowPath D:\\Ethanol\\ipfix -dumpPath D:\\Ethanol\\supermicro > D:\\Ethanol\\output.yaml"
+      "commandLineArgs": "test-csvflows -flowPath ipfix -dumpPath supermicro > output.yaml",
+      "workingDirectory": "$(Solution)..\\..\\..\\..\\TestData"
     }
   }
 }

@@ -1,6 +1,7 @@
 ﻿using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -21,9 +22,11 @@ namespace Ethanol.Console
         /// <returns>Task that completes when the processing is done.</returns>
         Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFlowFiles, IObservable<FileInfo> sourceDumpFiles,DataFileFormat inputFormat, DataFileFormat outputFormat)
         {
+            var sw = new Stopwatch();
+            sw.Start();
             var ethanol = new EthanolEnvironment();
             var torClassifier = new TorFlowClassifier();
-
+            var totalOutputFlows = 0;
             var entryObserver = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             var socketObserver = new SocketObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             /*
@@ -41,6 +44,7 @@ namespace Ethanol.Console
             var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
             var consumerTask = exitObservable.ForEachAsync(obj =>
             {
+                totalOutputFlows++;
                 if (outputFormat == DataFileFormat.Yaml)
                 {
                     PrintStreamEventYaml(obj.Payload.FlowKey.ToString(), obj);
@@ -62,7 +66,7 @@ namespace Ethanol.Console
                 ? ethanol.DataLoader.LoadFromCsvFiles(sourceDumpFiles, proxyObserver, _cancellationTokenSource.Token).ContinueWith(_ => proxyObserver.OnCompleted())
                 : CompleteEmptyObservableTask(socketObserver);
  
-            return Task.WhenAll(consumerTask, flowProducerTask, dumpProducerTask);
+            return Task.WhenAll(consumerTask, flowProducerTask, dumpProducerTask).ContinueWith(t => System.Console.Error.WriteLine($"Flows:{totalOutputFlows} [{sw.Elapsed}]"));         
         }
 
         private void DumpsItems<T>(T obj)

@@ -80,6 +80,7 @@ namespace Ethanol.Console
             var sourceFiles = TestAndGetFiles(flowPath);
             var dumpFiles = dumpPath != null ? TestAndGetFiles(dumpPath) : null ;
             await AnalyzeFlowsInFiles(sourceFiles, dumpFiles, DataFileFormat.Csv, outputFormat);
+
         }
 
         /// <summary>

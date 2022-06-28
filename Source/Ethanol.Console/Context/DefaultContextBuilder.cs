@@ -60,7 +60,7 @@ namespace Ethanol.Console
 
             var bagOfFlowStream = source[0]
                 .GroupApply(
-                    key => new BagOfFlowsKey (key.DstIp,  key.DstPort, key.Protocol),
+                    key => new BagOfFlowsKey (key.DestinationIpAddress,  key.DestinationPort, key.Protocol),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
                 .Expand(f => f.Value, (k,v) => new ContextFlow<FlowGroup<BagOfFlowsKey, IpfixRecord>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
@@ -68,7 +68,7 @@ namespace Ethanol.Console
 
             var flowBurstStream = source[1]
                 .GroupApply(
-                    key => new FlowBurstKey (key.SrcIp, key.DstIp, key.DstPort, key.Protocol),
+                    key => new FlowBurstKey (key.SourceIpAddress, key.DestinationIpAddress, key.DestinationPort, key.Protocol),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
                 .Expand(f=>f.Value,(k,v) => new ContextFlow<FlowGroup<FlowBurstKey, IpfixRecord>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
@@ -90,7 +90,7 @@ namespace Ethanol.Console
         /// <returns>A collection of meters for the given IPFIX record.</returns>
         public static FlowMeters GetMeters(this IpfixRecord f)
         {            
-            return new FlowMeters(f.InPackets, f.InBytes, TimeSpan.FromSeconds(f.TimeDuration));
+            return new FlowMeters(f.Packets, f.Bytes, f.TimeStart, f.TimeDuration);
         }
     }
 }

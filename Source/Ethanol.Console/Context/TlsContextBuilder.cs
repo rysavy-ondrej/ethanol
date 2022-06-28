@@ -7,7 +7,7 @@ using System.Reactive.Linq;
 
 namespace Ethanol.Console
 {
-    public record FlowMeters(int Packets, int Octets, TimeSpan Duration);
+    public record FlowMeters(int Packets, int Octets, DateTime TimeStart, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
     public record TlsFlowRecord(FlowKey Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName, string ProcessName);
     public record DnsFlowRecord(FlowKey Flow, FlowMeters Meters, string QueryName, string ResponseData);
@@ -37,9 +37,9 @@ namespace Ethanol.Console
             {
                 return source.Multicast(flowStream =>
                 {
-                    var tlsStream = flowStream.Where(x => x.TlsClientVersion != "N/A" && x.SrcPort > x.DstPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
-                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SrcPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.hurl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.hmethod, f.hhost, f.hurl,f.ProcessName));
+                    var tlsStream = flowStream.Where(x => x.IsTlsFlow && x.SourceTransportPort > x.DestinationPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
+                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SourceTransportPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
+                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.HttpUrl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl,f.ProcessName));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {

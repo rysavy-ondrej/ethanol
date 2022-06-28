@@ -62,13 +62,10 @@ namespace Ethanol.Console
         readonly ISerializer yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
 
         /// <summary>
-        /// 
+        /// Builds the context from the provided CSV files.
         /// </summary>
-        /// <param name="dataPath"></param>
-        /// <param name="csvPath"></param>
-        /// <returns></returns>
-        [Command("Test-CsvFlows", "Tests and analyses flows from the given Csv files.")]
-        public async Task TestCsvFlowsAsync(
+        [Command("Build-ContextCsv", "Builds the context from the provided CSV files.")]
+        public async Task BuildContextCsvCommand(
         [Option("s", "path to data folder with source IPFIX csv files.")]
                 string flowPath,
         [Option("d", "path to data folder with TCPConnection csv files.")]
@@ -79,7 +76,22 @@ namespace Ethanol.Console
         {
             var sourceFiles = TestAndGetFiles(flowPath);
             var dumpFiles = dumpPath != null ? TestAndGetFiles(dumpPath) : null ;
-            await AnalyzeFlowsInFiles(sourceFiles, dumpFiles, DataFileFormat.Csv, outputFormat);
+            await BuildContextFromFiles(sourceFiles, dumpFiles, DataFileFormat.Csv, outputFormat);
+        }
+
+        /// <summary>
+        /// Builds the context from the provided Json input.
+        /// </summary>
+        [Command("Build-ContextJson", "Builds the context from the provided CSV files.")]
+        public async Task BuildContextJsonCommand(
+        [Option("i", "path to data folder with source IPFIX csv files.")]
+                string input,
+        [Option("f", "the format for generated output")]
+                DataFileFormat outputFormat = DataFileFormat.Yaml
+        )
+        {
+            var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
+            await BuildContextFromIpfixcolJson(inputStream, outputFormat);
         }
 
         /// <summary>

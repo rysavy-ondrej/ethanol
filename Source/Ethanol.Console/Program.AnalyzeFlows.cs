@@ -1,4 +1,5 @@
-﻿using Ethanol.Streaming;
+﻿using AutoMapper;
+using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.IO;
@@ -14,16 +15,14 @@ namespace Ethanol.Console
     partial class Program
     {
         /// <summary>
-        /// Detects TOR communication from context in the collection of <paramref name="sourceFlowFiles"/>.
+        /// Compute the context in the collection of <paramref name="sourceFlowFiles"/> and writes it to the dump files.
         /// </summary>
         /// <param name="sourceFlowFiles">The observable collection of source files.</param>
         /// <param name="configuration">The configuration.</param>
         /// <returns>Task that completes when the processing is done.</returns>
-        Task AnalyzeFlowsInFiles(IObservable<FileInfo> sourceFlowFiles, IObservable<FileInfo> sourceDumpFiles,DataFileFormat inputFormat, DataFileFormat outputFormat)
+        Task BuildContextFromFiles(IObservable<FileInfo> sourceFlowFiles, IObservable<FileInfo> sourceDumpFiles,DataFileFormat inputFormat, DataFileFormat outputFormat)
         {
             var ethanol = new EthanolEnvironment();
-            var torClassifier = new TorFlowClassifier();
-
             var entryObserver = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             var socketObserver = new SocketObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             /*
@@ -37,7 +36,7 @@ namespace Ethanol.Console
                 right => right.FlowKey,
                 (left, right) => UpdateWith(left, right));
 
-            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);//.Select(ContextFlowClassifier<TlsContext>.Classify(torClassifier));
+            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);
             var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
             var consumerTask = exitObservable.ForEachAsync(obj =>
             {
@@ -82,5 +81,64 @@ namespace Ethanol.Console
             observer.OnCompleted();
             return Task.CompletedTask;
         }
+
+        /// <summary>
+        /// Reads input from the provided stream formatted as JSON produced by ipfixcol2.
+        /// </summary>
+        private async Task BuildContextFromIpfixcolJson(TextReader inputStream, DataFileFormat outputFormat)
+        {
+
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<IpfixEntry, IpfixRecord>()
+                .ForMember(d => d.Bytes, o => o.MapFrom(s => s.IanaOctetDeltaCount))
+                .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.IanaDestinationIPv4Address))
+                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.IanaDestinationTransportPort))
+                .ForMember(d => d.DnsQueryName, o => o.MapFrom(s => s.FlowmonDnsQname.Replace("\0","")))
+                .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.FlowmonDnsCrrRdata.Replace("\0", "")))
+                .ForMember(d => d.HttpHost, o => o.MapFrom(s => s.FlowmonHttpHost.Replace("\0", "")))
+                .ForMember(d => d.Packets, o => o.MapFrom(s => s.IanaPacketDeltaCount))
+                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.IanaProtocolIdentifier))
+                .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => s.IanaSourceIPv4Address))
+                .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.IanaSourceTransportPort))
+                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.IanaFlowStartMilliseconds))
+                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.IanaFlowEndMilliseconds - s.IanaFlowStartMilliseconds))
+                .ForMember(d => d.TlsClientVersion, o => o.MapFrom(s => s.FlowmonTlsClientVersion))
+                .ForMember(d => d.TlsJa3, o => o.MapFrom(s => s.FlowmonTlsJa3Fingerprint))
+                .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => s.FlowmonTlsSubjectCn.Replace("\0", "")))
+                .ForMember(d => d.TlsServerName, o => o.MapFrom(s => s.FlowmonTlsSni.Replace("\0", "")));
+            });
+            var mapper = configuration.CreateMapper();
+            var ethanol = new EthanolEnvironment();
+            var ipfixStream = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
+            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);
+            var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
+            var consumerTask = exitObservable.ForEachAsync(obj =>
+            {
+                if (outputFormat == DataFileFormat.Yaml)
+                {
+                    PrintStreamEventYaml(obj.Payload.FlowKey.ToString(), obj);
+                }
+                else
+                {
+                    PrintStreamEventJson(obj.Payload.FlowKey.ToString(), obj);
+                }
+            });
+
+            while (true)
+            {
+                var line = await inputStream.ReadLineAsync();
+                if (line == null) break;
+                if (IpfixEntry.TryDeserialize(line, out var ipfixEntry))
+                {
+                    var ipfixRecord = mapper.Map<IpfixRecord>(ipfixEntry);
+                    ipfixStream.OnNext(ipfixRecord);
+                }
+            }
+            ipfixStream.OnCompleted();
+            await Task.WhenAll(consumerTask);
+        }
+
+
     }
 }

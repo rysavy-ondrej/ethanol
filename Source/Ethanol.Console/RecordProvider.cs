@@ -14,14 +14,7 @@ namespace Ethanol.Console
     {
         static long GetTimestamp(IpfixRecord ipfixRecord)
         {
-            if(DateTime.TryParse(ipfixRecord?.TimeStart, out var dateTime))
-            {
-                return dateTime.Ticks;
-            }
-            else
-            {
-                return DateTime.MinValue.Ticks;
-            }
+            return ipfixRecord.TimeStart.Ticks;
         }
         public IpfixObservableStream(TimeSpan windowSize, TimeSpan windowHop) : base(GetTimestamp, windowSize, windowHop)
         {

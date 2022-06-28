@@ -4,10 +4,14 @@
       "commandName": "Project",
       "commandLineArgs": "help"
     },
-    "Test-CsvFlows": {
+    "Build-ContextCsv": {
       "commandName": "Project",
-      "commandLineArgs": "test-csvflows -flowPath ipfix -dumpPath supermicro > output.yaml",
+      "commandLineArgs": "Build-ContextCsv -s ipfix -d supermicro -f yaml > output.yaml",
       "workingDirectory": "..\\..\\TestData"
+    },
+    "Build-ContextJson": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-ContextJson -i  ./Data/ipfixcol.json -f yaml > ipfixcol.yaml"
     }
   }
 }

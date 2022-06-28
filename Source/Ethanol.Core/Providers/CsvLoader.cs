@@ -52,7 +52,7 @@ namespace Ethanol.Providers
         }
 
         /// <summary>
-        /// Loads all records from 
+        /// Loads all records from the provided stream.
         /// </summary>
         /// <param name="stream">The source stream to read record from.</param>
         /// <returns>An enumerable of CSV record.</returns>

@@ -5,8 +5,8 @@ An experimental environment for context-based flow artifact analysis. It impleme
 * building a context for the specified object using the set of predefined queries
 * performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
 
+## Environment and Packages
 
-## Environment and Packages 
 Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required. 
 
 ## Usage
@@ -15,18 +15,13 @@ Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required.
 
 ## Documentation
 
-The system is used to analyse the data source, e.g., NetFlow collection that provides an input data. For the selected object, its context 
-is created and then analyzed. Using this approach it is possible to either provide a rich information for each object or to perfom advanced
-security threats identification or network troubleshooting. 
-
+The system is used to analyse the data source, e.g., NetFlow collection that provides an input data. For the selected object, its context is created and then analyzed. Using this approach it is possible to either provide a rich information for each object or to perfom advanced security threats identification or network troubleshooting. 
 
 ### Context
 
 A context is an ordered sequence of properties that define an environment for the artifacts.
 
-
 ### Context building
-
 
 ## Install
 
@@ -43,7 +38,6 @@ This project was developed in the frame of research initiative [Context-based En
 ### Suitable datasets
 
 * [LITNET 2020 Dataset](https://dataset.litnet.lt/index.php)
-
 
 ## License
 

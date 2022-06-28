@@ -25,6 +25,7 @@ namespace Ethanol.Console
         {
             var sw = new Stopwatch();
             sw.Start();
+            var totalOutputFlows = 0;
             var ethanol = new EthanolEnvironment();
             var entryObserver = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
             var socketObserver = new SocketObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));

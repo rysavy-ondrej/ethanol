@@ -82,9 +82,9 @@ namespace Ethanol.Console
         /// <summary>
         /// Builds the context from the provided Json input.
         /// </summary>
-        [Command("Build-ContextJson", "Builds the context from the provided CSV files.")]
+        [Command("Build-ContextJson", "Builds the context from the provided JSON files.")]
         public async Task BuildContextJsonCommand(
-        [Option("i", "path to data folder with source IPFIX csv files.")]
+        [Option("i", "path to the file with JSON file.")]
                 string input,
         [Option("f", "the format for generated output")]
                 DataFileFormat outputFormat = DataFileFormat.Yaml
@@ -92,6 +92,20 @@ namespace Ethanol.Console
         {
             var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
             await BuildContextFromIpfixcolJson(inputStream, outputFormat);
+        }
+        /// <summary>
+        /// Builds the context from the provided Json input.
+        /// </summary>
+        [Command("Build-ContextExport", "Builds the context from the provided JSON files produced by flowmonexp tool.")]
+        public async Task BuildContextExportCommand(
+        [Option("i", "path to the file with JSON file.")]
+                string input,
+        [Option("f", "the format for generated output")]
+                DataFileFormat outputFormat = DataFileFormat.Yaml
+        )
+        {
+            var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
+            await BuildContextFromFlowmonexpJson(inputStream, outputFormat);
         }
 
         /// <summary>

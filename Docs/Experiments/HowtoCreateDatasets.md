@@ -3,7 +3,7 @@
 ## Ground Truth
 
 In order to design and test classifiers (either manual) or ML-based we need a rich datasets with ground truth information available.
-Fortunatelly, there are some simple method to get such information automatically.
+Fortunately, there are some simple method to get such information automatically.
 
 ## Windows PowerShell
 

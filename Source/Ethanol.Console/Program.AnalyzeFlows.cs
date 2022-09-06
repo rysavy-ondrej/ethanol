@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
 using Ethanol.Streaming;
-using Microsoft.StreamProcessing;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Ethanol.Console
@@ -87,15 +87,91 @@ namespace Ethanol.Console
             return Task.CompletedTask;
         }
 
+
+        private async Task BuildContextFromFlowmonexpJson(TextReader inputStream, DataFileFormat outputFormat)
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<FlowmonexpEntry, IpfixRecord>()
+                .ForMember(d => d.Bytes, o => o.MapFrom(s => s.Bytes))
+                .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.L3Ipv4Dst))
+                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.L4PortDst))
+                .ForMember(d => d.DnsQueryName, o => o.MapFrom(s => s.InveaDnsQname.Replace("\0", "")))
+                .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.InveaDnsCrrName.Replace("\0", "")))
+                .ForMember(d => d.HttpHost, o => o.MapFrom(s => s.HttpRequestHost.Replace("\0", "")))
+                .ForMember(d => d.Packets, o => o.MapFrom(s => s.Packets))
+                .ForMember(d => d.Protocol, o => o.MapFrom(s => (ProtocolType)s.L4Proto))
+                .ForMember(d => d.Nbar, o => o.MapFrom(s => s.NbarName))
+                .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => s.L3Ipv4Src))
+                .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.L4PortSrc))
+                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.StartNsec))
+                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.EndNsec - s.StartNsec))
+                .ForMember(d => d.TlsClientVersion, o => o.MapFrom(s => s.TlsClientVersion))
+                .ForMember(d => d.TlsJa3, o => o.MapFrom(s => s.TlsJa3Fingerprint))
+                .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => s.TlsSubjectCn.Replace("\0", "")))
+                .ForMember(d => d.TlsServerName, o => o.MapFrom(s => s.TlsSni.Replace("\0", "")));
+            });
+            var mapper = configuration.CreateMapper();
+            var ethanol = new EthanolEnvironment();
+            var ipfixStream = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
+            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);
+            var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
+            var consumerTask = exitObservable.ForEachAsync(obj =>
+            {
+                if (outputFormat == DataFileFormat.Yaml)
+                {
+                    PrintStreamEventYaml(obj.Payload.FlowKey.ToString(), obj);
+                }
+                else
+                {
+                    PrintStreamEventJson(obj.Payload.FlowKey.ToString(), obj);
+                }
+            });
+
+            while (true)
+            {
+                var line = await ReadJsonRecordAsync(inputStream);
+                if (String.IsNullOrWhiteSpace(line)) break;
+                if (FlowmonexpEntry.TryDeserialize(line, out var entry))
+                {
+                    var ipfixRecord = mapper.Map<IpfixRecord>(entry);
+                    ipfixStream.OnNext(ipfixRecord);
+                }
+            }
+            ipfixStream.OnCompleted();
+            await Task.WhenAll(consumerTask);
+
+        }
+
+        private async Task<string> ReadJsonRecordAsync(TextReader inputStream)
+        {
+            var buffer = new StringBuilder();
+            while (true)
+            {
+                var line = await inputStream.ReadLineAsync();
+                buffer.AppendLine(line);
+                if (line == null)
+                {
+                    break;
+                }
+
+                if (line.Trim() == "}")
+                {
+                    break;
+                }
+            }
+            return buffer.ToString().Trim();
+        }
+
         /// <summary>
         /// Reads input from the provided stream formatted as JSON produced by ipfixcol2.
         /// </summary>
         private async Task BuildContextFromIpfixcolJson(TextReader inputStream, DataFileFormat outputFormat)
-        {
+        { 
 
             var configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<IpfixEntry, IpfixRecord>()
+                cfg.CreateMap<IpfixcolEntry, IpfixRecord>()
                 .ForMember(d => d.Bytes, o => o.MapFrom(s => s.IanaOctetDeltaCount))
                 .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.IanaDestinationIPv4Address))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.IanaDestinationTransportPort))
@@ -134,7 +210,7 @@ namespace Ethanol.Console
             {
                 var line = await inputStream.ReadLineAsync();
                 if (line == null) break;
-                if (IpfixEntry.TryDeserialize(line, out var ipfixEntry))
+                if (IpfixcolEntry.TryDeserialize(line, out var ipfixEntry))
                 {
                     var ipfixRecord = mapper.Map<IpfixRecord>(ipfixEntry);
                     ipfixStream.OnNext(ipfixRecord);
@@ -143,7 +219,5 @@ namespace Ethanol.Console
             ipfixStream.OnCompleted();
             await Task.WhenAll(consumerTask);
         }
-
-
     }
 }

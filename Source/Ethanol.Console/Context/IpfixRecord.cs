@@ -1,5 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System;
+using System.Net.Sockets;
 
 namespace Ethanol.Console
 {
@@ -51,11 +52,17 @@ namespace Ethanol.Console
         }
 
         [Ignore]
-        public FlowKey FlowKey => new FlowKey(Protocol, SourceIpAddress, SourceTransportPort, DestinationIpAddress, DestinationPort);
+        public FlowKey FlowKey => new FlowKey(Protocol.ToString(), SourceIpAddress, SourceTransportPort, DestinationIpAddress, DestinationPort);
 
         [Name("ProcessName")]
         public string ProcessName { get; set; }
-        public string Protocol { get;  set; }
+
+        /// <summary>
+        /// Represents a string of recognized protocol using NBAR technique.
+        /// </summary>
+        public string Nbar { get; set; }
+        // we need to be sure that the name of the protocol is correct...
+        public System.Net.Sockets.ProtocolType Protocol { get;  set; }
         public string SourceIpAddress { get;  set; }
         public int SourceTransportPort { get;  set; }
         public string DestinationIpAddress { get;  set; }

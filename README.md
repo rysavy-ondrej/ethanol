@@ -23,6 +23,23 @@ A context is an ordered sequence of properties that define an environment for th
 
 ### Context building
 
+### Detection
+
+Created flow context instance is transfored to input data for a detector DET_M using n-projections that for a given context-flow pair produces a feature vector:
+
+```
+S_1 (CONTEXT, FLOW) -> x_1
+...
+S_n (CONTEXT, FLOW) -> x_n
+
+x = [x_1, ..., x_n]
+
+DET_M (x) -> {0,1} 
+```
+
+The features are then analyzed by model based on random forest classifier:
+https://rubikscode.net/2021/03/01/machine-learning-with-ml-net-random-forest/
+
 ## Install
 
 ## Acknowledgments

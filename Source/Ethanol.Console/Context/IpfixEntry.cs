@@ -1,16 +1,22 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Ethanol.Console
 {
-    public partial class IpfixEntry
+    /// <summary>
+    /// POCO for JSON record created by ipfixcol2 tool. 
+    /// </summary>
+    public partial class IpfixcolEntry
     {
-        public static bool TryDeserialize(string input, out IpfixEntry entry)
+        public static bool TryDeserialize(string input, out IpfixcolEntry entry)
         {
+
+
             try
             {
-                entry = JsonSerializer.Deserialize<IpfixEntry>(input);
+                entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);
                 return true;
             }
             catch(Exception)
@@ -21,7 +27,7 @@ namespace Ethanol.Console
         }
     }
 
-    public partial class IpfixEntry
+    public partial class IpfixcolEntry
     {
         [JsonPropertyName("flowmon:dnsId")]
         public int FlowmonDnsId { get; set; }
@@ -68,7 +74,7 @@ namespace Ethanol.Console
         [JsonPropertyName("flowmon:dnsQclass")]
         public int FlowmonDnsQclass { get; set; }
     }
-    public partial class IpfixEntry
+    public partial class IpfixcolEntry
     {
 
         [JsonPropertyName("flowmon:httpHost")]
@@ -171,7 +177,7 @@ namespace Ethanol.Console
         public string FlowmonTlsJa3Fingerprint { get; set; }
     }
 
-    public partial class IpfixEntry
+    public partial class IpfixcolEntry
     {
 
         [JsonPropertyName("flowmon:npmJitterDev")]
@@ -214,7 +220,7 @@ namespace Ethanol.Console
     /// <summary>
     /// Represents Ipfix.entry record as provided by the JSON output from ipfixcol2 tool.
     /// </summary>
-    public partial class IpfixEntry
+    public partial class IpfixcolEntry
     {
         [JsonPropertyName("@type")]
         public string Type { get; set; }

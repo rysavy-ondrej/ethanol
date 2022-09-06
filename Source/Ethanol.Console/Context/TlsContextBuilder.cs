@@ -38,8 +38,8 @@ namespace Ethanol.Console
                 return source.Multicast(flowStream =>
                 {
                     var tlsStream = flowStream.Where(x => x.IsTlsFlow && x.SourceTransportPort > x.DestinationPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
-                    var dnsStream = flowStream.Where(x => x.Protocol == "UDP" && x.SourceTransportPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.Protocol == "TCP" && !string.IsNullOrWhiteSpace(x.HttpUrl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl,f.ProcessName));
+                    var dnsStream = flowStream.Where(x => x.Protocol == System.Net.Sockets.ProtocolType.Udp && x.SourceTransportPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
+                    var httpStream = flowStream.Where(x => x.Protocol == System.Net.Sockets.ProtocolType.Tcp && !string.IsNullOrWhiteSpace(x.HttpUrl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl,f.ProcessName));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {

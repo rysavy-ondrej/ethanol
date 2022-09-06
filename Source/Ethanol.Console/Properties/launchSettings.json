@@ -12,6 +12,10 @@
     "Build-ContextJson": {
       "commandName": "Project",
       "commandLineArgs": "Build-ContextJson -i  ./Data/ipfixcol.json -f yaml > ipfixcol.yaml"
+    },
+    "Build-ContextExport": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-ContextExport -i  D:\\Ethanol\\malware-traffic-analysis\\cobalt1.json -f yaml > D:\\Ethanol\\malware-traffic-analysis\\cobalt1.yaml"
     }
   }
 }

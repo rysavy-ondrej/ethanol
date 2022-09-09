@@ -73,6 +73,8 @@ namespace Ethanol.Console
         public TimeSpan TimeDuration { get;  set; }
         public string TlsClientVersion { get;  set; }
         public string HttpUrl { get;  set; }
+
+        public string HttpResponse { get; set; }
         public string TlsJa3 { get;  set; }
         public string TlsServerName { get;  set; }
         public string TlsServerCommonName { get;  set; }

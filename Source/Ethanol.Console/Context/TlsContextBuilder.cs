@@ -12,6 +12,7 @@ namespace Ethanol.Console
     public record TlsFlowRecord(FlowKey Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName, string ProcessName);
     public record DnsFlowRecord(FlowKey Flow, FlowMeters Meters, string QueryName, string ResponseData);
     public record HttpFlowRecord(FlowKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
+    public record HttpsFlowRecord(FlowKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
     public record TlsContext(TlsFlowRecord TlsRecord, 
         FlowGroup<EndpointsKey, DnsFlowRecord> Domains, 
         FlowGroup<TlsClientKey, TlsFlowRecord> TlsClientFlows, 
@@ -19,7 +20,8 @@ namespace Ethanol.Console
         FlowGroup<FlowBurstKey, TlsFlowRecord> FlowBurst, 
         FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
     public record TlsClientKey(string SrcIp, string Ja3Fingerprint);
-    
+
+
    /// <summary>
    /// Implements context builder for TLS flows.
    /// </summary>

@@ -88,7 +88,7 @@ namespace Ethanol.Console
         }
 
 
-        private async Task BuildContextFromFlowmonexpJson(TextReader inputStream, DataFileFormat outputFormat)
+        private async Task BuildHostCentricContext(TextReader inputStream, bool newlineDelimitedJson, DataFileFormat outputFormat)
         {
             var configuration = new MapperConfiguration(cfg =>
             {
@@ -97,8 +97,11 @@ namespace Ethanol.Console
                 .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.L3Ipv4Dst))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.L4PortDst))
                 .ForMember(d => d.DnsQueryName, o => o.MapFrom(s => s.InveaDnsQname.Replace("\0", "")))
-                .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.InveaDnsCrrName.Replace("\0", "")))
+                .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.InveaDnsCrrRdata.Replace("\0", "")))
                 .ForMember(d => d.HttpHost, o => o.MapFrom(s => s.HttpRequestHost.Replace("\0", "")))
+                .ForMember(d => d.HttpMethod, o => o.MapFrom(s => s.HttpMethodMask.ToString()))
+                .ForMember(d => d.HttpResponse, o => o.MapFrom(s => s.HttpResponseStatusCode.ToString()))
+                .ForMember(d => d.HttpUrl, o => o.MapFrom(s => s.HttpRequestUrl.ToString()))
                 .ForMember(d => d.Packets, o => o.MapFrom(s => s.Packets))
                 .ForMember(d => d.Protocol, o => o.MapFrom(s => (ProtocolType)s.L4Proto))
                 .ForMember(d => d.Nbar, o => o.MapFrom(s => s.NbarName))
@@ -114,24 +117,24 @@ namespace Ethanol.Console
             var mapper = configuration.CreateMapper();
             var ethanol = new EthanolEnvironment();
             var ipfixStream = new IpfixObservableStream(TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(5));
-            var exitStream = ethanol.ContextBuilder.BuildTlsContext(ipfixStream);
-            var exitObservable = new ObservableEgressStream<ContextFlow<TlsContext>>(exitStream);
+            var exitStream = ethanol.ContextBuilder.BuildHostContext(ipfixStream);
+            var exitObservable = new ObservableEgressStream<HostContext<NetworkActivity>>(exitStream);
             var consumerTask = exitObservable.ForEachAsync(obj =>
             {
                 if (outputFormat == DataFileFormat.Yaml)
                 {
-                    PrintStreamEventYaml(obj.Payload.FlowKey.ToString(), obj);
+                    PrintStreamEventYaml(obj.Payload.HostKey.ToString(), obj);
                 }
                 else
                 {
-                    PrintStreamEventJson(obj.Payload.FlowKey.ToString(), obj);
+                    PrintStreamEventJson(obj.Payload.HostKey.ToString(), obj);
                 }
             });
 
             while (true)
             {
-                var line = await ReadJsonRecordAsync(inputStream);
-                if (String.IsNullOrWhiteSpace(line)) break;
+                var line = await (newlineDelimitedJson ? ReadNdJsonRecordAsync(inputStream) : ReadJsonRecordAsync(inputStream));
+                if (line==null) break;
                 if (FlowmonexpEntry.TryDeserialize(line, out var entry))
                 {
                     var ipfixRecord = mapper.Map<IpfixRecord>(entry);
@@ -141,6 +144,19 @@ namespace Ethanol.Console
             ipfixStream.OnCompleted();
             await Task.WhenAll(consumerTask);
 
+        }
+
+        private async Task<string> ReadNdJsonRecordAsync(TextReader inputStream)
+        {
+            var line = await inputStream.ReadLineAsync();
+            if (String.IsNullOrWhiteSpace(line))
+            {
+                return null;
+            }
+            else
+            {
+                return line;
+            }
         }
 
         private async Task<string> ReadJsonRecordAsync(TextReader inputStream)
@@ -160,7 +176,15 @@ namespace Ethanol.Console
                     break;
                 }
             }
-            return buffer.ToString().Trim();
+            var record = buffer.ToString().Trim();
+            if (String.IsNullOrWhiteSpace(record))
+            {
+                return null;
+            }
+            else
+            {
+                return record;
+            }
         }
 
         /// <summary>

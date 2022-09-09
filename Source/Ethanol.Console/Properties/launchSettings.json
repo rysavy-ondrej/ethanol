@@ -13,9 +13,9 @@
       "commandName": "Project",
       "commandLineArgs": "Build-ContextJson -i  ./Data/ipfixcol.json -f yaml > ipfixcol.yaml"
     },
-    "Build-ContextExport": {
+    "Build-HostContext": {
       "commandName": "Project",
-      "commandLineArgs": "Build-ContextExport -i  D:\\Ethanol\\malware-traffic-analysis\\cobalt1.json -f yaml > D:\\Ethanol\\malware-traffic-analysis\\cobalt1.yaml"
+      "commandLineArgs": "Build-HostContext -i D:\\Ethanol\\AppAnyRun\\66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.flows.json -f yaml > D:\\Ethanol\\AppAnyRun\\66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml"
     }
   }
 }

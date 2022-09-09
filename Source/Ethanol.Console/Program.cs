@@ -53,7 +53,7 @@ namespace Ethanol.Console
         /// <summary>
         /// Represents a possible file format of a data file.
         /// </summary>
-        public enum DataFileFormat { Json, Yaml, Csv, Nfd }
+        public enum DataFileFormat { Json, NdJson, Yaml, Csv, Nfd }
 
 
         /// <summary>
@@ -96,16 +96,26 @@ namespace Ethanol.Console
         /// <summary>
         /// Builds the context from the provided Json input.
         /// </summary>
-        [Command("Build-ContextExport", "Builds the context from the provided JSON files produced by flowmonexp tool.")]
-        public async Task BuildContextExportCommand(
-        [Option("i", "path to the file with JSON file.")]
+        [Command("Build-HostContext", "Builds the host context of flows from the provided (ND)JSON files produced by flowmonexp tool.")]
+        public async Task BuildHostContextCommand(
+        [Option("i", "path to the input file.")]
                 string input,
+        [Option("e", "input file format")]
+                DataFileFormat inputFormat = DataFileFormat.Json,
         [Option("f", "the format for generated output")]
                 DataFileFormat outputFormat = DataFileFormat.Yaml
         )
         {
-            var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
-            await BuildContextFromFlowmonexpJson(inputStream, outputFormat);
+            try
+            {
+                var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
+                System.Console.Error.WriteLine($"INFO: Processing input file '{input}'");
+                await BuildHostCentricContext(inputStream, inputFormat == DataFileFormat.NdJson, outputFormat);
+            }
+            catch(Exception e)
+            {
+                System.Console.Error.WriteLine($"ERROR: {e.Message}");
+            }
         }
 
         /// <summary>

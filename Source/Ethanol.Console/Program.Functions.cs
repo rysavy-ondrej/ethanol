@@ -7,6 +7,24 @@ using System.Threading.Tasks;
 
 namespace Ethanol.Console
 {
+
+    public struct TimeInterval
+    {
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public override string ToString()
+        {
+            return $"{Start} - {End}";
+        }
+    }
+    public class EthanolEvent<T>
+    {
+        public string Event { get; set; }
+        public TimeInterval ValidTime { get; set; }
+
+        public T Payload { get; set; }
+    }
+
     partial class Program
     {
         /// <summary>
@@ -18,7 +36,7 @@ namespace Ethanol.Console
         {
             if (obj.IsInterval || obj.IsEnd)
             {
-                var evt = new { Event = eventType, ValidTime = new { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
+                var evt = new EthanolEvent<T> { Event = eventType, ValidTime = new TimeInterval { Start = new DateTime(obj.StartTime), End = new DateTime(obj.EndTime) }, Payload = obj.Payload };
                 System.Console.WriteLine("---");
                 System.Console.Write(yamlSerializer.Serialize(evt));
                 System.Console.WriteLine("...");

@@ -11,16 +11,55 @@ namespace Ethanol.Console
 {
 
 
-    public record HostContext<T>(string HostKey, T Value);
+    public record HostContext<T>
+    {
+        public string HostKey { get; set; }
+        public T Value { get; set; }
+    }
+    public record NetworkActivity
+    {
+        public HttpRequest[] Http { get; set; }
+        public HttpsConnection[] Https { get; set; }
+        public DnsResolution[] Dns { get; set; }
+        public TlsData[] Tls { get; set; }
+    }
 
-    public record NetworkActivity(HttpRequest[] Http, HttpsConnection[] Https, DnsResolution[] Dns, TlsData[] Tls);
+    public record HttpsConnection
+    {
+        public FlowKey Flow { get; set; }
+        public string DomainName { get; set; }
 
-    public record HttpsConnection(FlowKey Flow, string DomainName);
-    public record HttpRequest(FlowKey Flow, string Url, string Method, string Response);
-    public record DnsResolution(FlowKey Flow, string DomainNane, string[] Addresses);
-    public record TlsData(FlowKey Flow, string RequestHost, string TlsVersion, string JA3, string SNI, string CommonName);
+    }
 
-    public record HostFlows(string Host, IpfixRecord[] Flows);
+    public record HttpRequest
+    {
+        public FlowKey Flow { get; set; }
+        public string Url { get; set; }
+        public string Method { get; set; }
+        public string Response { get; set; }
+    }
+    public record DnsResolution
+    {
+        public FlowKey Flow { get; set; }
+        public string DomainNane { get; set; }
+        public string[] Addresses { get; set; } 
+    }
+    public record TlsData
+    {
+        public FlowKey Flow { get; set; }
+        public string RequestHost { get; set; }
+        public string TlsVersion { get; set; }
+        public string JA3 { get; set; }
+        public string SNI { get; set; }
+        public string CommonName { get; set; }
+    }
+
+    public record HostFlows
+    {
+        public string Host { get; set; }
+        public IpfixRecord[] Flows { get; set; }
+    }
+
 
     public static class HostContextBuilder
     {
@@ -40,7 +79,7 @@ namespace Ethanol.Console
                         .GroupApply(
                                     obj => obj.Host,
                                     group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj.Flow)),
-                                    (key, value) => new HostFlows(key.Key, value));
+                                    (key, value) => new HostFlows { Host = key.Key, Flows = value });
 
                     return hostRelatedFlows; 
                 });
@@ -55,12 +94,15 @@ namespace Ethanol.Console
 
         private static HostContext<NetworkActivity> GetNetworkActivity(HostFlows x)
         {
-            return new HostContext<NetworkActivity>(x.Host,
-                new NetworkActivity(
-                    x.Flows.Where(x => x.Nbar == NBAR_HTTP).Select(GetHttpRequest).ToArray(),
-                    x.Flows.Where(x => x.Nbar == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
-                    x.Flows.Where(x => x.Nbar == NBAR_DNS).Select(GetDnsResolution).ToArray(),
-                    x.Flows.Where(x => x.Nbar == NBAR_TLS).Select(GetTlsData).ToArray()));
+            return new HostContext<NetworkActivity> { HostKey = x.Host,
+                Value =
+                new NetworkActivity
+                {
+                    Http = x.Flows.Where(x => x.Nbar == NBAR_HTTP).Select(GetHttpRequest).ToArray(),
+                    Https = x.Flows.Where(x => x.Nbar == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
+                    Dns = x.Flows.Where(x => x.Nbar == NBAR_DNS).Select(GetDnsResolution).ToArray(),
+                    Tls = x.Flows.Where(x => x.Nbar == NBAR_TLS).Select(GetTlsData).ToArray()
+            } };        
         }
 
         public static string GetHostAddress(IpfixRecord flow)
@@ -74,22 +116,22 @@ namespace Ethanol.Console
 
         private static HttpsConnection GetHttpsConnection(IpfixRecord record)
         {
-            return new HttpsConnection(record.FlowKey, record.HttpHost);
+            return new HttpsConnection { Flow = record.FlowKey, DomainName = record.HttpHost };
         }
 
         private static HttpRequest GetHttpRequest(IpfixRecord record)
         {
-            return new HttpRequest(record.FlowKey, record.HttpHost + record.HttpUrl, record.HttpMethod, record.HttpResponse);
+            return new HttpRequest { Flow = record.FlowKey, Url = record.HttpHost + record.HttpUrl, Method = record.HttpMethod, Response = record.HttpResponse };
         }
 
         private static DnsResolution GetDnsResolution(IpfixRecord record)
         {
-            return new DnsResolution(record.FlowKey, record.DnsQueryName, record.DnsResponseData?.Split(',') ?? Array.Empty<string>());
+            return new DnsResolution { Flow = record.FlowKey, DomainNane = record.DnsQueryName, Addresses = record.DnsResponseData?.Split(',') ?? Array.Empty<string>() };
         }
 
         private static TlsData GetTlsData(IpfixRecord record)
         {
-            return new TlsData(record.FlowKey, record.HttpHost, record.TlsClientVersion, record.TlsJa3, record.TlsServerName, record.TlsServerCommonName);
+            return new TlsData { Flow = record.FlowKey, RequestHost = record.HttpHost, TlsVersion = record.TlsClientVersion, JA3 = record.TlsJa3, SNI = record.TlsServerName, CommonName = record.TlsServerCommonName };
         }
     }
 }

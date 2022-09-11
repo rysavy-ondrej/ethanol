@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Ethanol.Streaming;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,9 +11,73 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using static Ethanol.Console.Program;
 
 namespace Ethanol.Console
 {
+    partial class Program
+    {
+        readonly IDeserializer yamlDeserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+
+        private async Task CheckHostContextAsync(TextReader inputStream, DataFileFormat inputFormat, DataFileFormat outputFormat)
+        {
+            foreach (var record in LoadContextRecords(inputStream))
+            {
+                System.Console.WriteLine();
+                System.Console.WriteLine($"[{record.ValidTime}] checking network activity of host {record.Event}.");
+                TestMalware(record.Payload);
+            }
+        }
+
+        private bool TestMalware(HostContext<NetworkActivity> record)
+        {
+            if (
+                (record.Value.Http?.Any(x => x.Url.Contains("whatismyipaddress.com")) ?? false)
+                &&
+                (record.Value.Http?.Any(x => x.Url.Contains("22ssh.com.com")) ?? false)
+                ||
+                (
+                (record.Value.Dns?.Any(d => d.DomainNane.Contains("ipify.org")) ?? false)
+                &&
+                (record.Value.Dns?.Any(d => d.DomainNane.Contains("duckdns.org")) ?? false)
+                )
+            )
+            {
+                System.Console.WriteLine($"! Malware of the 'azorult' family has been detected:");
+                System.Console.WriteLine($"    Infected host: {record.HostKey}");
+                System.Console.WriteLine($"    This is a Trojan and keylogger that is used to retrieve private information such as passwords and login credentials."); 
+                System.Console.WriteLine($"    It is an advanced malware that features strong anti-evasion functions.");
+                System.Console.WriteLine($"    See: https://bazaar.abuse.ch/sample/37d8e1ce3b6e6488942717aa78cb54785edc985143bcc8d9ba9f42d73a3dbd7a/");
+                return true;
+            }
+            return false;
+        }
+
+        private IEnumerable<EthanolEvent<HostContext<NetworkActivity>>> LoadContextRecords(TextReader inputStream)
+        { 
+            while (true)
+            {
+                var singleRecord = ReadYamlRecord(inputStream);
+                if (singleRecord == null) yield break;
+                var record = yamlDeserializer.Deserialize<EthanolEvent<HostContext<NetworkActivity>>>(singleRecord);
+                yield return record;
+            }
+        }
+
+        private string ReadYamlRecord(TextReader inputStream)
+        {
+            StringBuilder sb = new StringBuilder();
+            while (true)
+            {
+                var line = inputStream.ReadLine();
+                if (line == null) return null;
+                sb.AppendLine(line);
+                if (line.Trim() == "...") return sb.ToString();
+            }
+        }
+    }
 
     partial class Program
     {

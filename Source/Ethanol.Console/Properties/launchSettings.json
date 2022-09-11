@@ -15,7 +15,13 @@
     },
     "Build-HostContext": {
       "commandName": "Project",
-      "commandLineArgs": "Build-HostContext -i D:\\Ethanol\\AppAnyRun\\66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.flows.json -f yaml > D:\\Ethanol\\AppAnyRun\\66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml"
+      "commandLineArgs": "Build-HostContext -i 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.flows.json -f yaml > 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml",
+      "workingDirectory": "C:\\GitHub\\ethanol\\TestData\\AppAnyRun\\"
+    },
+    "Check-HostContext": {
+      "commandName": "Project",
+      "commandLineArgs": "Check-HostContext -i 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml ",
+      "workingDirectory": "C:\\GitHub\\ethanol\\TestData\\AppAnyRun\\"
     }
   }
 }

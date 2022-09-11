@@ -118,6 +118,28 @@ namespace Ethanol.Console
             }
         }
 
+        [Command("Check-HostContext", "Checks the host context of flows using the given set of rules.")]
+        public async Task CheckHostContextCommand(
+        [Option("i", "path to the input context file.")]
+                string input,
+        [Option("e", "input file format")]
+                DataFileFormat inputFormat = DataFileFormat.Yaml,
+        [Option("f", "the format for generated output")]
+                DataFileFormat outputFormat = DataFileFormat.Yaml
+        )
+        {
+            try
+            {
+                var inputStream = input == "stdin" ? System.Console.In : File.OpenText(input);
+                System.Console.Error.WriteLine($"INFO: Processing input file '{input}'");
+                await CheckHostContextAsync(inputStream, inputFormat, outputFormat);
+            }
+            catch (Exception e)
+            {
+                System.Console.Error.WriteLine($"ERROR: {e.Message}");
+            }
+        }
+
         /// <summary>
         /// Test if the given <paramref name="path"/> points to the valid directory with source files.
         /// </summary>

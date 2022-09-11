@@ -14,7 +14,7 @@ namespace Ethanol.Console
         public string FlowKeyString { get; set; }
 
         [Ignore]
-        public FlowKey FlowKey => new FlowKey("TCP", LocalAddress, LocalPort, RemoteAddress, RemotePort);
+        public FlowKey FlowKey => new FlowKey { Proto = "TCP", SrcIp = LocalAddress, SrcPt = LocalPort, DstIp = RemoteAddress, DstPt = RemotePort };
 
         [Name("LocalAddress")]
         public string LocalAddress {  get; set; }
@@ -52,7 +52,7 @@ namespace Ethanol.Console
         }
 
         [Ignore]
-        public FlowKey FlowKey => new FlowKey(Protocol.ToString(), SourceIpAddress, SourceTransportPort, DestinationIpAddress, DestinationPort);
+        public FlowKey FlowKey => new FlowKey { Proto = Protocol.ToString(), SrcIp = SourceIpAddress, SrcPt = SourceTransportPort, DstIp = DestinationIpAddress, DstPt = DestinationPort };
 
         [Name("ProcessName")]
         public string ProcessName { get; set; }

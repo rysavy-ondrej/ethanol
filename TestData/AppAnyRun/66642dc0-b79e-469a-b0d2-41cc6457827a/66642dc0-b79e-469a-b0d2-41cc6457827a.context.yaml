@@ -1,0 +1,403 @@
+---
+event: 192.168.100.233
+validTime:
+  start: 2022-09-09T18:25:00.0000000
+  end: 2022-09-09T18:30:00.0000000
+payload:
+  hostKey: 192.168.100.233
+  value:
+    http:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62206
+        dstIp: 104.16.154.36
+        dstPt: 80
+      url: whatismyipaddress.com/
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62288
+        dstIp: 34.98.99.30
+        dstPt: 80
+      url: 22ssh.com/32.exe
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62190
+        dstIp: 194.180.174.53
+        dstPt: 80
+      url: 194.180.174.53/brikitiki
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62307
+        dstIp: 92.63.107.12
+        dstPt: 80
+      url: 92.63.107.12/Poll/Phptrack8request/6python7Uploads/Lowtemporarypoll0/public/Proton/0Default/videoflower.php?v5fqRRIuOkvz=rB1KZTa7lOCqNcj64Z&R0hqQ1j6QQD1Pz0OO=ZiBPYKrc9EziyUKPirKVkT0WKr&Xx1WOVIf1eCcX8y1fH=bsq9QIE2NGsoErlUpIrlMpz&b413d86971fc42e54d3bceda7c50d277=1f7739aa83855b8bf4bc8f883f476c45&a9982c9e61949b25e6414a873df9509b=AN1kzYilDOyMmM5QDZ3AzN2MTMzYGNmZTM4IWYxMjNzYmM3MmZzE2M&v5fqRRIuOkvz=rB1KZTa7lOCqNcj64Z&R0hqQ1j6QQD1Pz0OO=ZiBPYKrc9EziyUKPirKVkT0WKr&Xx1WOVIf1eCcX8y1fH=bsq9QIE2NGsoErlUpIrlMpz
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62205
+        dstIp: 3.220.57.224
+        dstPt: 80
+      url: api.ipify.org/?format=xml
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62264
+        dstIp: 91.219.236.18
+        dstPt: 80
+      url: 91.219.236.18/brikitiki
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62335
+        dstIp: 194.180.174.41
+        dstPt: 80
+      url: 194.180.174.41/brikitiki
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62500
+        dstIp: 104.42.225.122
+        dstPt: 80
+      url: londonpaerl.co.uk/yesup/gate.php
+      method: 32770
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62384
+        dstIp: 91.219.236.148
+        dstPt: 80
+      url: 91.219.236.148/brikitiki
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62576
+        dstIp: 104.42.225.122
+        dstPt: 80
+      url: londonpaerl.co.uk/yesup/gate.php
+      method: 32770
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62333
+        dstIp: 34.98.99.30
+        dstPt: 80
+      url: 22ssh.com/Update.txt
+      method: 32769
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62654
+        dstIp: 104.42.225.122
+        dstPt: 80
+      url: londonpaerl.co.uk/yesup/gate.php
+      method: 32770
+      response: 404
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62559
+        dstIp: 34.98.99.30
+        dstPt: 80
+      url: 22ssh.com/Update.txt
+      method: 32772
+      response: 404
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 64637
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: pretorian.ac.ug
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 54477
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: yabynennet.xyz
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 63828
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: prepepe.ac.ug
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 54477
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: yabynennet.xyz
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 64637
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: pretorian.ac.ug
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 55197
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: whatismyipaddress.com
+      addresses:
+      - 104.16.154.36
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 60127
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: api.ipify.org
+      addresses:
+      - 3.220.57.224
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 65522
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: pretorian.ac.ug
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 59336
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: gfhhjgh.duckdns.org
+      addresses:
+      - 179.13.1.253
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 49782
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: 22ssh.com
+      addresses:
+      - 34.98.99.30
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 51932
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: kazya1.hopto.org
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 57014
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: watson.microsoft.com
+      addresses:
+      - 20.42.65.92
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 58139
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: t.me
+      addresses:
+      - 149.154.167.99
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 52319
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: files.000webhost.com
+      addresses:
+      - 145.14.144.13
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 57241
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: londonpaerl.co.uk
+      addresses:
+      - 104.42.225.122
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 51840
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 51840
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses:
+      - 127.0.0.1
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 54060
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses:
+      - 127.0.0.1
+    tls:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 62248
+        dstIp: 179.13.1.253
+        dstPt: 8050
+      requestHost: 
+      tlsVersion: 769
+      jA3: 8C4A22651D328568EC66382A84FC505F
+      sNI: 
+      commonName: 
+...
+---
+event: 192.168.100.233
+validTime:
+  start: 2022-09-09T18:30:00.0000000
+  end: 2022-09-09T18:35:00.0000000
+payload:
+  hostKey: 192.168.100.233
+  value:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 63864
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: gfhhjgh.duckdns.org
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 63864
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: gfhhjgh.duckdns.org
+      addresses:
+      - 179.13.1.253
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 57913
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses:
+      - 127.0.0.1
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 51078
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: gfhhjgh.duckdns.org
+      addresses:
+      - 179.13.1.253
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 53208
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses:
+      - 127.0.0.1
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 62901
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: gfhhjgh.duckdns.org
+      addresses:
+      - 179.13.1.253
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.233
+        srcPt: 59306
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: hackerinvasion.f3322.net
+      addresses:
+      - 127.0.0.1
+    tls:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 63951
+        dstIp: 179.13.1.253
+        dstPt: 8050
+      requestHost: 
+      tlsVersion: 769
+      jA3: 8C4A22651D328568EC66382A84FC505F
+      sNI: 
+      commonName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 64888
+        dstIp: 179.13.1.253
+        dstPt: 8050
+      requestHost: 
+      tlsVersion: 769
+      jA3: 8C4A22651D328568EC66382A84FC505F
+      sNI: 
+      commonName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.233
+        srcPt: 49444
+        dstIp: 179.13.1.253
+        dstPt: 8050
+      requestHost: 
+      tlsVersion: 769
+      jA3: 8C4A22651D328568EC66382A84FC505F
+      sNI: 
+      commonName: 
+...

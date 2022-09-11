@@ -1,0 +1,85 @@
+---
+event: 192.168.100.52
+validTime:
+  start: 2022-09-06T10:25:00.0000000
+  end: 2022-09-06T10:30:00.0000000
+payload:
+  hostKey: 192.168.100.52
+  value:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 57790
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: pastebin.com
+      addresses:
+      - 104.20.68.143
+    tls:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      requestHost: pastebin.com
+      tlsVersion: 769
+      jA3: 05AF1F5CA1B87CC9CC9B25185115607D
+      sNI: pastebin.com
+      commonName: sni.cloudflaressl.com
+...
+---
+event: 192.168.100.52
+validTime:
+  start: 2022-09-06T10:30:00.0000000
+  end: 2022-09-06T10:35:00.0000000
+payload:
+  hostKey: 192.168.100.52
+  value:
+    http: []
+    https:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      domainName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      domainName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      domainName: 
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 63585
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: 0.tcp.eu.ngrok.io
+      addresses:
+      - 18.192.31.165
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 55708
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: 0.tcp.eu.ngrok.io
+      addresses:
+      - 3.125.223.134
+    tls: []
+...

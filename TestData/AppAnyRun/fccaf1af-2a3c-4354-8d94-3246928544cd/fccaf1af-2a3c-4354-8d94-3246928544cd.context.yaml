@@ -1,0 +1,63 @@
+---
+event: 192.168.100.63
+validTime:
+  start: 2022-09-09T19:15:00.0000000
+  end: 2022-09-09T19:20:00.0000000
+payload:
+  hostKey: 192.168.100.63
+  value:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.63
+        srcPt: 57790
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: nnedianckia.xyz
+      addresses: []
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.63
+        srcPt: 57790
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: nnedianckia.xyz
+      addresses:
+      - 94.140.115.207
+    tls: []
+...
+---
+event: 192.168.100.63
+validTime:
+  start: 2022-09-09T19:20:00.0000000
+  end: 2022-09-09T19:25:00.0000000
+payload:
+  hostKey: 192.168.100.63
+  value:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.63
+        srcPt: 63585
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: api.ip.sb
+      addresses:
+      - 172.67.75.172
+    tls:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.63
+        srcPt: 60458
+        dstIp: 172.67.75.172
+        dstPt: 443
+      requestHost: api.ip.sb
+      tlsVersion: 769
+      jA3: 05AF1F5CA1B87CC9CC9B25185115607D
+      sNI: api.ip.sb
+      commonName: sni.cloudflaressl.com
+...

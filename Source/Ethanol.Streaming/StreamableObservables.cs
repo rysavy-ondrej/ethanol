@@ -30,11 +30,10 @@ namespace Ethanol.Streaming
             var stream = source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(windowSize.Ticks), FlushPolicy.FlushOnPunctuation);
 
             return stream.AlterEventDuration(windowPeriod.Ticks);
-            return stream.QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
+            //return stream.QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
         }
         private static DateTime RoundMinutes(long arg, long roundTicks)
-        {
-            var dt = new DateTime(arg);
+        {            
             var sub = arg % roundTicks;
             var newDt = new DateTime(arg - sub);
             return newDt;

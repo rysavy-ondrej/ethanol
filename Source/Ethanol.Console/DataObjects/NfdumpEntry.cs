@@ -1,12 +1,12 @@
 ﻿using CsvHelper.Configuration.Attributes;
 
-namespace Ethanol.Console
+namespace Ethanol.Console.DataObjects
 {
     /// <summary>
     /// Represents a single flow record as exported from nfdump. 
     /// This record contains many properties but only a few are relevant for further processing. 
     /// </summary>
-    public class NfdumpEntry 
+    public class NfdumpEntry
     {
         [Name("ts")]
         public string TimeStart { get; set; }
@@ -662,6 +662,6 @@ namespace Ethanol.Console
         public string ndp { get; set; }
     }
 }
-    
+
 
 

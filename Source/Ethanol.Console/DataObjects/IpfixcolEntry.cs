@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ethanol.Console
+namespace Ethanol.Console.DataObjects
 {
     /// <summary>
     /// POCO for JSON record created by ipfixcol2 tool. 
@@ -12,8 +11,6 @@ namespace Ethanol.Console
     {
         public static bool TryDeserialize(string input, out IpfixcolEntry entry)
         {
-
-
             try
             {
                 entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);

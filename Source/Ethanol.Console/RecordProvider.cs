@@ -1,4 +1,5 @@
 ﻿using Ethanol.Catalogs;
+using Ethanol.Console.DataObjects;
 using Ethanol.Providers;
 using Ethanol.Streaming;
 using System;
@@ -21,9 +22,9 @@ namespace Ethanol.Console
         }
     }
 
-    public class SocketObservableStream : ObservableIngressStream<SocketRecord>
+    public class SocketObservableStream : ObservableIngressStream<SocketEntry>
     {
-        static long GetTimestamp(SocketRecord socketRecord)
+        static long GetTimestamp(SocketEntry socketRecord)
         {
             var dateTime = socketRecord?.CurrentTime ?? DateTime.MinValue;
             return dateTime.Ticks;

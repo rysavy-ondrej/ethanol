@@ -1,4 +1,4 @@
-﻿using ConsoleAppFramework;  // https://github.com/Cysharp/ConsoleAppFramework
+﻿using ConsoleAppFramework;              //----> https://github.com/Cysharp/ConsoleAppFramework
 using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
@@ -26,6 +26,11 @@ namespace Ethanol.ContextBuilder
             _logger = logger;
         }
 
+        /// <summary>
+        /// The entry point of the program.
+        /// </summary>
+        /// <param name="args">Input arguments.</param>
+        /// <returns>A task that ends when the program is finished/terminated.</returns>
         static async Task Main(string[] args)
         {
             System.Console.CancelKeyPress += new ConsoleCancelEventHandler(CancelHandler);
@@ -92,6 +97,9 @@ namespace Ethanol.ContextBuilder
             Console.Error.WriteLine($"[{sw.Elapsed}] Finished!");
         }
 
+        /// <summary>
+        /// Gets the list of all available modules. 
+        /// </summary>
         [Command("List-Modules", "Provides information on available modules.")]
         public async Task ListModulesCommand(
             )

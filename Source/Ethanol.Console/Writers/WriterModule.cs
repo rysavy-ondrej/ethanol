@@ -12,11 +12,11 @@ namespace Ethanol.ContextBuilder.Writers
     /// Represets a base class for all writer modules. Writer modules produces 
     /// context-based information in the specifc output format. 
     /// </summary>
-    public abstract class OutputDataWriter<TRecord> : IObserver<TRecord>
+    public abstract class WriterModule<TRecord> : IObserver<TRecord>
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource;
-        protected OutputDataWriter()
+        protected WriterModule()
         {
             _taskCompletionSource = new TaskCompletionSource();           
         }
@@ -53,12 +53,12 @@ namespace Ethanol.ContextBuilder.Writers
 
     public static class WriterFactory
     {
-        internal static OutputDataWriter<object> GetWriter(ModuleSpecification outputModule)
+        internal static WriterModule<object> GetWriter(ModuleSpecification outputModule)
         {
             switch(outputModule?.Name)
             {
-                case nameof(YamlDataWriter): return YamlDataWriter.Create(outputModule.Attributes);
-                case nameof(JsonDataWriter): return JsonDataWriter.Create(outputModule.Attributes);
+                case nameof(YamlDataWriter): return YamlDataWriter.Create(outputModule.Parameters);
+                case nameof(JsonDataWriter): return JsonDataWriter.Create(outputModule.Parameters);
             }
             return null;
         }

@@ -53,8 +53,8 @@ namespace Ethanol.ContextBuilder.Builders
         {
             switch(moduleSpecification?.Name)
             {
-                case nameof(TlsFlowContextBuilder): return TlsFlowContextBuilder.Create(moduleSpecification.Attributes);
-                case nameof(IpHostContextBuilder): return IpHostContextBuilder.Create(moduleSpecification.Attributes);
+                case nameof(TlsFlowContextBuilder): return TlsFlowContextBuilder.Create(moduleSpecification.Parameters);
+                case nameof(IpHostContextBuilder): return IpHostContextBuilder.Create(moduleSpecification.Parameters);
             }
             return null;
         }

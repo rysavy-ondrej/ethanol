@@ -7,7 +7,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// <summary>
     /// Produces NDJSON output for arbitrary object type.
     /// </summary>
-    public class JsonDataWriter : OutputDataWriter<object>
+    public class JsonDataWriter : WriterModule<object>
     {
         private readonly TextWriter _writer;
         JsonSerializerOptions _jsonOptions;

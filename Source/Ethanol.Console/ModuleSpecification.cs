@@ -5,7 +5,12 @@ using System.Reactive.Linq;
 
 namespace Ethanol.ContextBuilder
 {
-    public record ModuleSpecification(string Name, IReadOnlyDictionary<string,string> Attributes)
+    /// <summary>
+    /// Records the specification of the reader/builder/writer module.
+    /// </summary>
+    /// <param name="Name">The name of the module.</param>
+    /// <param name="Parameters">The parameters used to create the instance of the module.</param>
+    public record ModuleSpecification(string Name, IReadOnlyDictionary<string,string> Parameters)
     {
         /// <summary>
         /// Parses module string. It is ModuleName:key1=val1,...,keyn=valn

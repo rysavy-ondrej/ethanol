@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
-using Ethanol.Console.DataObjects;
+using Ethanol.ContextBuilder;
+using Ethanol.ContextBuilder.DataObjects;
+using Ethanol.ContextBuilder.Context;
 using System.IO;
 
-namespace Ethanol.Console.Readers
+namespace Ethanol.ContextBuilder.Readers
 {
-    class IpfixcolEntryReader : IIpfixRecordReader
+    class IpfixcolEntryReader 
     {
         private readonly TextReader textReader;
         private readonly MapperConfiguration configuration;

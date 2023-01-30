@@ -1,7 +1,8 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using Ethanol.ContextBuilder.Context;
 using System;
 
-namespace Ethanol.Console.DataObjects
+namespace Ethanol.ContextBuilder.DataObjects
 {
     /// <summary>
     /// Represents a single record in the collection of TCP connection list

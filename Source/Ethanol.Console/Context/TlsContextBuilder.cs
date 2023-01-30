@@ -1,11 +1,12 @@
 ﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Context
 {
     public record FlowMeters(int Packets, int Octets, DateTime TimeStart, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
@@ -33,7 +34,13 @@ namespace Ethanol.Console
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, ContextFlow<TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
+        public static IStreamable<Empty, InternalContextFlow<TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
+        {
+            return BuildTlsContext(source);
+        }
+        internal static IStreamable<Empty, InternalContextFlow<TlsContext>> BuildTlsContext(IStreamable<Empty, IpfixRecord> source)
+
+        
         {
             try
             {
@@ -53,7 +60,7 @@ namespace Ethanol.Console
                             .GroupApply(
                                 flow => new { flow.Flow, flow.Key },
                                 group => group.Aggregate(aggregate => aggregate.CollectList(flow => flow.Value)),
-                                (key, value) => new ContextFlow<FlowGroup<EndpointsKey, DnsFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, DnsFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
+                                (key, value) => new InternalContextFlow<FlowGroup<EndpointsKey, DnsFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, DnsFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
                                );
 
                         var httpClientFlowsStream = stream
@@ -64,21 +71,21 @@ namespace Ethanol.Console
                             .GroupApply(
                                 flow => new { flow.Flow, flow.Key },
                                 group => group.Aggregate(aggregate => aggregate.CollectList(flow => flow.Value)),
-                                (key, value) => new ContextFlow<FlowGroup<EndpointsKey, HttpFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, HttpFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
+                                (key, value) => new InternalContextFlow<FlowGroup<EndpointsKey, HttpFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, HttpFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
                                );
 
                         var tlsClientFlowsStream = stream.MatchGroupApply(
                         flow => new TlsClientKey(flow.Flow.SrcIp, flow.TlsJa3),
                         flow => ValueTuple.Create(flow.Flow, new TlsClientKey(flow.Flow.SrcIp, flow.TlsJa3)),
-                        grouping => new ContextFlow<FlowGroup<TlsClientKey, TlsFlowRecord>>(
+                        grouping => new InternalContextFlow<FlowGroup<TlsClientKey, TlsFlowRecord>>(
                             grouping.Key.Item1,
-                            new FlowGroup<TlsClientKey, TlsFlowRecord>(grouping.Key.Item2, grouping.OrderBy(t=> Math.Abs(grouping.Key.Item1.SrcPt - t.Flow.SrcPt)).ToArray())
+                            new FlowGroup<TlsClientKey, TlsFlowRecord>(grouping.Key.Item2, grouping.OrderBy(t=> System.Math.Abs(grouping.Key.Item1.SrcPt - t.Flow.SrcPt)).ToArray())
                         ));
 
                         var bagOfFlowsStream = stream.MatchGroupApply(
                         flow => new BagOfFlowsKey(flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto),
                         flow => ValueTuple.Create(flow.Flow, new BagOfFlowsKey(flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto)),
-                        grouping => new ContextFlow<FlowGroup<BagOfFlowsKey, TlsFlowRecord>>(
+                        grouping => new InternalContextFlow<FlowGroup<BagOfFlowsKey, TlsFlowRecord>>(
                             grouping.Key.Item1,
                             new FlowGroup<BagOfFlowsKey, TlsFlowRecord>(grouping.Key.Item2, grouping.ToArray())
                         ));
@@ -86,12 +93,12 @@ namespace Ethanol.Console
                         var flowBurstStream = stream.MatchGroupApply(
                             flow => new FlowBurstKey(flow.Flow.SrcIp, flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto),
                             flow => ValueTuple.Create(flow.Flow, new FlowBurstKey(flow.Flow.SrcIp, flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto)),
-                            grouping => new ContextFlow<FlowGroup<FlowBurstKey, TlsFlowRecord>>(grouping.Key.Item1,
+                            grouping => new InternalContextFlow<FlowGroup<FlowBurstKey, TlsFlowRecord>>(grouping.Key.Item1,
                                 new FlowGroup<FlowBurstKey, TlsFlowRecord>(grouping.Key.Item2, grouping.ToArray())
                             ));
 
                         return stream
-                            .Select(f => new ContextFlow<TlsFlowRecord>(f.Flow, f))
+                            .Select(f => new InternalContextFlow<TlsFlowRecord>(f.Flow, f))
                             .AggregateContextStreams(dnsClientFlowsStream, tlsClientFlowsStream, bagOfFlowsStream, flowBurstStream, httpClientFlowsStream, AggregateContext);
                     });
                     return flowContextStream;

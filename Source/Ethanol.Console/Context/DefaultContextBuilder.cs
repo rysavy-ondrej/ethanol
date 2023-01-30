@@ -1,11 +1,13 @@
 ﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Context
 {
     /// <summary>
     /// Record representing key fields for Flow Burst.
@@ -38,7 +40,7 @@ namespace Ethanol.Console
     /// <param name="FlowBurst"></param>
     public record FlowRelations(IpfixRecord TargetFlow, FlowGroup<BagOfFlowsKey, IpfixRecord> BagOfFlows, FlowGroup<FlowBurstKey, IpfixRecord> FlowBurst);
     public static class DefaultContextBuilder
-    { 
+    {
         /// <summary>
         /// Builds a general flow context. 
         /// </summary>
@@ -51,42 +53,42 @@ namespace Ethanol.Console
         /// </remarks>
         /// <param name="flowStream"></param>
         /// <returns></returns>
-        public static IStreamable<Empty, ContextFlow<FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _,IStreamable<Empty, IpfixRecord> flowStream)
+        public static IStreamable<Empty, InternalContextFlow<FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> flowStream)
         {
             var source = flowStream.Multicast(3);
 
             var bagOfFlowStream = source[0]
                 .GroupApply(
-                    key => new BagOfFlowsKey (key.DestinationIpAddress,  key.DestinationPort, key.Protocol.ToString()),
+                    key => new BagOfFlowsKey(key.DestinationIpAddress, key.DestinationPort, key.Protocol.ToString()),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f => f.Value, (k,v) => new ContextFlow<FlowGroup<BagOfFlowsKey, IpfixRecord>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
-                
+                .Expand(f => f.Value, (k, v) => new InternalContextFlow<FlowGroup<BagOfFlowsKey, IpfixRecord>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
+
 
             var flowBurstStream = source[1]
                 .GroupApply(
-                    key => new FlowBurstKey (key.SourceIpAddress, key.DestinationIpAddress, key.DestinationPort, key.Protocol.ToString()),
+                    key => new FlowBurstKey(key.SourceIpAddress, key.DestinationIpAddress, key.DestinationPort, key.Protocol.ToString()),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f=>f.Value,(k,v) => new ContextFlow<FlowGroup<FlowBurstKey, IpfixRecord>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
+                .Expand(f => f.Value, (k, v) => new InternalContextFlow<FlowGroup<FlowBurstKey, IpfixRecord>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixRecord>(v.Key, v.Value.ToArray())), k => k.FlowKey);
 
-            var sourceFlowsStream = source[2].Select(f => new ContextFlow<IpfixRecord>(f.FlowKey, f));
+            var sourceFlowsStream = source[2].Select(f => new InternalContextFlow<IpfixRecord>(f.FlowKey, f));
 
-            return ContextAggregator.AggregateContextStreams(sourceFlowsStream, bagOfFlowStream, flowBurstStream, MergeFunc);
+            return sourceFlowsStream.AggregateContextStreams(bagOfFlowStream, flowBurstStream, MergeFunc);
         }
 
-        private static FlowRelations MergeFunc(IpfixRecord[] arg1, FlowGroup<BagOfFlowsKey, IpfixRecord>[] arg2, FlowGroup<FlowBurstKey, IpfixRecord>[] arg3) 
-            =>  new FlowRelations(arg1.FirstOrDefault(), 
+        private static FlowRelations MergeFunc(IpfixRecord[] arg1, FlowGroup<BagOfFlowsKey, IpfixRecord>[] arg2, FlowGroup<FlowBurstKey, IpfixRecord>[] arg3)
+            => new FlowRelations(arg1.FirstOrDefault(),
                 new FlowGroup<BagOfFlowsKey, IpfixRecord>(arg2.FirstOrDefault()?.Key, arg2.SelectMany(v => v.Flows).ToArray()),
                 new FlowGroup<FlowBurstKey, IpfixRecord>(arg3.FirstOrDefault()?.Key, arg3.SelectMany(v => v.Flows).ToArray()));
-    
+
         /// <summary>
         /// Gets various meters for the given IPFIX record.
         /// </summary>
         /// <param name="f">The IPFIX record.</param>
         /// <returns>A collection of meters for the given IPFIX record.</returns>
         public static FlowMeters GetMeters(this IpfixRecord f)
-        {            
+        {
             return new FlowMeters(f.Packets, f.Bytes, f.TimeStart, f.TimeDuration);
         }
     }

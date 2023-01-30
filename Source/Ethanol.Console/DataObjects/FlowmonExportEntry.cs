@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Context
 {
     /// <summary>
     /// POCO for JSON record created by flowmonexp5 tool.

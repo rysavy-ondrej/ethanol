@@ -1,6 +1,6 @@
 ﻿using CsvHelper.Configuration.Attributes;
 
-namespace Ethanol.Console.DataObjects
+namespace Ethanol.ContextBuilder.DataObjects
 {
     /// <summary>
     /// Represents a single flow record as exported from nfdump. 

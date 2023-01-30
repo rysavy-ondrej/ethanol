@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Context
 {
     public static class ContextAggregator
     {
@@ -27,9 +27,9 @@ namespace Ethanol.Console
             return new FlowGroup<TKey, TValue>(key, (removeDuplicities ? elements.Distinct() : elements).ToArray());
         }
 
-        public static IStreamable<TStreamKey, ContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TTarget>(
-            this IStreamable<TStreamKey, ContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, ContextFlow<TSource2>> source2,
+        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TTarget>(
+            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
+            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
             Func<TSource1[], TSource2[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class
         {
@@ -40,7 +40,7 @@ namespace Ethanol.Console
                 key => key.Flow,
                 agg1 => agg1.CollectList(x => x.Item1),
                 agg2 => agg2.CollectList(x => x.Item2),
-                (key, val1, val2) => new ContextFlow<TTarget>(key.Key, aggregator(val1, val2)));
+                (key, val1, val2) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2)));
         }
 
         /// <summary>
@@ -59,10 +59,10 @@ namespace Ethanol.Console
         /// <param name="source3">The third stream.</param>
         /// <param name="aggregator">A function used to merge records. The arguments are arrays of values. Note that these arrays may be sparse, i.e., some elements may be null.</param>
         /// <returns>A context flow stream of the <typeparamref name="TTarget"/> context type.</returns>
-        public static IStreamable<TStreamKey, ContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TTarget>(
-            this IStreamable<TStreamKey, ContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, ContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, ContextFlow<TSource3>> source3,
+        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TTarget>(
+            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
+            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
+            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
             Func<TSource1[], TSource2[], TSource3[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class
         {
@@ -75,13 +75,13 @@ namespace Ethanol.Console
                 agg1 => agg1.CollectList(x => x.Item1),
                 agg2 => agg2.CollectList(x => x.Item2),
                 agg3 => agg3.CollectList(x => x.Item3),
-                (key, val1, val2, val3) => new ContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3)));
+                (key, val1, val2, val3) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3)));
         }
-        public static IStreamable<TStreamKey, ContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
-            this IStreamable<TStreamKey, ContextFlow<TSource1>> source1,
-                 IStreamable<TStreamKey, ContextFlow<TSource2>> source2,
-                 IStreamable<TStreamKey, ContextFlow<TSource3>> source3,
-                 IStreamable<TStreamKey, ContextFlow<TSource4>> source4,
+        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
+            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
+                 IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
+                 IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
+                 IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
                  Func<TSource1[], TSource2[], TSource3[], TSource4[], TTarget> aggregator)
         where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
@@ -96,7 +96,7 @@ namespace Ethanol.Console
                 agg2 => agg2.CollectList(x => x.Item2),
                 agg3 => agg3.CollectList(x => x.Item3),
                 agg4 => agg4.CollectList(x => x.Item4),
-                (key, val1, val2, val3, val4) => new ContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4)));
+                (key, val1, val2, val3, val4) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4)));
         }
 
         public static IStreamable<TStreamKey, TTarget> UnionGroupAggregate<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
@@ -129,12 +129,12 @@ namespace Ethanol.Console
                 (key, val1, val2, val3, val4, val5) => aggregator(key.Key, val1, val2, val3, val4, val5));
         }
 
-        public static IStreamable<TStreamKey, ContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
-            this IStreamable<TStreamKey, ContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, ContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, ContextFlow<TSource3>> source3,
-            IStreamable<TStreamKey, ContextFlow<TSource4>> source4,
-            IStreamable<TStreamKey, ContextFlow<TSource5>> source5,
+        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
+            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
+            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
+            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
+            IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
+            IStreamable<TStreamKey, InternalContextFlow<TSource5>> source5,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
@@ -151,23 +151,23 @@ namespace Ethanol.Console
                 agg3 => agg3.CollectList(x => x.Item3),
                 agg4 => agg4.CollectList(x => x.Item4),
                  agg5 => agg5.CollectList(x => x.Item5),
-                (key, val1, val2, val3, val4, val5) => new ContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
+                (key, val1, val2, val3, val4, val5) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
         }
-        public static IStreamable<TStreamKey, ContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6,TTarget>(
-            this IStreamable<TStreamKey, ContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, ContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, ContextFlow<TSource3>> source3,
-            IStreamable<TStreamKey, ContextFlow<TSource4>> source4,
-            IStreamable<TStreamKey, ContextFlow<TSource5>> source5,
-            IStreamable<TStreamKey, ContextFlow<TSource6>> source6,
+        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6, TTarget>(
+            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
+            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
+            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
+            IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
+            IStreamable<TStreamKey, InternalContextFlow<TSource5>> source5,
+            IStreamable<TStreamKey, InternalContextFlow<TSource6>> source6,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TSource6[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context,         Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context,         Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context,         Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context,         Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context,         Item6 = default(TSource6) }))
+            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
+                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context, Item6 = default(TSource6) }))
                  .Union(source6.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Context }));
 
             return union.GroupAggregate(
@@ -178,7 +178,7 @@ namespace Ethanol.Console
                 agg4 => agg4.CollectList(x => x.Item4),
                 agg5 => agg5.CollectList(x => x.Item5),
                 agg6 => agg6.CollectList(x => x.Item6),
-                (key, val1, val2, val3, val4, val5, val6) => new ContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
+                (key, val1, val2, val3, val4, val5, val6) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
         }
     }
 }

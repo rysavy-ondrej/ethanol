@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ethanol.Console.DataObjects
+namespace Ethanol.ContextBuilder.DataObjects
 {
     /// <summary>
     /// POCO for JSON record created by ipfixcol2 tool. 

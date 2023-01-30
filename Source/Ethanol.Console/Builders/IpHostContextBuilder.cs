@@ -1,17 +1,26 @@
 ﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.Streaming;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Hosting;
 using Microsoft.StreamProcessing;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Builders
 {
 
-
     public record HostContext<T>
+    {
+        public string HostKey { get; set; }
+
+        public WindowSpan Window { get; set; }
+        public T Value { get; set; }
+    }
+
+    public record InternalHostContext<T>
     {
         public string HostKey { get; set; }
         public T Value { get; set; }
@@ -42,7 +51,7 @@ namespace Ethanol.Console
     {
         public FlowKey Flow { get; set; }
         public string DomainNane { get; set; }
-        public string[] Addresses { get; set; } 
+        public string[] Addresses { get; set; }
     }
     public record TlsData
     {
@@ -60,14 +69,46 @@ namespace Ethanol.Console
         public IpfixRecord[] Flows { get; set; }
     }
 
+    public class IpHostContextBuilder : ContextBuilder<IpfixRecord, InternalHostContext<NetworkActivity>, HostContext<NetworkActivity>>
+    {
+        public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
+        {
+        }
 
-    public static class HostContextBuilder
+        internal static IContextBuilder<IpfixRecord, object> Create(IReadOnlyDictionary<string, string> attributes)
+        {
+            if (!attributes.TryGetValue("window", out var windowSize)) windowSize = "00:01:00";
+            if (!attributes.TryGetValue("hop", out var windowHop)) windowHop = "00:00:30";
+
+            if (!TimeSpan.TryParse(windowSize, out var windowSizeTimeSpan)) windowSizeTimeSpan = TimeSpan.FromSeconds(60);
+            if (!TimeSpan.TryParse(windowHop, out var windowHopTimeSpan)) windowHopTimeSpan = TimeSpan.FromSeconds(30);
+            return new IpHostContextBuilder(windowSizeTimeSpan, windowHopTimeSpan);
+        }
+
+        protected override IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildContext(IStreamable<Empty, IpfixRecord> source)
+        {
+            return _HostContextBuilder.BuildHostContext(source);
+        }
+
+        protected override HostContext<NetworkActivity> GetTarget(StreamEvent<InternalHostContext<NetworkActivity>> arg)
+        {
+            return new HostContext<NetworkActivity> { HostKey = arg.Payload.HostKey, Window = WindowSpan.FromLong(arg.StartTime, arg.EndTime), Value = arg.Payload.Value };
+        }
+    }
+
+    public static class _HostContextBuilder
     {
         private static readonly string NBAR_DNS = "DNS_TCP";
         private static readonly string NBAR_TLS = "SSL/TLS";
         private static readonly string NBAR_HTTPS = "HTTPS";
         private static readonly string NBAR_HTTP = "HTTP";
-        public static IStreamable<Empty, HostContext<NetworkActivity>> BuildHostContext (this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
+
+        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
+        {
+            return BuildHostContext(source);
+        }
+        
+        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext( IStreamable<Empty, IpfixRecord> source)
         {
             try
             {
@@ -81,20 +122,22 @@ namespace Ethanol.Console
                                     group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj.Flow)),
                                     (key, value) => new HostFlows { Host = key.Key, Flows = value });
 
-                    return hostRelatedFlows; 
+                    return hostRelatedFlows;
                 });
-                return xy.Select(x=> GetNetworkActivity(x));
+                return xy.Select(x => GetNetworkActivity(x));
             }
             catch (Exception e)
             {
-                System.Console.Error.WriteLine(e);
+                Console.Error.WriteLine(e);
                 throw;
             }
         }
 
-        private static HostContext<NetworkActivity> GetNetworkActivity(HostFlows x)
+        private static InternalHostContext<NetworkActivity> GetNetworkActivity(HostFlows x)
         {
-            return new HostContext<NetworkActivity> { HostKey = x.Host,
+            return new InternalHostContext<NetworkActivity>
+            {
+                HostKey = x.Host,
                 Value =
                 new NetworkActivity
                 {
@@ -102,7 +145,8 @@ namespace Ethanol.Console
                     Https = x.Flows.Where(x => x.Nbar == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
                     Dns = x.Flows.Where(x => x.Nbar == NBAR_DNS).Select(GetDnsResolution).ToArray(),
                     Tls = x.Flows.Where(x => x.Nbar == NBAR_TLS).Select(GetTlsData).ToArray()
-            } };        
+                }
+            };
         }
 
         public static string GetHostAddress(IpfixRecord flow)
@@ -111,7 +155,7 @@ namespace Ethanol.Console
             if (flow.Nbar == NBAR_TLS) return flow.SourceIpAddress;
             if (flow.Nbar == NBAR_HTTPS) return flow.SourceIpAddress;
             if (flow.Nbar == NBAR_HTTP) return flow.SourceIpAddress;
-            return String.Empty;
+            return string.Empty;
         }
 
         private static HttpsConnection GetHttpsConnection(IpfixRecord record)

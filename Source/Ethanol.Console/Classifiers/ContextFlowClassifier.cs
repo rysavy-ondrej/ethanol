@@ -1,9 +1,10 @@
-﻿using Microsoft.StreamProcessing;
+﻿using Ethanol.ContextBuilder.Context;
+using Microsoft.StreamProcessing;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Classifiers
 {
     /// <summary>
     /// Result of the classification. 
@@ -28,13 +29,13 @@ namespace Ethanol.Console
         /// </summary>
         /// <param name="arg">An input context flow to be classified.</param>
         /// <returns>The value of score represented as double.</returns>
-        double Score(ContextFlow<TContext> arg);
+        double Score(InternalContextFlow<TContext> arg);
     }
 
     /// <summary>
     /// A base class of all context flow classifiers.
     /// <para/>
-    /// The classifier needs to implement <see cref="Score(ContextFlow{TContext})"/> method, which computes the likelihood that the given context flow is of the given class.
+    /// The classifier needs to implement <see cref="Score(InternalContextFlow{TContext})"/> method, which computes the likelihood that the given context flow is of the given class.
     /// </summary>
     /// <typeparam name="TContext"></typeparam>
     public abstract class ContextFlowClassifier<TContext> : IContextFlowClassifier<TContext>
@@ -45,7 +46,7 @@ namespace Ethanol.Console
         /// <typeparam name="TContext">The type of the context.</typeparam>
         /// <param name="classifiers">The classifiers to use for the classification.</param>
         /// <returns>An expression that can be used as an operator in <see cref="Streamable.Select{TKey, TPayload, TResult}(IStreamable{TKey, TPayload}, Expression{Func{TPayload, TResult}})"/> method.</returns>
-        public static Expression<Func<ContextFlow<TContext>, ClassifiedContextFlow<TContext>>> Classify(params IContextFlowClassifier<TContext>[] classifiers)
+        public static Expression<Func<InternalContextFlow<TContext>, ClassifiedContextFlow<TContext>>> Classify(params IContextFlowClassifier<TContext>[] classifiers)
         {
             return (arg) =>
               new ClassifiedContextFlow<TContext>(arg.FlowKey, classifiers.Select(classifier => new ClassificationResult(classifier.Label, classifier.Score(arg))).ToArray(), arg.Context);
@@ -54,7 +55,7 @@ namespace Ethanol.Console
         /// Provides an expression that can be used to compute the score of the context flow.
         /// </summary>
         /// <returns>An expression that computes the score for the current classifier.</returns>
-        public abstract double Score(ContextFlow<TContext> arg);
+        public abstract double Score(InternalContextFlow<TContext> arg);
         /// <summary>
         /// A label of the current classifier.
         /// </summary>

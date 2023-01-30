@@ -1,27 +1,27 @@
 {
   "profiles": {
-    "Ethanol.Console": {
-      "commandName": "Project",
-      "commandLineArgs": "help"
-    },
-    "Build-ContextCsv": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-ContextCsv -s ipfix -d supermicro -f yaml > output.yaml",
-      "workingDirectory": "..\\..\\TestData"
-    },
     "Build-ContextJson": {
       "commandName": "Project",
       "commandLineArgs": "Build-ContextJson -i  ./Data/ipfixcol.json -f yaml > ipfixcol.yaml"
     },
     "Build-HostContext": {
       "commandName": "Project",
-      "commandLineArgs": "Build-HostContext -i 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.flows.json -f yaml > 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml",
-      "workingDirectory": "C:\\GitHub\\ethanol\\TestData\\AppAnyRun\\"
+      "commandLineArgs": "Build-Context -r FlowmonJsonReader:file=test.flowmon.json,speed=1 -b IpHostContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=host.contex.yaml",
+      "workingDirectory": "..\\..\\TestData\\"
     },
     "Check-HostContext": {
       "commandName": "Project",
       "commandLineArgs": "Check-HostContext -i 66642dc0-b79e-469a-b0d2-41cc6457827a\\66642dc0-b79e-469a-b0d2-41cc6457827a.context.yaml ",
       "workingDirectory": "C:\\GitHub\\ethanol\\TestData\\AppAnyRun\\"
+    },
+    "Build-FlowContext": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJsonReader:file=test.flowmon.json,speed=1 -b TlsFlowContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=flow.context.yaml",
+      "workingDirectory": "..\\..\\TestData"
+    },
+    "Help": {
+      "commandName": "Project",
+      "commandLineArgs": "help"
     }
   }
 }

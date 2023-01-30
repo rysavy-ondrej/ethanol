@@ -2,7 +2,7 @@
 using System;
 using System.Net.Sockets;
 
-namespace Ethanol.Console
+namespace Ethanol.ContextBuilder.Context
 {
 
     /// <summary>
@@ -28,30 +28,30 @@ namespace Ethanol.Console
         /// </summary>
         public string Nbar { get; set; }
         // we need to be sure that the name of the protocol is correct...
-        public System.Net.Sockets.ProtocolType Protocol { get;  set; }
-        public string SourceIpAddress { get;  set; }
-        public int SourceTransportPort { get;  set; }
-        public string DestinationIpAddress { get;  set; }
-        public int DestinationPort { get;  set; }
+        public ProtocolType Protocol { get; set; }
+        public string SourceIpAddress { get; set; }
+        public int SourceTransportPort { get; set; }
+        public string DestinationIpAddress { get; set; }
+        public int DestinationPort { get; set; }
         public DateTime TimeStart { get; set; }
-        public int Packets { get;  set; }
-        public int Bytes { get;  set; }
-        public TimeSpan TimeDuration { get;  set; }
-        public string TlsClientVersion { get;  set; }
-        public string HttpUrl { get;  set; }
+        public int Packets { get; set; }
+        public int Bytes { get; set; }
+        public TimeSpan TimeDuration { get; set; }
+        public string TlsClientVersion { get; set; }
+        public string HttpUrl { get; set; }
 
         public string HttpResponse { get; set; }
-        public string TlsJa3 { get;  set; }
-        public string TlsServerName { get;  set; }
-        public string TlsServerCommonName { get;  set; }
-        public string DnsQueryName { get;  set; }
-        public string DnsResponseData { get;  set; }
-        public string HttpMethod { get;  set; }
-        public string HttpHost { get;  set; }
+        public string TlsJa3 { get; set; }
+        public string TlsServerName { get; set; }
+        public string TlsServerCommonName { get; set; }
+        public string DnsQueryName { get; set; }
+        public string DnsResponseData { get; set; }
+        public string HttpMethod { get; set; }
+        public string HttpHost { get; set; }
         [Ignore]
         public bool IsTlsFlow => TlsClientVersion != "N/A" && TlsClientVersion != "0";
     }
 }
-    
+
 
 

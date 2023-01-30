@@ -1,52 +1,28 @@
-# ethanol
+# Ethanol
 
-An experimental environment for context-based flow artifact analysis. It implements two phases:
+An experimental environment for context-based flow artifact analysis. 
+The system can be used to analyse the data source, e.g., NetFlow collection that provides an input data. For the selected object, its context is created and then analyzed. Using this approach it is possible to either provide a rich information for each object or to perfom advanced security threats identification or network troubleshooting. 
 
-* building a context for the specified object using the set of predefined queries
-* performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
+It implements the following tools:
+
+* [ContexBuilder](Source/Ethanol.Console/Readme.md) - building a context for the specified object using the set of predefined queries
+* [MalwareSonar](Source/Ethanol.MalwareSonar/Readme.md) - performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
 
 ## Environment and Packages
 
 Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required. 
 
-## Usage
-
-## Why?
-
 ## Documentation
 
-The system is used to analyse the data source, e.g., NetFlow collection that provides an input data. For the selected object, its context is created and then analyzed. Using this approach it is possible to either provide a rich information for each object or to perfom advanced security threats identification or network troubleshooting. 
-
-### Context
-
-A context is an ordered sequence of properties that define an environment for the artifacts.
-
-### Context building
-
-### Detection
-
-Created flow context instance is transfored to input data for a detector DET_M using n-projections that for a given context-flow pair produces a feature vector:
-
-```
-S_1 (CONTEXT, FLOW) -> x_1
-...
-S_n (CONTEXT, FLOW) -> x_n
-
-x = [x_1, ..., x_n]
-
-DET_M (x) -> {0,1} 
-```
-
-The features are then analyzed by model based on random forest classifier:
-https://rubikscode.net/2021/03/01/machine-learning-with-ml-net-random-forest/
-
-## Install
+TBD
 
 ## Acknowledgments
 
 This project was developed in the frame of research initiative [Context-based Encrypted Traffic Analysis Using Flow Data](https://www.fit.vut.cz/research/project/1445/.en).
 
 ## See Also
+
+TBD
 
 ### References
 
@@ -58,4 +34,4 @@ This project was developed in the frame of research initiative [Context-based En
 
 ## License
 
-Not decided yet.
+TBD

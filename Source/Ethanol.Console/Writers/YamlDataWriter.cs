@@ -6,7 +6,7 @@ using YamlDotNet.Serialization;
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
-    /// This object can write the data in YAML format. 
+    /// This object can write the data in the YAML format. 
     /// </summary>
     public class YamlDataWriter : WriterModule<object>
     {
@@ -28,24 +28,27 @@ namespace Ethanol.ContextBuilder.Writers
             return new YamlDataWriter(writer);
         }
         /// <summary>
-        /// Creates a yaml writer for the given <paramref name="writer"/>.
+        /// Creates a YAML writer for the given <paramref name="writer"/>.
         /// </summary>
-        /// <param name="writer"></param>
+        /// <param name="writer">The text writer to produce the output.</param>
         public YamlDataWriter(TextWriter writer)
         {
             this._writer = writer;
         }
 
+        /// <inheritdoc/>
         protected override void Close()
         {
             _writer.Close();
         }
 
+        /// <inheritdoc/>
         protected override void Open()
         {
             // already opened.    
         }
 
+        /// <inheritdoc/>
         protected override void Write(object value)
         {
             _writer.Write(_yamlSerializer.Serialize(value));

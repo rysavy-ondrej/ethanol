@@ -21,18 +21,22 @@ namespace Ethanol.ContextBuilder.Writers
             _taskCompletionSource = new TaskCompletionSource();           
         }
 
+        /// <inheritdoc/>
         public void OnCompleted()
         {
             Close();
             _taskCompletionSource.SetResult();
         }
 
+
+        /// <inheritdoc/>
         public void OnError(Exception error)
         {
             _taskCompletionSource.SetException(error);
         }
-        
 
+
+        /// <inheritdoc/>
         public void OnNext(TRecord value)
         {
             if (!_isopen) { Open(); _isopen = false; }
@@ -40,27 +44,23 @@ namespace Ethanol.ContextBuilder.Writers
         }
 
         /// <summary>
-        /// The task that signalizes completion of the writing.
+        /// The task signalizes completion of the writing operation.
         /// </summary>
         public Task Completed => _taskCompletionSource.Task;
 
+        /// <summary>
+        /// Override in the subclass to perform open operation on the underlying device.
+        /// </summary>
         protected abstract void Open();
 
+        /// <summary>
+        /// Override in the subclass to perform write operation on the underlying device.
+        /// </summary>
         protected abstract void Write(TRecord value);
 
+        /// <summary>
+        /// Override in the subclass to perform close operation on the underlying device.
+        /// </summary>
         protected abstract void Close();
-    }
-
-    public static class WriterFactory
-    {
-        internal static WriterModule<object> GetWriter(ModuleSpecification outputModule)
-        {
-            switch(outputModule?.Name)
-            {
-                case nameof(YamlDataWriter): return YamlDataWriter.Create(outputModule.Parameters);
-                case nameof(JsonDataWriter): return JsonDataWriter.Create(outputModule.Parameters);
-            }
-            return null;
-        }
     }
 }

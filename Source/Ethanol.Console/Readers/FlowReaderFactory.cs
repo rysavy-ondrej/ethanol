@@ -8,7 +8,7 @@ namespace Ethanol.ContextBuilder.Readers
     public static class FlowReaderFactory
     {
         /// <summary>
-        /// Creates flow reader according the givn <paramref name="moduleSpecification"/>.
+        /// Creates flow reader according the given <paramref name="moduleSpecification"/>.
         /// </summary>
         /// <param name="moduleSpecification">The reader modules specification.</param>
         /// <returns>Reader module or null if a reader of the given name does not exist.</returns>

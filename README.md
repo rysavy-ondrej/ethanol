@@ -20,9 +20,8 @@ TBD
 
 This project was developed in the frame of research initiative [Context-based Encrypted Traffic Analysis Using Flow Data](https://www.fit.vut.cz/research/project/1445/.en).
 
-## See Also
+We use [Pine Cone](https://icons8.com/icon/MrEybNsoqQoH/pine-cone"), [Center of Gravity](https://icons8.com/icon/JnSQSAhuEi7B/center-of-gravity) icons by [Icons8](https://icons8.com).
 
-TBD
 
 ### References
 

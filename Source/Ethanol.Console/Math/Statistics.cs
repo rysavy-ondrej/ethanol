@@ -6,6 +6,9 @@ using System.Reactive.Linq;
 
 namespace Ethanol.ContextBuilder.Math
 {
+    /// <summary>
+    /// Provides various useful statistical functions.
+    /// </summary>
     public class Statistics
     {
         /// <summary>

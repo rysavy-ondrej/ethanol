@@ -10,14 +10,21 @@ using System.Threading;
 
 namespace Ethanol.ContextBuilder.Readers
 {
-    public enum JsonFormat { Json, NdJson }
+    /// <summary>
+    /// Reads export from flowmonexp5 in JSON format. This format is specific by 
+    /// representing each flow as an individual JSON object. It is not NDJSON nor 
+    /// properly formatted array of JSON objects.
+    /// </summary>
     class FlowmonJsonReader : InputDataReader<IpfixRecord>
     {
         private readonly TextReader _reader;
         private readonly IMapper mapper;
-        private readonly Func<string> ReadLine;
 
-
+        /// <summary>
+        /// Creates a new reader for the given arguments.
+        /// </summary>
+        /// <param name="arguments">Collection of arguments used to create a reader.</param>
+        /// <returns>A new <see cref="FlowmonJsonReader"/> object.</returns>
         public static FlowmonJsonReader Create(IReadOnlyDictionary<string, string> arguments)
         {
             var reader = arguments.TryGetValue("file", out var inputFile) ? File.OpenText(inputFile) : System.Console.In;
@@ -25,10 +32,13 @@ namespace Ethanol.ContextBuilder.Readers
             return new FlowmonJsonReader(reader);
         }
 
+        /// <summary>
+        /// Initializes the reader with underlying <see cref="TextReader"/>.
+        /// </summary>
+        /// <param name="reader">The text reader device (input file or standard input).</param>
         public FlowmonJsonReader(TextReader reader)
         {
             _reader = reader;
-            ReadLine = () => ReadJsonRecord(reader);
             var configuration = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<FlowmonexpEntry, IpfixRecord>()
@@ -56,10 +66,15 @@ namespace Ethanol.ContextBuilder.Readers
             mapper = configuration.CreateMapper();
         }
 
+        /// <summary>
+        /// Provides next record form the input or null.
+        /// </summary>
+        /// <param name="ipfixRecord">The record that was read or null.</param>
+        /// <returns>true if recrod was read or null for EOF reached.</returns>
         public bool TryReadNextEntry(out IpfixRecord ipfixRecord)
         {
             ipfixRecord = null;
-            var line = ReadLine();
+            var line = ReadJsonRecord(_reader);
             if (line == null) return false;
             if (FlowmonexpEntry.TryDeserialize(line, out var entry))
             {
@@ -68,21 +83,12 @@ namespace Ethanol.ContextBuilder.Readers
             }
             return false;
         }
-        private string ReadNdJsonRecord(TextReader inputStream)
-        {
-            var line = inputStream.ReadLine();
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                return null;
-            }
-            else
-            {
-                return line;
-            }
-        }
 
-        private string ReadJsonRecord(TextReader inputStream)
-        {
+    /// <summary>
+    /// Reads input record from Flowmon's specific JSON.
+    /// </summary>
+    private string ReadJsonRecord(TextReader inputStream)
+        { 
             var buffer = new StringBuilder();
             while (true)
             {
@@ -109,16 +115,17 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
+        /// <inheritdoc/>
         protected override void Open()
         {
 
         }
-
+        /// <inheritdoc/>
         protected override bool TryGetNextRecord(CancellationToken ct, out IpfixRecord record)
         {
             return TryReadNextEntry(out record);
         }
-
+        /// <inheritdoc/>
         protected override void Close()
         {
             _reader.Close();

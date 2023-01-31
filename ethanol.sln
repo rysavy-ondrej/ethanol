@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.ContextBuilder", "Source\Ethanol.Console\Ethanol.ContextBuilder.csproj", "{55A2F8E5-2DA3-4F34-9A1B-33AD0712D18E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.ContextBuilder", "Source\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj", "{55A2F8E5-2DA3-4F34-9A1B-33AD0712D18E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{178FF7A9-31E1-4C4D-8D31-F69F1776B791}"
 EndProject
@@ -20,7 +20,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.Core", "Source\Etha
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.Streaming", "Source\Ethanol.Streaming\Ethanol.Streaming.csproj", "{AE333B9B-F535-47D1-9CB0-EBF94680DBA2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.MalwareSonar", "Source\Ethanol.Ng\Ethanol.MalwareSonar.csproj", "{256C987D-FDBA-4179-B30F-DEB908415F21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.MalwareSonar", "Source\Ethanol.MalwareSonar\Ethanol.MalwareSonar.csproj", "{256C987D-FDBA-4179-B30F-DEB908415F21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

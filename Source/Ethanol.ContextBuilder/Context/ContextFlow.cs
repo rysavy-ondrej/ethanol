@@ -25,7 +25,7 @@ namespace Ethanol.ContextBuilder.Context
     /// <param name="FlowKey"></param>
     /// <param name="Window"></param>
     /// <param name="Context"></param>
-    public record ContextFlow<TContext>(string Id, FlowKey FlowKey, WindowSpan Window, TContext Context);
+    public record ContextFlow<TContext>(string Id, IpfixKey FlowKey, WindowSpan Window, TContext Context);
 
     /// <summary>
     /// This context flow is used internally during computations in streams.
@@ -33,6 +33,6 @@ namespace Ethanol.ContextBuilder.Context
     /// <typeparam name="TContext"></typeparam>
     /// <param name="FlowKey"></param>
     /// <param name="Context"></param>
-    public record InternalContextFlow<TContext>(FlowKey FlowKey, TContext Context);
-    public record ClassifiedContextFlow<TContext>(FlowKey FlowKey, ClassificationResult[] Tags, TContext Context);
+    public record InternalContextFlow<TContext>(IpfixKey FlowKey, TContext Context);
+    public record ClassifiedContextFlow<TContext>(IpfixKey FlowKey, ClassificationResult[] Tags, TContext Context);
 }

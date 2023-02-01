@@ -82,7 +82,7 @@ namespace Ethanol.ContextBuilder
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
 
-            var reader = FlowReaderFactory.GetReader(inputModule) ?? throw new KeyNotFoundException($"Reader {inputModule.Name} not found!");
+            var reader = ReaderFactory.GetReader(inputModule) ?? throw new KeyNotFoundException($"Reader {inputModule.Name} not found!");
             Console.Error.WriteLine($"                   Reader: {reader}");
             var builder = ContextBuilderFactory.GetBuilder(builderModule) ?? throw new KeyNotFoundException($"Builder {builderModule.Name} not found!");
             Console.Error.WriteLine($"                   Builder: {builder}");

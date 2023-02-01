@@ -1,12 +1,8 @@
 ﻿using CsvHelper.Configuration.Attributes;
 
-namespace Ethanol.ContextBuilder.DataObjects
+namespace Ethanol.ContextBuilder.Readers.DataObjects
 {
-    /// <summary>
-    /// Represents a single flow record as exported from nfdump. 
-    /// This record contains many properties but only a few are relevant for further processing. 
-    /// </summary>
-    public class NfdumpEntry
+    struct NfdumpRaw
     {
         [Name("ts")]
         public string TimeStart { get; set; }
@@ -15,7 +11,7 @@ namespace Ethanol.ContextBuilder.DataObjects
         [Name("td")]
         public double TimeDuration { get; set; }
         [Name("sa")]
-        public string SrcIp { get; set; }
+        public string SourceIpAddress { get; set; }
         [Name("da")]
         public string DstIp { get; set; }
         [Name("sp")]

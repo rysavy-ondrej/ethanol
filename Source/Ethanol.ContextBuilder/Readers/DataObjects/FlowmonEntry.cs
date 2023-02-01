@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.ContextBuilder.Readers.DataObjects
 {
     /// <summary>
     /// POCO for JSON record created by flowmonexp5 tool.
     /// </summary>
-    public partial class FlowmonexpEntry
+    internal class FlowmonexpEntry
     {
         [JsonPropertyName("BYTES")]
         public long Bytes { get; set; }
@@ -252,10 +252,7 @@ namespace Ethanol.ContextBuilder.Context
 
         [JsonPropertyName("HTTP_UA_OS_MIN")]
         public long HttpUaOsMin { get; set; }
-    }
 
-    public partial class FlowmonexpEntry
-    {
         public static bool TryDeserialize(string input, out FlowmonexpEntry entry)
         {
             JsonSerializerOptions options = new JsonSerializerOptions();

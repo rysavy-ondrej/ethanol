@@ -1,12 +1,9 @@
 ﻿using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.Streaming;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Hosting;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace Ethanol.ContextBuilder.Builders
@@ -35,27 +32,27 @@ namespace Ethanol.ContextBuilder.Builders
 
     public record HttpsConnection
     {
-        public FlowKey Flow { get; set; }
+        public IpfixKey Flow { get; set; }
         public string DomainName { get; set; }
 
     }
 
     public record HttpRequest
     {
-        public FlowKey Flow { get; set; }
+        public IpfixKey Flow { get; set; }
         public string Url { get; set; }
         public string Method { get; set; }
         public string Response { get; set; }
     }
     public record DnsResolution
     {
-        public FlowKey Flow { get; set; }
+        public IpfixKey Flow { get; set; }
         public string DomainNane { get; set; }
         public string[] Addresses { get; set; }
     }
     public record TlsData
     {
-        public FlowKey Flow { get; set; }
+        public IpfixKey Flow { get; set; }
         public string RequestHost { get; set; }
         public string TlsVersion { get; set; }
         public string JA3 { get; set; }
@@ -66,16 +63,16 @@ namespace Ethanol.ContextBuilder.Builders
     public record HostFlows
     {
         public string Host { get; set; }
-        public IpfixRecord[] Flows { get; set; }
+        public IpfixObject[] Flows { get; set; }
     }
 
-    public class IpHostContextBuilder : ContextBuilder<IpfixRecord, InternalHostContext<NetworkActivity>, HostContext<NetworkActivity>>
+    public class IpHostContextBuilder : ContextBuilder<IpfixObject, InternalHostContext<NetworkActivity>, HostContext<NetworkActivity>>
     {
         public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
         {
         }
 
-        internal static IContextBuilder<IpfixRecord, object> Create(IReadOnlyDictionary<string, string> attributes)
+        internal static IContextBuilder<IpfixObject, object> Create(IReadOnlyDictionary<string, string> attributes)
         {
             if (!attributes.TryGetValue("window", out var windowSize)) windowSize = "00:01:00";
             if (!attributes.TryGetValue("hop", out var windowHop)) windowHop = "00:00:30";
@@ -85,7 +82,7 @@ namespace Ethanol.ContextBuilder.Builders
             return new IpHostContextBuilder(windowSizeTimeSpan, windowHopTimeSpan);
         }
 
-        protected override IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildContext(IStreamable<Empty, IpfixRecord> source)
+        public override IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildContext(IStreamable<Empty, IpfixObject> source)
         {
             return _HostContextBuilder.BuildHostContext(source);
         }
@@ -103,12 +100,12 @@ namespace Ethanol.ContextBuilder.Builders
         private static readonly string NBAR_HTTPS = "HTTPS";
         private static readonly string NBAR_HTTP = "HTTP";
 
-        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixRecord> source)
+        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> source)
         {
             return BuildHostContext(source);
         }
         
-        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext( IStreamable<Empty, IpfixRecord> source)
+        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext( IStreamable<Empty, IpfixObject> source)
         {
             try
             {
@@ -149,7 +146,7 @@ namespace Ethanol.ContextBuilder.Builders
             };
         }
 
-        public static string GetHostAddress(IpfixRecord flow)
+        public static string GetHostAddress(IpfixObject flow)
         {
             if (flow.Nbar == NBAR_DNS) return flow.SourceIpAddress;
             if (flow.Nbar == NBAR_TLS) return flow.SourceIpAddress;
@@ -158,24 +155,38 @@ namespace Ethanol.ContextBuilder.Builders
             return string.Empty;
         }
 
-        private static HttpsConnection GetHttpsConnection(IpfixRecord record)
+        private static HttpsConnection GetHttpsConnection(IpfixObject record)
         {
             return new HttpsConnection { Flow = record.FlowKey, DomainName = record.HttpHost };
         }
 
-        private static HttpRequest GetHttpRequest(IpfixRecord record)
+        private static HttpRequest GetHttpRequest(IpfixObject record)
         {
             return new HttpRequest { Flow = record.FlowKey, Url = record.HttpHost + record.HttpUrl, Method = record.HttpMethod, Response = record.HttpResponse };
         }
 
-        private static DnsResolution GetDnsResolution(IpfixRecord record)
+        private static DnsResolution GetDnsResolution(IpfixObject record)
         {
             return new DnsResolution { Flow = record.FlowKey, DomainNane = record.DnsQueryName, Addresses = record.DnsResponseData?.Split(',') ?? Array.Empty<string>() };
         }
 
-        private static TlsData GetTlsData(IpfixRecord record)
+        private static TlsData GetTlsData(IpfixObject record)
         {
-            return new TlsData { Flow = record.FlowKey, RequestHost = record.HttpHost, TlsVersion = record.TlsClientVersion, JA3 = record.TlsJa3, SNI = record.TlsServerName, CommonName = record.TlsServerCommonName };
+            return new TlsData { Flow = record.FlowKey, RequestHost = record.HttpHost, TlsVersion = record.TlsVersion, JA3 = record.TlsJa3, SNI = record.TlsServerName, CommonName = record.TlsServerCommonName };
+        }
+    }
+    static class IpHostContextBuilderCatalogueExtensions
+    {
+        /// <summary>
+        /// Creates a TLS facts related to the given flow.
+        /// </summary>
+        /// <param name="source">Flow stream.</param>
+        /// <param name="configuration">Configuration.</param>
+        /// <returns>A stream of flows with their contexts.</returns>
+        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> source, TimeSpan windowSize, TimeSpan windowHop)
+        {
+            var builder = new IpHostContextBuilder(windowSize, windowHop);
+            return builder.BuildContext(source);
         }
     }
 }

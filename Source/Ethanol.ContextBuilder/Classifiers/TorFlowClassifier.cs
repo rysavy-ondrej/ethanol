@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Math;
 using Microsoft.StreamProcessing;
 using System.Linq;

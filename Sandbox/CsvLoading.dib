@@ -1,0 +1,96 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!csharp
+
+#r "nuget:CsvHelper"
+using System;
+using System.IO;
+using System.Globalization;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
+
+#!csharp
+
+[Delimiter(",")]
+  internal class NfdumpEntry
+    {
+        [Name("apptag")]
+        public string Nbar { get; set; }
+
+        [Name("pr")]
+        public string Protocol { get; set; }
+
+        [Name("sa")]
+        public string SourceIpAddress { get; set; }
+
+        [Name("sp")]
+        public int SourceTransportPort { get; set; }
+
+        [Name("da")]
+        public string DestinationIpAddress { get; set; }
+
+        [Name("dp")]
+        public int DestinationPort { get; set; }
+
+        [Name("ts")]
+        public DateTime TimeStart { get; set; }
+
+        [Name("td")]
+        public double TimeDuration { get; set; }
+
+        [Name("ipkt")]
+        public int InPackets { get; set; }
+
+        [Name("ibyt")]
+        public int InBytes { get; set; }
+
+        [Name("opkt")]
+        public int OutPackets { get; set; }
+
+        [Name("obyt")]
+        public int OutBytes { get; set; }
+
+        public int Packets => InPackets + OutPackets;
+        public int Bytes => InBytes + OutBytes;
+
+        [Name("tlscver")]
+        public string TlsClientVersion { get; set; }
+
+        [Name("hurl")]
+        public string HttpUrl { get; set; }
+
+        [Name("hrcode")]
+        public int HttpResponse { get; set; }
+
+        [Name("tlsja3")]
+        public string TlsJa3 { get; set; }
+
+        [Name("tlssni")]
+        public string TlsServerName { get; set; }
+
+        [Name("tlsscn")]
+        public string TlsServerCommonName { get; set; }
+
+        [Name("dnsqname")]
+        public string DnsQueryName { get; set; }
+
+        [Name("dnsrdata")]
+        public string DnsResponseData { get; set; }
+
+        [Name("hmethod")]
+        public string HttpMethod { get; set; }
+
+        [Name("hhost")]
+        public string HttpHost { get; set; }
+    }
+
+#!csharp
+
+    var reader = new StreamReader("data-nfdump.csv");
+    var csv = new CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture);
+    var list = csv.GetRecords<NfdumpEntry>().ToList();
+    reader.Close();
+    list.Select(x=>x.Protocol)

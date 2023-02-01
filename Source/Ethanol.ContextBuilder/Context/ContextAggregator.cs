@@ -6,7 +6,10 @@ using System.Linq;
 
 namespace Ethanol.ContextBuilder.Context
 {
-    public static class ContextAggregator
+    /// <summary>
+    /// Static class implements various useful aggregation methods.
+    /// </summary>
+    static class ContextAggregator
     {
         /// <summary>
         /// A default aggregator for the collection of items to be used together with <see cref="AggregateContextStreams"/>. 

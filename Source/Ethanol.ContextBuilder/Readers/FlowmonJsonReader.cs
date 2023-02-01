@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
+using Ethanol.ContextBuilder.Attributes;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Readers.DataObjects;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -15,7 +18,8 @@ namespace Ethanol.ContextBuilder.Readers
     /// representing each flow as an individual JSON object. It is not NDJSON nor 
     /// properly formatted array of JSON objects.
     /// </summary>
-    class FlowmonJsonReader : InputDataReader<IpfixRecord>
+    [Module(ModuleType.Reader, "FlowmonJson")]
+    class FlowmonJsonReader : ReaderModule<IpfixObject>
     {
         private readonly TextReader _reader;
         private readonly IMapper mapper;
@@ -41,7 +45,7 @@ namespace Ethanol.ContextBuilder.Readers
             _reader = reader;
             var configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<FlowmonexpEntry, IpfixRecord>()
+                cfg.CreateMap<FlowmonexpEntry, IpfixObject>()
                 .ForMember(d => d.Bytes, o => o.MapFrom(s => s.Bytes))
                 .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.L3Ipv4Dst))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.L4PortDst))
@@ -58,7 +62,7 @@ namespace Ethanol.ContextBuilder.Readers
                 .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.L4PortSrc))
                 .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.StartNsec))
                 .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.EndNsec - s.StartNsec))
-                .ForMember(d => d.TlsClientVersion, o => o.MapFrom(s => s.TlsClientVersion))
+                .ForMember(d => d.TlsVersion, o => o.MapFrom(s => s.TlsClientVersion))
                 .ForMember(d => d.TlsJa3, o => o.MapFrom(s => s.TlsJa3Fingerprint))
                 .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => s.TlsSubjectCn.Replace("\0", "")))
                 .ForMember(d => d.TlsServerName, o => o.MapFrom(s => s.TlsSni.Replace("\0", "")));
@@ -71,14 +75,14 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="ipfixRecord">The record that was read or null.</param>
         /// <returns>true if recrod was read or null for EOF reached.</returns>
-        public bool TryReadNextEntry(out IpfixRecord ipfixRecord)
+        public bool TryReadNextEntry(out IpfixObject ipfixRecord)
         {
             ipfixRecord = null;
             var line = ReadJsonRecord(_reader);
             if (line == null) return false;
             if (FlowmonexpEntry.TryDeserialize(line, out var entry))
             {
-                ipfixRecord = mapper.Map<IpfixRecord>(entry);
+                ipfixRecord = mapper.Map<IpfixObject>(entry);
                 return true;
             }
             return false;
@@ -121,7 +125,7 @@ namespace Ethanol.ContextBuilder.Readers
 
         }
         /// <inheritdoc/>
-        protected override bool TryGetNextRecord(CancellationToken ct, out IpfixRecord record)
+        protected override bool TryGetNextRecord(CancellationToken ct, out IpfixObject record)
         {
             return TryReadNextEntry(out record);
         }

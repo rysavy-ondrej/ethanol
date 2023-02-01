@@ -22,7 +22,7 @@ namespace Ethanol.ContextBuilder.Builders
             _egressStream = new ObservableEgressStream<TIntermediate>(BuildContext(_ingressStream));
         }
 
-        protected abstract IStreamable<Empty, TIntermediate> BuildContext(IStreamable<Empty, TSource> source);
+        public abstract IStreamable<Empty, TIntermediate> BuildContext(IStreamable<Empty, TSource> source);
 
         public IDisposable Subscribe(IObserver<TTarget> observer)
         {
@@ -49,7 +49,7 @@ namespace Ethanol.ContextBuilder.Builders
 
     public static class ContextBuilderFactory
     {
-        public static IContextBuilder<IpfixRecord, object> GetBuilder(ModuleSpecification moduleSpecification)
+        public static IContextBuilder<IpfixObject, object> GetBuilder(ModuleSpecification moduleSpecification)
         {
             switch(moduleSpecification?.Name)
             {

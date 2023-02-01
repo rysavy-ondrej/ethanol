@@ -2,12 +2,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ethanol.ContextBuilder.DataObjects
+namespace Ethanol.ContextBuilder.Readers.DataObjects
 {
     /// <summary>
-    /// POCO for JSON record created by ipfixcol2 tool. 
+    /// Representational object for JSON record created by ipfixcol2 tool. 
+    /// <para/>
+    /// The object is loaded from the output from ipfixcol2 tool. Use map to get corresponding IpfixRecord.
     /// </summary>
-    public partial class IpfixcolEntry
+    internal class IpfixcolEntry
     {
         public static bool TryDeserialize(string input, out IpfixcolEntry entry)
         {
@@ -16,16 +18,13 @@ namespace Ethanol.ContextBuilder.DataObjects
                 entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);
                 return true;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 entry = default;
                 return false;
             }
         }
-    }
-
-    public partial class IpfixcolEntry
-    {
+        #region FLOWMON IPFIX Fields
         [JsonPropertyName("flowmon:dnsId")]
         public int FlowmonDnsId { get; set; }
 
@@ -70,9 +69,7 @@ namespace Ethanol.ContextBuilder.DataObjects
 
         [JsonPropertyName("flowmon:dnsQclass")]
         public int FlowmonDnsQclass { get; set; }
-    }
-    public partial class IpfixcolEntry
-    {
+
 
         [JsonPropertyName("flowmon:httpHost")]
         public string FlowmonHttpHost { get; set; }
@@ -172,10 +169,6 @@ namespace Ethanol.ContextBuilder.DataObjects
 
         [JsonPropertyName("flowmon:tlsJa3Fingerprint")]
         public string FlowmonTlsJa3Fingerprint { get; set; }
-    }
-
-    public partial class IpfixcolEntry
-    {
 
         [JsonPropertyName("flowmon:npmJitterDev")]
         public int FlowmonNpmJitterDev { get; set; }
@@ -212,13 +205,8 @@ namespace Ethanol.ContextBuilder.DataObjects
 
         [JsonPropertyName("flowmon:npmServerResponseTime")]
         public long FlowmonNpmServerResponseTime { get; set; }
-    }
-
-    /// <summary>
-    /// Represents Ipfix.entry record as provided by the JSON output from ipfixcol2 tool.
-    /// </summary>
-    public partial class IpfixcolEntry
-    {
+        #endregion
+        #region IANA IPFIX Fields
         [JsonPropertyName("@type")]
         public string Type { get; set; }
 
@@ -284,6 +272,7 @@ namespace Ethanol.ContextBuilder.DataObjects
 
         [JsonPropertyName("iana:applicationId")]
         public int IanaApplicationId { get; set; }
+        #endregion
     }
 }
 

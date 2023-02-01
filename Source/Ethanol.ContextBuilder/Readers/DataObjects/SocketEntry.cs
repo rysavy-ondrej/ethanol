@@ -2,7 +2,7 @@
 using Ethanol.ContextBuilder.Context;
 using System;
 
-namespace Ethanol.ContextBuilder.DataObjects
+namespace Ethanol.ContextBuilder.Readers.DataObjects
 {
     /// <summary>
     /// Represents a single record in the collection of TCP connection list
@@ -14,7 +14,7 @@ namespace Ethanol.ContextBuilder.DataObjects
         public string FlowKeyString { get; set; }
 
         [Ignore]
-        public FlowKey FlowKey => new FlowKey { Proto = "TCP", SrcIp = LocalAddress, SrcPt = LocalPort, DstIp = RemoteAddress, DstPt = RemotePort };
+        public IpfixKey FlowKey => new IpfixKey { Proto = "TCP", SrcIp = LocalAddress, SrcPt = LocalPort, DstIp = RemoteAddress, DstPt = RemotePort };
 
         [Name("LocalAddress")]
         public string LocalAddress { get; set; }

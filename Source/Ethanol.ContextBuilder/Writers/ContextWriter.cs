@@ -1,22 +1,17 @@
-﻿using Ethanol.ContextBuilder.Readers;
-using System;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
-using CsvHelper;
-using System.Xml.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
-    /// Represets a base class for all writer modules. Writer modules produces 
-    /// context-based information in the specifc output format. 
+    /// Represets a base class for all writers. A writer outputs 
+    /// context-based data in the specifc output format. 
     /// </summary>
-    public abstract class WriterModule<TRecord> : IObserver<TRecord>
+    public abstract class ContextWriter<TRecord> : IObserver<TRecord>
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource;
-        protected WriterModule()
+        protected ContextWriter()
         {
             _taskCompletionSource = new TaskCompletionSource();           
         }

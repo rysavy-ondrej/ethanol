@@ -5,7 +5,7 @@ The system can be used to analyse the data source, e.g., NetFlow collection that
 
 It implements the following tools:
 
-* [ContexBuilder](Source/Ethanol.Console/Readme.md) - building a context for the specified object using the set of predefined queries
+* [ContexBuilder](Source/Ethanol.ContextBuilder/Readme.md) - building a context for the specified object using the set of predefined queries
 * [MalwareSonar](Source/Ethanol.MalwareSonar/Readme.md) - performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
 
 ## Environment and Packages

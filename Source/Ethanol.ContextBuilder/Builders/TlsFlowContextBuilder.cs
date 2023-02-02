@@ -1,5 +1,8 @@
-﻿using Ethanol.Catalogs;
+﻿using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
@@ -7,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
@@ -24,6 +28,7 @@ namespace Ethanol.ContextBuilder.Builders
         FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
     public record TlsClientKey(string SrcIp, string Ja3Fingerprint);
 
+    [Plugin(PluginType.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
     public class TlsFlowContextBuilder : ContextBuilder<IpfixObject, InternalContextFlow<TlsContext>, ContextFlow<TlsContext>>
     {
 
@@ -31,14 +36,18 @@ namespace Ethanol.ContextBuilder.Builders
         {
         }
 
-        internal static IContextBuilder<IpfixObject, object> Create(IReadOnlyDictionary<string, string> attributes)
+        public class Configuration
         {
-            if (!attributes.TryGetValue("window", out var windowSize)) windowSize = "00:01:00";
-            if (!attributes.TryGetValue("hop", out var windowHop))  windowHop = "00:00:30";
+            [YamlMember(Alias = "window", Description = "The time span of window.")]
+            public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
+            [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
+            public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
+        }
 
-            if (!TimeSpan.TryParse(windowSize, out var windowSizeTimeSpan)) windowSizeTimeSpan = TimeSpan.FromSeconds(60);
-            if (!TimeSpan.TryParse(windowHop, out var windowHopTimeSpan)) windowHopTimeSpan = TimeSpan.FromSeconds(30);
-            return new TlsFlowContextBuilder(windowSizeTimeSpan, windowHopTimeSpan);
+        [PluginCreate]
+        internal static IContextBuilder<IpfixObject, object> Create(Configuration configuration)
+        {
+            return new TlsFlowContextBuilder(configuration.Window, configuration.Hop);
         }
 
         public override IStreamable<Empty, InternalContextFlow<TlsContext>> BuildContext(IStreamable<Empty, IpfixObject> source)

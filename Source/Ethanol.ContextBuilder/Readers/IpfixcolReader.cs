@@ -5,16 +5,28 @@ using System.IO;
 using System.Threading;
 using System.Collections.Generic;
 using Ethanol.ContextBuilder.Readers.DataObjects;
-using Ethanol.ContextBuilder.Attributes;
+using System.Text.Json.Serialization;
+using Ethanol.ContextBuilder.Plugins.Attributes;
+using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Readers
 {
     /// <summary>
     /// Reads <see cref="IpfixObject"/> collection as exported from Ipfixcol2 tool (https://github.com/CESNET/ipfixcol2), which is basically NDJSON.
     /// </summary>
-    [Module(ModuleType.Reader, "IpfixcolJson")]
-    class IpfixcolReader : ReaderModule<IpfixObject>
+    [Plugin(PluginType.Reader, "IpfixcolJson", "Reads NDJSON exported from ipfixcol2 tool.")]
+    class IpfixcolReader : FlowReader<IpfixObject>
     {
+
+        public class Configuration
+        {
+            [YamlMember(Alias = "file", Description = "The file name with JSON data to read.")]
+            public string FileName { get; set; }
+        }
+
+
         private readonly TextReader _textReader;
         private readonly MapperConfiguration _configuration;
         private readonly IMapper _mapper;
@@ -25,10 +37,10 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="arguments">Collection of arguments used to create a reader.</param>
         /// <returns>A new <see cref="IpfixcolReader"/> object.</returns>
-        public static IpfixcolReader Create(IReadOnlyDictionary<string, string> arguments)
+        [PluginCreate]
+        public static IpfixcolReader Create(Configuration configuration)
         {
-            var reader = arguments.TryGetValue("file", out var inputFile) ? File.OpenText(inputFile) : System.Console.In;
-            arguments.TryGetValue("format", out var format);
+            var reader = configuration.FileName != null ? File.OpenText(configuration.FileName) : System.Console.In;
             return new IpfixcolReader(reader);
         }
         /// <summary>

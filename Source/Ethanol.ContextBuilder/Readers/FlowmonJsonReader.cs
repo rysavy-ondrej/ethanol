@@ -1,15 +1,18 @@
 ﻿using AutoMapper;
-using Ethanol.ContextBuilder.Attributes;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Readers
 {
@@ -18,21 +21,28 @@ namespace Ethanol.ContextBuilder.Readers
     /// representing each flow as an individual JSON object. It is not NDJSON nor 
     /// properly formatted array of JSON objects.
     /// </summary>
-    [Module(ModuleType.Reader, "FlowmonJson")]
-    class FlowmonJsonReader : ReaderModule<IpfixObject>
+    [Plugin(PluginType.Reader, "FlowmonJson", "Reads JSON file with IPFIX data produced by flowmonexp5 tool.")]
+    class FlowmonJsonReader : FlowReader<IpfixObject>
     {
         private readonly TextReader _reader;
         private readonly IMapper mapper;
+
+
+        public class Configuration
+        {
+            [YamlMember(Alias ="file", Description ="The file name with JSON data to read.")]
+            public string FileName { get; set; }
+        }
 
         /// <summary>
         /// Creates a new reader for the given arguments.
         /// </summary>
         /// <param name="arguments">Collection of arguments used to create a reader.</param>
         /// <returns>A new <see cref="FlowmonJsonReader"/> object.</returns>
-        public static FlowmonJsonReader Create(IReadOnlyDictionary<string, string> arguments)
+        [PluginCreate]
+        public static FlowmonJsonReader Create(Configuration configuration)
         {
-            var reader = arguments.TryGetValue("file", out var inputFile) ? File.OpenText(inputFile) : System.Console.In;
-            arguments.TryGetValue("format", out var format);
+            var reader = configuration.FileName != null ? File.OpenText(configuration.FileName) : System.Console.In;
             return new FlowmonJsonReader(reader);
         }
 

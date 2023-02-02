@@ -1,10 +1,14 @@
-﻿using Ethanol.Catalogs;
+﻿using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
@@ -66,20 +70,17 @@ namespace Ethanol.ContextBuilder.Builders
         public IpfixObject[] Flows { get; set; }
     }
 
+    [Plugin(PluginType.Builder, "HostContext", "Builds the context for Ip hosts identified in the source IPFIX stream.")]
     public class IpHostContextBuilder : ContextBuilder<IpfixObject, InternalHostContext<NetworkActivity>, HostContext<NetworkActivity>>
     {
         public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
         {
         }
 
-        internal static IContextBuilder<IpfixObject, object> Create(IReadOnlyDictionary<string, string> attributes)
+        [PluginCreate]
+        internal static IContextBuilder<IpfixObject, object> Create(Configuration configuration)
         {
-            if (!attributes.TryGetValue("window", out var windowSize)) windowSize = "00:01:00";
-            if (!attributes.TryGetValue("hop", out var windowHop)) windowHop = "00:00:30";
-
-            if (!TimeSpan.TryParse(windowSize, out var windowSizeTimeSpan)) windowSizeTimeSpan = TimeSpan.FromSeconds(60);
-            if (!TimeSpan.TryParse(windowHop, out var windowHopTimeSpan)) windowHopTimeSpan = TimeSpan.FromSeconds(30);
-            return new IpHostContextBuilder(windowSizeTimeSpan, windowHopTimeSpan);
+            return new IpHostContextBuilder(configuration.Window, configuration.Hop);
         }
 
         public override IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildContext(IStreamable<Empty, IpfixObject> source)
@@ -90,6 +91,14 @@ namespace Ethanol.ContextBuilder.Builders
         protected override HostContext<NetworkActivity> GetTarget(StreamEvent<InternalHostContext<NetworkActivity>> arg)
         {
             return new HostContext<NetworkActivity> { HostKey = arg.Payload.HostKey, Window = WindowSpan.FromLong(arg.StartTime, arg.EndTime), Value = arg.Payload.Value };
+        }
+
+        public class Configuration
+        {
+            [YamlMember(Alias = "window", Description = "The time span of window.")]
+            public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
+            [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
+            public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
         }
     }
 

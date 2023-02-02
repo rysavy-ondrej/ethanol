@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using CsvHelper;
-using Ethanol.ContextBuilder.Attributes;
+using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
 using System;
 using System.Collections.Generic;
@@ -10,8 +12,10 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using YamlDotNet.Core.Tokens;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Readers
 {
@@ -20,9 +24,15 @@ namespace Ethanol.ContextBuilder.Readers
     /// representing each flow as an individual JSON object. It is not NDJSON nor 
     /// properly formatted array of JSON objects.
     /// </summary>
-    [Module(ModuleType.Reader, "NfdumpCsv")]
-    class NfdumpReader : ReaderModule<IpfixObject>
+    [Plugin(PluginType.Reader, "NfdumpCsv", "Reads CSV file produced by nfdump.")]
+    class NfdumpReader : FlowReader<IpfixObject>
     {
+        public class Configuration
+        {
+            [YamlMember(Alias = "file", Description = "The file name with JSON data to read.")]
+            public string FileName { get; set; }
+        }
+
         private readonly CsvReader _csvReader;
         private readonly IMapper mapper;
 
@@ -31,9 +41,10 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="arguments">Collection of arguments used to create a reader.</param>
         /// <returns>A new <see cref="FlowmonJsonReader"/> object.</returns>
-        public static NfdumpReader Create(IReadOnlyDictionary<string, string> arguments)
+        [PluginCreate]
+        public static NfdumpReader Create(Configuration configuration)
         {
-            var reader = arguments.TryGetValue("file", out var inputFile) ? File.OpenText(inputFile) : System.Console.In;
+            var reader = configuration.FileName != null ? File.OpenText(configuration.FileName) : System.Console.In;
             return new NfdumpReader(reader);
         }
 

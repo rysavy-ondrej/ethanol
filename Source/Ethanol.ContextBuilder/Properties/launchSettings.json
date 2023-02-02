@@ -1,23 +1,23 @@
 {
   "profiles": {
-    "Help": {
-      "commandName": "Project",
-      "commandLineArgs": "help"
-    },
     "Build-HostContext(JSON)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:file=test.flowmon.json,speed=1 -b IpHostContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=host-json.contex.yaml",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowmon.json} -b HostContext:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=host-json.contex.yaml}",
       "workingDirectory": "..\\..\\TestData\\"
     },
     "Build-TlsFlowContext(CSV)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:file=test.nfdump.csv,speed=1 -b TlsFlowContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=flow-nfdump.context.yaml",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b TlsFlowContextBuilder:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-nfdump.context.yaml}",
       "workingDirectory": "..\\..\\TestData"
     },
     "Build-TlsFlowContext(JSON)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:file=test.flowmon.json,speed=1 -b TlsFlowContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=flow-json.context.yaml",
+      "commandLineArgs": "Build-Context -r \"FlowmonJson:{file=test.flowmon.json} -b FlowContext:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-json.context.yaml}",
       "workingDirectory": "..\\..\\TestData"
+    },
+    "List-Modules": {
+      "commandName": "Project",
+      "commandLineArgs": "List-Modules"
     }
   }
 }

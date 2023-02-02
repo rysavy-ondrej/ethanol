@@ -1,23 +1,18 @@
-﻿namespace Ethanol.ContextBuilder.Writers
+﻿using Ethanol.ContextBuilder.Plugins;
+using Ethanol.ContextBuilder.Plugins.Attributes;
+using System;
+
+namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
-    /// Factory class for creating writer modules.
+    /// Factory class supporting to instantiating flow readers.
     /// </summary>
-    public static class WriterFactory
+    public class WriterFactory : PluginFactory<ContextWriter<object>>
     {
-        /// <summary>
-        /// Creates writer object according the given <paramref name="moduleSpecification"/>.
-        /// </summary>
-        /// <param name="moduleSpecification">The writer modules specification.</param>
-        /// <returns>Writer module or null if a writer of the given name does not exist.</returns>
-        internal static WriterModule<object> GetWriter(ModuleSpecification outputModule)
+        protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            switch(outputModule?.Name)
-            {
-                case nameof(YamlDataWriter): return YamlDataWriter.Create(outputModule.Parameters);
-                case nameof(JsonDataWriter): return JsonDataWriter.Create(outputModule.Parameters);
-            }
-            return null;
+            return plugin.Plugin.PluginType == PluginType.Writer;
         }
+        static public WriterFactory Instance => new WriterFactory();
     }
 }

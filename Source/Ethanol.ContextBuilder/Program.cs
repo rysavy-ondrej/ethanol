@@ -1,5 +1,6 @@
 ﻿using ConsoleAppFramework;              //----> https://github.com/Cysharp/ConsoleAppFramework
 using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using Microsoft.Extensions.Hosting;
@@ -76,17 +77,17 @@ namespace Ethanol.ContextBuilder
         {
             var sw = new Stopwatch();
             sw.Start();
-            var inputModule = ModuleSpecification.Parse(inputReader);
-            var builderModule = ModuleSpecification.Parse(contextBuilder);
-            var outputModule = ModuleSpecification.Parse(outputWriter);
+            var readerRecipe = PluginCreateRecipe.Parse(inputReader);
+            var builderRecipe = PluginCreateRecipe.Parse(contextBuilder);
+            var writerRecipe = PluginCreateRecipe.Parse(outputWriter);
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
 
-            var reader = ReaderFactory.GetReader(inputModule) ?? throw new KeyNotFoundException($"Reader {inputModule.Name} not found!");
+            var reader = ReaderFactory.Instance.CreatePluginObject(readerRecipe.Name, readerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Reader {readerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Reader: {reader}");
-            var builder = ContextBuilderFactory.GetBuilder(builderModule) ?? throw new KeyNotFoundException($"Builder {builderModule.Name} not found!");
+            var builder = ContextBuilderFactory.Instance.CreatePluginObject(builderRecipe.Name, builderRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {builderRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Builder: {builder}");
-            var writer = WriterFactory.GetWriter(outputModule) ?? throw new KeyNotFoundException($"Writer {outputModule.Name} not found!");
+            var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Writer: {writer}");
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
@@ -101,19 +102,23 @@ namespace Ethanol.ContextBuilder
         /// Gets the list of all available modules. 
         /// </summary>
         [Command("List-Modules", "Provides information on available modules.")]
-        public async Task ListModulesCommand(
-            )
+        public void ListModulesCommand()
         {
             Console.WriteLine("READERS:");
-            Console.WriteLine($"  {nameof(FlowmonJsonReader)}      reads JSON file with IPFIX data produced by flowmonexp5 tool.");
-            
+            foreach(var obj in ReaderFactory.Instance.PluginObjects)
+            {
+                Console.WriteLine($"  {obj.Name}    {obj.Description}");
+            }
             Console.WriteLine("BUILDERS:");
-            Console.WriteLine($"  {nameof(TlsFlowContextBuilder)}  builds the context for TLS flows in the source IPFIX stream.");
-            Console.WriteLine($"  {nameof(IpHostContextBuilder)}   builds the context for Ip hosts identified in the source IPFIX stream.");
-
+            foreach (var obj in ContextBuilderFactory.Instance.PluginObjects)
+            {
+                Console.WriteLine($"  {obj.Name}    {obj.Description}");
+            }
             Console.WriteLine("WRITERS:");
-            Console.WriteLine($"  {nameof(JsonDataWriter)}         writes NDJSON formatted file for computed context.");
-            Console.WriteLine($"  {nameof(YamlDataWriter)}         writes YAML formatted file for computed context.");
+            foreach (var obj in WriterFactory.Instance.PluginObjects)
+            {
+                Console.WriteLine($"  {obj.Name}    {obj.Description}");
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// <para/>
     /// The database provides additional data indexed by IP addresses. This data enrich context.
     /// </summary>
-    public class PostgreTagsReader : ReaderModule<Enrichment>
+    public class PostgreTagsReader : FlowReader<Enrichment>
     {
         protected override void Close()
         {

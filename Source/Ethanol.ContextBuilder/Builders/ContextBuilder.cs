@@ -1,10 +1,12 @@
-﻿using Elastic.Clients.Elasticsearch.Core.Reindex;
-using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Plugins;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Linq;
 using System.Reactive.Linq;
+
 namespace Ethanol.ContextBuilder.Builders
 {
 
@@ -47,16 +49,17 @@ namespace Ethanol.ContextBuilder.Builders
         }
     }
 
-    public static class ContextBuilderFactory
+
+
+    /// <summary>
+    /// Factory class supporting to instantiating flow readers.
+    /// </summary>
+    public class ContextBuilderFactory : PluginFactory<IContextBuilder<IpfixObject, object>>
     {
-        public static IContextBuilder<IpfixObject, object> GetBuilder(ModuleSpecification moduleSpecification)
+        protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            switch(moduleSpecification?.Name)
-            {
-                case nameof(TlsFlowContextBuilder): return TlsFlowContextBuilder.Create(moduleSpecification.Parameters);
-                case nameof(IpHostContextBuilder): return IpHostContextBuilder.Create(moduleSpecification.Parameters);
-            }
-            return null;
+            return plugin.Plugin.PluginType == PluginType.Builder;
         }
+        static public ContextBuilderFactory Instance => new ContextBuilderFactory();
     }
 }

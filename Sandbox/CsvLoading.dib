@@ -93,4 +93,4 @@ using CsvHelper.Configuration.Attributes;
     var csv = new CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture);
     var list = csv.GetRecords<NfdumpEntry>().ToList();
     reader.Close();
-    list.Select(x=>x.Protocol)
+    list.Select(x=>x.TlsServerName)

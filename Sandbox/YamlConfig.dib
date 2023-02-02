@@ -1,0 +1,37 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!csharp
+
+#r "nuget:YamlDotNet"
+using YamlDotNet.Serialization;
+
+
+ private static readonly IDeserializer deserializer = new DeserializerBuilder().Build();
+       
+
+#!csharp
+
+public class Configuration
+{
+    [YamlMember(Alias ="file", Description ="The file name with JSON data to read.")]
+    public string FileName { get; set; }
+    [YamlMember(Alias = "foo", Description = "Dummy property.")]
+    public int Foo { get; set;  }
+    [YamlMember(Alias = "bar", Description = "Dummy property.")]
+    public TimeSpan Bar { get; set; }
+    [YamlMember(Alias = "date", Description = "Dummy property.")]
+    public DateTime Date { get; set; }
+    public static Configuration Deserialize(string input)
+    {
+        var yamlString = System.Text.RegularExpressions.Regex.Replace(input, @"(([{,])(\w+:))", "$2 $3 ");
+        return (Configuration)deserializer.Deserialize(yamlString, typeof(Configuration));
+    }
+}
+
+#!csharp
+
+var obj = Configuration.Deserialize(@"{file:c:\Temp\aaaa.txt,foo:123,bar:00:00:01,date:13:23:45.123}");
+
+obj

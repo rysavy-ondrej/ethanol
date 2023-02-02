@@ -1,13 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Ethanol.ContextBuilder.Plugins.Attributes;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
     /// Produces NDJSON output for arbitrary object type.
     /// </summary>
-    public class JsonDataWriter : WriterModule<object>
+    [Plugin(PluginType.Writer, "JsonWriter", "Writes NDJSON formatted file for computed context.")]
+    public class JsonDataWriter : ContextWriter<object>
     {
         private readonly TextWriter _writer;
         JsonSerializerOptions _jsonOptions;
@@ -21,10 +27,16 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         /// <param name="arguments">The arguments used in object creation.</param>
         /// <returns>The new  <see cref="JsonDataWriter"/> object. </returns>
-        public static JsonDataWriter Create(IReadOnlyDictionary<string, string> arguments)
+        public static JsonDataWriter Create(Configuration configuration)
         {
-            var writer = arguments.TryGetValue("file", out var inputFile) ? File.CreateText(inputFile) : System.Console.Out;
+                var writer = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
             return new JsonDataWriter(writer);
+        }
+
+        public class Configuration
+        {
+            [YamlMember(Alias = "file", Description = "The file name with NDJSON data to write.")]
+            public string FileName { get; set; }
         }
         /// <summary>
         /// Creates a JSON writer for the given <paramref name="writer"/>.

@@ -13,13 +13,13 @@ namespace Ethanol.ContextBuilder.Readers
     /// abstract from implementation details and provide data as observable sequence.
     /// </summary>
     /// <typeparam name="TRecord">The type of recrods to read.</typeparam>
-    public abstract class ReaderModule<TRecord> : IObservable<TRecord>
+    public abstract class FlowReader<TRecord> : IObservable<TRecord>
     {
         CancellationTokenSource _cts;
         Subject<TRecord> _subject;
         private Task _readingTask;
 
-        protected ReaderModule()
+        protected FlowReader()
         {
             _subject = new Subject<TRecord>();
             _cts = new CancellationTokenSource();

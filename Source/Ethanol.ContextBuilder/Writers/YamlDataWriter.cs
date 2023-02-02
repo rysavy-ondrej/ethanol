@@ -2,13 +2,18 @@
 using System.IO;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
+using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Context;
+using System.Text.Json.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
     /// This object can write the data in the YAML format. 
     /// </summary>
-    public class YamlDataWriter : WriterModule<object>
+    [Plugin(PluginType.Writer, "YamlWriter", "Writes YAML formatted file for computed context.")]
+    public class YamlDataWriter : ContextWriter<object>
     {
         private readonly TextWriter _writer;
         private readonly ISerializer _yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
@@ -22,10 +27,17 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         /// <param name="arguments">The arguments used in object creation.</param>
         /// <returns>The new  <see cref="YamlDataWriter"/> object. </returns>
-        public static YamlDataWriter Create(IReadOnlyDictionary<string, string> arguments)
+        /// 
+        [PluginCreate]
+        public static YamlDataWriter Create(Configuration configuration)
         {
-            var writer = arguments.TryGetValue("file", out var inputFile) ? File.CreateText(inputFile) : System.Console.Out;
+            var writer = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
             return new YamlDataWriter(writer);
+        }
+        public class Configuration
+        {
+            [YamlMember(Alias = "file", Description = "The file name with YAML data to write.")]
+            public string FileName { get; set; }
         }
         /// <summary>
         /// Creates a YAML writer for the given <paramref name="writer"/>.

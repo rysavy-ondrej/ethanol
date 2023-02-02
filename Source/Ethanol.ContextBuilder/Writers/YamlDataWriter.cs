@@ -25,7 +25,7 @@ namespace Ethanol.ContextBuilder.Writers
         /// <para/>
         /// file=OUTPUT_FILE specifies that the output will be written to OUTPUT_FILE instead to standard output.
         /// </summary>
-        /// <param name="arguments">The arguments used in object creation.</param>
+        /// <param name="configuration">The configuration used in object creation.</param>
         /// <returns>The new  <see cref="YamlDataWriter"/> object. </returns>
         /// 
         [PluginCreate]
@@ -36,7 +36,8 @@ namespace Ethanol.ContextBuilder.Writers
         }
         public class Configuration
         {
-            [YamlMember(Alias = "file", Description = "The file name with YAML data to write.")]
+            [PluginParameter(Name: "file", PluginParameterFlag.Optional, Description: "The file name with YAML data to write.")]
+            [YamlMember(Alias="file")]
             public string FileName { get; set; }
         }
         /// <summary>

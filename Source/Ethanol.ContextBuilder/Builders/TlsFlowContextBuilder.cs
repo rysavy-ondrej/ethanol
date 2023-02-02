@@ -28,6 +28,10 @@ namespace Ethanol.ContextBuilder.Builders
         FlowGroup<EndpointsKey, HttpFlowRecord> PlainHttpFlows);
     public record TlsClientKey(string SrcIp, string Ja3Fingerprint);
 
+
+    /// <summary>
+    /// Implements TLS flow context builder.
+    /// </summary>
     [Plugin(PluginType.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
     public class TlsFlowContextBuilder : ContextBuilder<IpfixObject, InternalContextFlow<TlsContext>, ContextFlow<TlsContext>>
     {

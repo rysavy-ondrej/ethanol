@@ -1,5 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Readers;
 using System;
 
 namespace Ethanol.ContextBuilder.Writers
@@ -13,6 +14,9 @@ namespace Ethanol.ContextBuilder.Writers
         {
             return plugin.Plugin.PluginType == PluginType.Writer;
         }
-        static public WriterFactory Instance => new WriterFactory();
+        /// <summary>
+        /// Gets the singleton of the factory.
+        /// </summary>
+        static public WriterFactory Instance { get; } = new WriterFactory();
     }
 }

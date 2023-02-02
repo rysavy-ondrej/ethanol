@@ -1,3 +1,115 @@
+id: Tcp@192.168.111.32:55263-52.182.143.210:443
+flowKey:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 55263
+  dstIp: 52.182.143.210
+  dstPt: 443
+window:
+  start: 2021-10-16T16:59:25.0000000
+  duration: 00:00:05
+context:
+  tlsRecord:
+    flow:
+      proto: Tcp
+      srcIp: 192.168.111.32
+      srcPt: 55263
+      dstIp: 52.182.143.210
+      dstPt: 443
+    meters:
+      packets: 10
+      octets: 3628
+      timeStart: 2021-10-16T16:59:26.9690000
+      duration: 00:00:00.5669999
+    tlsJa3: cd08e31494f9531f560d64c695473da9
+    tlsServerName: browser.pipe.aria.microsoft.com
+    tlsServerCommonName: '*.events.data.microsoft.com'
+    processName: 
+  domains:
+    key: 
+    flows: []
+  tlsClientFlows:
+    key:
+      srcIp: 192.168.111.32
+      ja3Fingerprint: cd08e31494f9531f560d64c695473da9
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 55263
+        dstIp: 52.182.143.210
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3628
+        timeStart: 2021-10-16T16:59:26.9690000
+        duration: 00:00:00.5669999
+      tlsJa3: cd08e31494f9531f560d64c695473da9
+      tlsServerName: browser.pipe.aria.microsoft.com
+      tlsServerCommonName: '*.events.data.microsoft.com'
+      processName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 63399
+        dstIp: 52.16.234.243
+        dstPt: 443
+      meters:
+        packets: 19
+        octets: 2091
+        timeStart: 2021-10-16T16:59:25.4710000
+        duration: 00:00:10.1370000
+      tlsJa3: cd08e31494f9531f560d64c695473da9
+      tlsServerName: w.usabilla.com
+      tlsServerCommonName: w.usabilla.com
+      processName: 
+  bagOfFlows:
+    key:
+      dstIp: 52.182.143.210
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 55263
+        dstIp: 52.182.143.210
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3628
+        timeStart: 2021-10-16T16:59:26.9690000
+        duration: 00:00:00.5669999
+      tlsJa3: cd08e31494f9531f560d64c695473da9
+      tlsServerName: browser.pipe.aria.microsoft.com
+      tlsServerCommonName: '*.events.data.microsoft.com'
+      processName: 
+  flowBurst:
+    key:
+      srcIp: 192.168.111.32
+      dstIp: 52.182.143.210
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 55263
+        dstIp: 52.182.143.210
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3628
+        timeStart: 2021-10-16T16:59:26.9690000
+        duration: 00:00:00.5669999
+      tlsJa3: cd08e31494f9531f560d64c695473da9
+      tlsServerName: browser.pipe.aria.microsoft.com
+      tlsServerCommonName: '*.events.data.microsoft.com'
+      processName: 
+  plainHttpFlows:
+    key: 
+    flows: []
+---
 id: Tcp@192.168.111.32:63399-52.16.234.243:443
 flowKey:
   proto: Tcp
@@ -120,118 +232,6 @@ context:
       tlsJa3: cd08e31494f9531f560d64c695473da9
       tlsServerName: w.usabilla.com
       tlsServerCommonName: w.usabilla.com
-      processName: 
-  plainHttpFlows:
-    key: 
-    flows: []
----
-id: Tcp@192.168.111.32:55263-52.182.143.210:443
-flowKey:
-  proto: Tcp
-  srcIp: 192.168.111.32
-  srcPt: 55263
-  dstIp: 52.182.143.210
-  dstPt: 443
-window:
-  start: 2021-10-16T16:59:25.0000000
-  duration: 00:00:05
-context:
-  tlsRecord:
-    flow:
-      proto: Tcp
-      srcIp: 192.168.111.32
-      srcPt: 55263
-      dstIp: 52.182.143.210
-      dstPt: 443
-    meters:
-      packets: 10
-      octets: 3628
-      timeStart: 2021-10-16T16:59:26.9690000
-      duration: 00:00:00.5669999
-    tlsJa3: cd08e31494f9531f560d64c695473da9
-    tlsServerName: browser.pipe.aria.microsoft.com
-    tlsServerCommonName: '*.events.data.microsoft.com'
-    processName: 
-  domains:
-    key: 
-    flows: []
-  tlsClientFlows:
-    key:
-      srcIp: 192.168.111.32
-      ja3Fingerprint: cd08e31494f9531f560d64c695473da9
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 55263
-        dstIp: 52.182.143.210
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3628
-        timeStart: 2021-10-16T16:59:26.9690000
-        duration: 00:00:00.5669999
-      tlsJa3: cd08e31494f9531f560d64c695473da9
-      tlsServerName: browser.pipe.aria.microsoft.com
-      tlsServerCommonName: '*.events.data.microsoft.com'
-      processName: 
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 63399
-        dstIp: 52.16.234.243
-        dstPt: 443
-      meters:
-        packets: 19
-        octets: 2091
-        timeStart: 2021-10-16T16:59:25.4710000
-        duration: 00:00:10.1370000
-      tlsJa3: cd08e31494f9531f560d64c695473da9
-      tlsServerName: w.usabilla.com
-      tlsServerCommonName: w.usabilla.com
-      processName: 
-  bagOfFlows:
-    key:
-      dstIp: 52.182.143.210
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 55263
-        dstIp: 52.182.143.210
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3628
-        timeStart: 2021-10-16T16:59:26.9690000
-        duration: 00:00:00.5669999
-      tlsJa3: cd08e31494f9531f560d64c695473da9
-      tlsServerName: browser.pipe.aria.microsoft.com
-      tlsServerCommonName: '*.events.data.microsoft.com'
-      processName: 
-  flowBurst:
-    key:
-      srcIp: 192.168.111.32
-      dstIp: 52.182.143.210
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 55263
-        dstIp: 52.182.143.210
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3628
-        timeStart: 2021-10-16T16:59:26.9690000
-        duration: 00:00:00.5669999
-      tlsJa3: cd08e31494f9531f560d64c695473da9
-      tlsServerName: browser.pipe.aria.microsoft.com
-      tlsServerCommonName: '*.events.data.microsoft.com'
       processName: 
   plainHttpFlows:
     key: 
@@ -655,103 +655,6 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51323-172.217.23.202:443
-flowKey:
-  proto: Tcp
-  srcIp: 192.168.111.32
-  srcPt: 51323
-  dstIp: 172.217.23.202
-  dstPt: 443
-window:
-  start: 2021-10-16T17:01:30.0000000
-  duration: 00:00:05
-context:
-  tlsRecord:
-    flow:
-      proto: Tcp
-      srcIp: 192.168.111.32
-      srcPt: 51323
-      dstIp: 172.217.23.202
-      dstPt: 443
-    meters:
-      packets: 5
-      octets: 888
-      timeStart: 2021-10-16T17:01:33.0300000
-      duration: 00:00:00.0750000
-    tlsJa3: 598872011444709307b861ae817a4b60
-    tlsServerName: signaler-pa.clients6.google.com
-    tlsServerCommonName: ''
-    processName: 
-  domains:
-    key: 
-    flows: []
-  tlsClientFlows:
-    key:
-      srcIp: 192.168.111.32
-      ja3Fingerprint: 598872011444709307b861ae817a4b60
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 51323
-        dstIp: 172.217.23.202
-        dstPt: 443
-      meters:
-        packets: 5
-        octets: 888
-        timeStart: 2021-10-16T17:01:33.0300000
-        duration: 00:00:00.0750000
-      tlsJa3: 598872011444709307b861ae817a4b60
-      tlsServerName: signaler-pa.clients6.google.com
-      tlsServerCommonName: ''
-      processName: 
-  bagOfFlows:
-    key:
-      dstIp: 172.217.23.202
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 51323
-        dstIp: 172.217.23.202
-        dstPt: 443
-      meters:
-        packets: 5
-        octets: 888
-        timeStart: 2021-10-16T17:01:33.0300000
-        duration: 00:00:00.0750000
-      tlsJa3: 598872011444709307b861ae817a4b60
-      tlsServerName: signaler-pa.clients6.google.com
-      tlsServerCommonName: ''
-      processName: 
-  flowBurst:
-    key:
-      srcIp: 192.168.111.32
-      dstIp: 172.217.23.202
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 51323
-        dstIp: 172.217.23.202
-        dstPt: 443
-      meters:
-        packets: 5
-        octets: 888
-        timeStart: 2021-10-16T17:01:33.0300000
-        duration: 00:00:00.0750000
-      tlsJa3: 598872011444709307b861ae817a4b60
-      tlsServerName: signaler-pa.clients6.google.com
-      tlsServerCommonName: ''
-      processName: 
-  plainHttpFlows:
-    key: 
-    flows: []
----
 id: Tcp@192.168.111.32:64808-40.77.226.250:443
 flowKey:
   proto: Tcp
@@ -844,6 +747,103 @@ context:
       tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
       tlsServerName: vortex.data.microsoft.com
       tlsServerCommonName: '*.vortex.data.microsoft.com'
+      processName: 
+  plainHttpFlows:
+    key: 
+    flows: []
+---
+id: Tcp@192.168.111.32:51323-172.217.23.202:443
+flowKey:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51323
+  dstIp: 172.217.23.202
+  dstPt: 443
+window:
+  start: 2021-10-16T17:01:30.0000000
+  duration: 00:00:05
+context:
+  tlsRecord:
+    flow:
+      proto: Tcp
+      srcIp: 192.168.111.32
+      srcPt: 51323
+      dstIp: 172.217.23.202
+      dstPt: 443
+    meters:
+      packets: 5
+      octets: 888
+      timeStart: 2021-10-16T17:01:33.0300000
+      duration: 00:00:00.0750000
+    tlsJa3: 598872011444709307b861ae817a4b60
+    tlsServerName: signaler-pa.clients6.google.com
+    tlsServerCommonName: ''
+    processName: 
+  domains:
+    key: 
+    flows: []
+  tlsClientFlows:
+    key:
+      srcIp: 192.168.111.32
+      ja3Fingerprint: 598872011444709307b861ae817a4b60
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 51323
+        dstIp: 172.217.23.202
+        dstPt: 443
+      meters:
+        packets: 5
+        octets: 888
+        timeStart: 2021-10-16T17:01:33.0300000
+        duration: 00:00:00.0750000
+      tlsJa3: 598872011444709307b861ae817a4b60
+      tlsServerName: signaler-pa.clients6.google.com
+      tlsServerCommonName: ''
+      processName: 
+  bagOfFlows:
+    key:
+      dstIp: 172.217.23.202
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 51323
+        dstIp: 172.217.23.202
+        dstPt: 443
+      meters:
+        packets: 5
+        octets: 888
+        timeStart: 2021-10-16T17:01:33.0300000
+        duration: 00:00:00.0750000
+      tlsJa3: 598872011444709307b861ae817a4b60
+      tlsServerName: signaler-pa.clients6.google.com
+      tlsServerCommonName: ''
+      processName: 
+  flowBurst:
+    key:
+      srcIp: 192.168.111.32
+      dstIp: 172.217.23.202
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 51323
+        dstIp: 172.217.23.202
+        dstPt: 443
+      meters:
+        packets: 5
+        octets: 888
+        timeStart: 2021-10-16T17:01:33.0300000
+        duration: 00:00:00.0750000
+      tlsJa3: 598872011444709307b861ae817a4b60
+      tlsServerName: signaler-pa.clients6.google.com
+      tlsServerCommonName: ''
       processName: 
   plainHttpFlows:
     key: 

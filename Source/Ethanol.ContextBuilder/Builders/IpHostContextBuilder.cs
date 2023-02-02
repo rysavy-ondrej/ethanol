@@ -5,14 +5,19 @@ using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using YamlDotNet.Serialization;
+using static System.Net.WebRequestMethods;
 
 namespace Ethanol.ContextBuilder.Builders
 {
-
+    /// <summary>
+    /// Represents a host context.
+    /// </summary>
+    /// <typeparam name="T">The content type of the context.</typeparam>
     public record HostContext<T>
     {
         public string HostKey { get; set; }
@@ -20,12 +25,18 @@ namespace Ethanol.ContextBuilder.Builders
         public WindowSpan Window { get; set; }
         public T Value { get; set; }
     }
-
+    /// <summary>
+    /// Represents an internal representation of a host context.
+    /// </summary>
+    /// <typeparam name="T">The content type of the context.</typeparam>
     public record InternalHostContext<T>
     {
         public string HostKey { get; set; }
         public T Value { get; set; }
     }
+    /// <summary>
+    /// Represents host-related network activity/flows, which is a part of the host context.
+    /// </summary>
     public record NetworkActivity
     {
         public HttpRequest[] Http { get; set; }
@@ -33,14 +44,18 @@ namespace Ethanol.ContextBuilder.Builders
         public DnsResolution[] Dns { get; set; }
         public TlsData[] Tls { get; set; }
     }
-
+    /// <summary>
+    /// Represents selected information from HTTPS connection.
+    /// </summary>
     public record HttpsConnection
     {
         public IpfixKey Flow { get; set; }
         public string DomainName { get; set; }
 
     }
-
+    /// <summary>
+    /// Represents selected information from HTTP connection. 
+    /// </summary>
     public record HttpRequest
     {
         public IpfixKey Flow { get; set; }
@@ -48,12 +63,18 @@ namespace Ethanol.ContextBuilder.Builders
         public string Method { get; set; }
         public string Response { get; set; }
     }
+    /// <summary>
+    ///  Represents selected information from DNS connection.
+    /// </summary>
     public record DnsResolution
     {
         public IpfixKey Flow { get; set; }
         public string DomainNane { get; set; }
         public string[] Addresses { get; set; }
     }
+    /// <summary>
+    ///  Represents selected information from TLS connection.
+    /// </summary>
     public record TlsData
     {
         public IpfixKey Flow { get; set; }
@@ -63,16 +84,28 @@ namespace Ethanol.ContextBuilder.Builders
         public string SNI { get; set; }
         public string CommonName { get; set; }
     }
-
+    /// <summary>
+    ///  Represents a collection of flows related to the host.
+    /// </summary>
     public record HostFlows
     {
         public string Host { get; set; }
         public IpfixObject[] Flows { get; set; }
     }
-
+    /// <summary>
+    /// Builds the context for Ip hosts identified in the source IPFIX stream.
+    /// </summary>
     [Plugin(PluginType.Builder, "HostContext", "Builds the context for Ip hosts identified in the source IPFIX stream.")]
     public class IpHostContextBuilder : ContextBuilder<IpfixObject, InternalHostContext<NetworkActivity>, HostContext<NetworkActivity>>
     {
+        public class Configuration
+        {
+            [YamlMember(Alias = "window", Description = "The time span of window.")]
+            public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
+            [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
+            public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
+        }
+
         public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
         {
         }
@@ -85,7 +118,7 @@ namespace Ethanol.ContextBuilder.Builders
 
         public override IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildContext(IStreamable<Empty, IpfixObject> source)
         {
-            return _HostContextBuilder.BuildHostContext(source);
+            return BuildHostContext(source);
         }
 
         protected override HostContext<NetworkActivity> GetTarget(StreamEvent<InternalHostContext<NetworkActivity>> arg)
@@ -93,28 +126,12 @@ namespace Ethanol.ContextBuilder.Builders
             return new HostContext<NetworkActivity> { HostKey = arg.Payload.HostKey, Window = WindowSpan.FromLong(arg.StartTime, arg.EndTime), Value = arg.Payload.Value };
         }
 
-        public class Configuration
-        {
-            [YamlMember(Alias = "window", Description = "The time span of window.")]
-            public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
-            [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
-            public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
-        }
-    }
-
-    public static class _HostContextBuilder
-    {
         private static readonly string NBAR_DNS = "DNS_TCP";
         private static readonly string NBAR_TLS = "SSL/TLS";
         private static readonly string NBAR_HTTPS = "HTTPS";
         private static readonly string NBAR_HTTP = "HTTP";
-
-        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> source)
-        {
-            return BuildHostContext(source);
-        }
         
-        public static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext( IStreamable<Empty, IpfixObject> source)
+        static IStreamable<Empty, InternalHostContext<NetworkActivity>> BuildHostContext( IStreamable<Empty, IpfixObject> source)
         {
             try
             {
@@ -155,6 +172,14 @@ namespace Ethanol.ContextBuilder.Builders
             };
         }
 
+        /// <summary>
+        /// Gets the host address from the supported <paramref name="flow"/>. 
+        /// The flow should be NBAR annotated as DNS, TLS, HTTP or HTTPS.
+        /// <para/>
+        /// Note that this method needs to be public because it is used from stream pipeline.
+        /// </summary>
+        /// <param name="flow">The IPFIX flow object.</param>
+        /// <returns>String representing the IP address or empty string if the flow </returns>
         public static string GetHostAddress(IpfixObject flow)
         {
             if (flow.Nbar == NBAR_DNS) return flow.SourceIpAddress;

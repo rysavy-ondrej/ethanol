@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
@@ -15,6 +16,9 @@ namespace Ethanol.ContextBuilder.Readers
         {
             return plugin.Plugin.PluginType == PluginType.Reader;
         }
-        static public ReaderFactory Instance => new ReaderFactory();
+        /// <summary>
+        /// Gets the singleton of the factory.
+        /// </summary>
+        static public ReaderFactory Instance { get; } = new ReaderFactory();
     }
 }

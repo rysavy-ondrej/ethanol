@@ -7,12 +7,12 @@
     },
     "Build-TlsFlowContext(CSV)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b TlsFlowContextBuilder:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-nfdump.context.yaml}",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b FlowContext:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-nfdump.context.yaml}",
       "workingDirectory": "..\\..\\TestData"
     },
     "Build-TlsFlowContext(JSON)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r \"FlowmonJson:{file=test.flowmon.json} -b FlowContext:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-json.context.yaml}",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowmon.json} -b FlowContext:{window=00:00:10,hop=00:00:05} -w YamlWriter:{file=flow-json.context.yaml}",
       "workingDirectory": "..\\..\\TestData"
     },
     "List-Modules": {

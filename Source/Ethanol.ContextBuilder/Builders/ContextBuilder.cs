@@ -10,10 +10,20 @@ using System.Reactive.Linq;
 namespace Ethanol.ContextBuilder.Builders
 {
 
-    public interface IContextBuilder<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget>
-    {
+    /// <summary>
+    /// An interface of all context builder. 
+    /// It is observer for source data and observable for computed context data.
+    /// </summary>
+    /// <typeparam name="TSource">The type of source data.</typeparam>
+    /// <typeparam name="TTarget">The type of generated context.</typeparam>
+    public interface IContextBuilder<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget> { }
 
-    }
+    /// <summary>
+    /// The abstract class for implementing context builder classes.
+    /// </summary>
+    /// <typeparam name="TSource">The type of source data.</typeparam>
+    /// <typeparam name="TIntermediate">The type of intermediate data.</typeparam>
+    /// <typeparam name="TTarget">The type of generated context.</typeparam>
     public abstract class ContextBuilder<TSource, TIntermediate, TTarget> : IContextBuilder<TSource, TTarget>
     {
         private ObservableIngressStream<TSource> _ingressStream;
@@ -24,25 +34,37 @@ namespace Ethanol.ContextBuilder.Builders
             _egressStream = new ObservableEgressStream<TIntermediate>(BuildContext(_ingressStream));
         }
 
+        /// <summary>
+        /// Implements the procedure of building the context for records from the given <paramref name="source"/> stream.
+        /// </summary>
+        /// <param name="source">The source stream.</param>
+        /// <returns>The output stream.</returns>
         public abstract IStreamable<Empty, TIntermediate> BuildContext(IStreamable<Empty, TSource> source);
 
+        /// <inheritdoc/>>
         public IDisposable Subscribe(IObserver<TTarget> observer)
         {
             return _egressStream.Where(x=>x.IsEnd).Select(GetTarget).Subscribe(observer);
         }
 
+        /// <summary>
+        /// Gets the target object from the intermediate data.
+        /// </summary>
+        /// <param name="arg">The intermediate object.</param>
+        /// <returns>The resulting context object.</returns>
         protected abstract TTarget GetTarget(StreamEvent<TIntermediate> arg);
 
+        /// <inheritdoc/>>
         public void OnCompleted()
         {
             _ingressStream.OnCompleted();
         }
-
+        /// <inheritdoc/>>
         public void OnError(Exception error)
         {
             _ingressStream.OnError(error);
-        }
-
+        }        
+        /// <inheritdoc/>>
         public void OnNext(TSource value)
         {
             _ingressStream.OnNext(value);
@@ -56,10 +78,15 @@ namespace Ethanol.ContextBuilder.Builders
     /// </summary>
     public class ContextBuilderFactory : PluginFactory<IContextBuilder<IpfixObject, object>>
     {
+        /// <inheritdoc/>>
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
             return plugin.Plugin.PluginType == PluginType.Builder;
         }
-        static public ContextBuilderFactory Instance => new ContextBuilderFactory();
+
+        /// <summary>
+        /// Gets the singleton of the factory.
+        /// </summary>
+        static public ContextBuilderFactory Instance { get; } = new ContextBuilderFactory();
     }
 }

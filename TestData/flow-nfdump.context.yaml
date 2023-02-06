@@ -1,13 +1,19 @@
-id: Tcp@192.168.111.32:55263-52.182.143.210:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 55263
   dstIp: 52.182.143.210
   dstPt: 443
+id: Tcp@192.168.111.32:55263-52.182.143.210:443
 window:
   start: 2021-10-16T16:59:25.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 55263
+  dstIp: 52.182.143.210
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -110,16 +116,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:63399-52.16.234.243:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 63399
   dstIp: 52.16.234.243
   dstPt: 443
+id: Tcp@192.168.111.32:63399-52.16.234.243:443
 window:
   start: 2021-10-16T16:59:25.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 63399
+  dstIp: 52.16.234.243
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -237,16 +249,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:65070-204.79.197.219:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 65070
   dstIp: 204.79.197.219
   dstPt: 443
+id: Tcp@192.168.111.32:65070-204.79.197.219:443
 window:
   start: 2021-10-16T16:59:25.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 65070
+  dstIp: 204.79.197.219
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -334,16 +352,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:64663-13.107.5.88:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 64663
   dstIp: 13.107.5.88
   dstPt: 443
+id: Tcp@192.168.111.32:64663-13.107.5.88:443
 window:
   start: 2021-10-16T17:00:25.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 64663
+  dstIp: 13.107.5.88
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -446,16 +470,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:64681-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 64681
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:64681-40.77.226.250:443
 window:
   start: 2021-10-16T17:00:30.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 64681
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -543,16 +573,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:64761-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 64761
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:64761-40.77.226.250:443
 window:
   start: 2021-10-16T17:01:05.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 64761
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -655,113 +691,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:64808-40.77.226.250:443
-flowKey:
-  proto: Tcp
-  srcIp: 192.168.111.32
-  srcPt: 64808
-  dstIp: 40.77.226.250
-  dstPt: 443
-window:
-  start: 2021-10-16T17:01:30.0000000
-  duration: 00:00:05
-context:
-  tlsRecord:
-    flow:
-      proto: Tcp
-      srcIp: 192.168.111.32
-      srcPt: 64808
-      dstIp: 40.77.226.250
-      dstPt: 443
-    meters:
-      packets: 10
-      octets: 3168
-      timeStart: 2021-10-16T17:01:31.6820000
-      duration: 00:00:00.1960000
-    tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
-    tlsServerName: vortex.data.microsoft.com
-    tlsServerCommonName: '*.vortex.data.microsoft.com'
-    processName: 
-  domains:
-    key: 
-    flows: []
-  tlsClientFlows:
-    key:
-      srcIp: 192.168.111.32
-      ja3Fingerprint: 080027e640f8ec6d966f79fc2f7ca551
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 64808
-        dstIp: 40.77.226.250
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3168
-        timeStart: 2021-10-16T17:01:31.6820000
-        duration: 00:00:00.1960000
-      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
-      tlsServerName: vortex.data.microsoft.com
-      tlsServerCommonName: '*.vortex.data.microsoft.com'
-      processName: 
-  bagOfFlows:
-    key:
-      dstIp: 40.77.226.250
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 64808
-        dstIp: 40.77.226.250
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3168
-        timeStart: 2021-10-16T17:01:31.6820000
-        duration: 00:00:00.1960000
-      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
-      tlsServerName: vortex.data.microsoft.com
-      tlsServerCommonName: '*.vortex.data.microsoft.com'
-      processName: 
-  flowBurst:
-    key:
-      srcIp: 192.168.111.32
-      dstIp: 40.77.226.250
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.32
-        srcPt: 64808
-        dstIp: 40.77.226.250
-        dstPt: 443
-      meters:
-        packets: 10
-        octets: 3168
-        timeStart: 2021-10-16T17:01:31.6820000
-        duration: 00:00:00.1960000
-      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
-      tlsServerName: vortex.data.microsoft.com
-      tlsServerCommonName: '*.vortex.data.microsoft.com'
-      processName: 
-  plainHttpFlows:
-    key: 
-    flows: []
----
-id: Tcp@192.168.111.32:51323-172.217.23.202:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51323
   dstIp: 172.217.23.202
   dstPt: 443
+id: Tcp@192.168.111.32:51323-172.217.23.202:443
 window:
   start: 2021-10-16T17:01:30.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51323
+  dstIp: 172.217.23.202
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -849,16 +794,243 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.13:62130-104.120.111.248:443
+flowKey:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 64808
+  dstIp: 40.77.226.250
+  dstPt: 443
+id: Tcp@192.168.111.32:64808-40.77.226.250:443
+window:
+  start: 2021-10-16T17:01:30.0000000
+  duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 64808
+  dstIp: 40.77.226.250
+  dstPt: 443
+context:
+  tlsRecord:
+    flow:
+      proto: Tcp
+      srcIp: 192.168.111.32
+      srcPt: 64808
+      dstIp: 40.77.226.250
+      dstPt: 443
+    meters:
+      packets: 10
+      octets: 3168
+      timeStart: 2021-10-16T17:01:31.6820000
+      duration: 00:00:00.1960000
+    tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
+    tlsServerName: vortex.data.microsoft.com
+    tlsServerCommonName: '*.vortex.data.microsoft.com'
+    processName: 
+  domains:
+    key: 
+    flows: []
+  tlsClientFlows:
+    key:
+      srcIp: 192.168.111.32
+      ja3Fingerprint: 080027e640f8ec6d966f79fc2f7ca551
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 64808
+        dstIp: 40.77.226.250
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3168
+        timeStart: 2021-10-16T17:01:31.6820000
+        duration: 00:00:00.1960000
+      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
+      tlsServerName: vortex.data.microsoft.com
+      tlsServerCommonName: '*.vortex.data.microsoft.com'
+      processName: 
+  bagOfFlows:
+    key:
+      dstIp: 40.77.226.250
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 64808
+        dstIp: 40.77.226.250
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3168
+        timeStart: 2021-10-16T17:01:31.6820000
+        duration: 00:00:00.1960000
+      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
+      tlsServerName: vortex.data.microsoft.com
+      tlsServerCommonName: '*.vortex.data.microsoft.com'
+      processName: 
+  flowBurst:
+    key:
+      srcIp: 192.168.111.32
+      dstIp: 40.77.226.250
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.32
+        srcPt: 64808
+        dstIp: 40.77.226.250
+        dstPt: 443
+      meters:
+        packets: 10
+        octets: 3168
+        timeStart: 2021-10-16T17:01:31.6820000
+        duration: 00:00:00.1960000
+      tlsJa3: 080027e640f8ec6d966f79fc2f7ca551
+      tlsServerName: vortex.data.microsoft.com
+      tlsServerCommonName: '*.vortex.data.microsoft.com'
+      processName: 
+  plainHttpFlows:
+    key: 
+    flows: []
+---
+flowKey:
+  proto: Tcp
+  srcIp: 192.168.111.13
+  srcPt: 62129
+  dstIp: 20.191.46.211
+  dstPt: 443
+id: Tcp@192.168.111.13:62129-20.191.46.211:443
+window:
+  start: 2021-10-16T17:02:15.0000000
+  duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.13
+  srcPt: 62129
+  dstIp: 20.191.46.211
+  dstPt: 443
+context:
+  tlsRecord:
+    flow:
+      proto: Tcp
+      srcIp: 192.168.111.13
+      srcPt: 62129
+      dstIp: 20.191.46.211
+      dstPt: 443
+    meters:
+      packets: 12
+      octets: 1805
+      timeStart: 2021-10-16T17:02:18.7950000
+      duration: 00:00:00.1810000
+    tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
+    tlsServerName: array602.prod.do.dsp.mp.microsoft.com
+    tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
+    processName: 
+  domains:
+    key: 
+    flows: []
+  tlsClientFlows:
+    key:
+      srcIp: 192.168.111.13
+      ja3Fingerprint: 28a2c9bd18a11de089ef85a160da29e4
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.13
+        srcPt: 62129
+        dstIp: 20.191.46.211
+        dstPt: 443
+      meters:
+        packets: 12
+        octets: 1805
+        timeStart: 2021-10-16T17:02:18.7950000
+        duration: 00:00:00.1810000
+      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
+      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
+      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
+      processName: 
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.13
+        srcPt: 62130
+        dstIp: 104.120.111.248
+        dstPt: 443
+      meters:
+        packets: 8
+        octets: 1012
+        timeStart: 2021-10-16T17:02:18.9500000
+        duration: 00:00:00.2600000
+      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
+      tlsServerName: kv601.prod.do.dsp.mp.microsoft.com
+      tlsServerCommonName: cp601-prod.do.dsp.mp.microsoft.com
+      processName: 
+  bagOfFlows:
+    key:
+      dstIp: 20.191.46.211
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.13
+        srcPt: 62129
+        dstIp: 20.191.46.211
+        dstPt: 443
+      meters:
+        packets: 12
+        octets: 1805
+        timeStart: 2021-10-16T17:02:18.7950000
+        duration: 00:00:00.1810000
+      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
+      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
+      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
+      processName: 
+  flowBurst:
+    key:
+      srcIp: 192.168.111.13
+      dstIp: 20.191.46.211
+      dstPort: 443
+      protocol: Tcp
+    flows:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.111.13
+        srcPt: 62129
+        dstIp: 20.191.46.211
+        dstPt: 443
+      meters:
+        packets: 12
+        octets: 1805
+        timeStart: 2021-10-16T17:02:18.7950000
+        duration: 00:00:00.1810000
+      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
+      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
+      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
+      processName: 
+  plainHttpFlows:
+    key: 
+    flows: []
+---
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.13
   srcPt: 62130
   dstIp: 104.120.111.248
   dstPt: 443
+id: Tcp@192.168.111.13:62130-104.120.111.248:443
 window:
   start: 2021-10-16T17:02:15.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.13
+  srcPt: 62130
+  dstIp: 104.120.111.248
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -976,128 +1148,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.13:62129-20.191.46.211:443
-flowKey:
-  proto: Tcp
-  srcIp: 192.168.111.13
-  srcPt: 62129
-  dstIp: 20.191.46.211
-  dstPt: 443
-window:
-  start: 2021-10-16T17:02:15.0000000
-  duration: 00:00:05
-context:
-  tlsRecord:
-    flow:
-      proto: Tcp
-      srcIp: 192.168.111.13
-      srcPt: 62129
-      dstIp: 20.191.46.211
-      dstPt: 443
-    meters:
-      packets: 12
-      octets: 1805
-      timeStart: 2021-10-16T17:02:18.7950000
-      duration: 00:00:00.1810000
-    tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
-    tlsServerName: array602.prod.do.dsp.mp.microsoft.com
-    tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
-    processName: 
-  domains:
-    key: 
-    flows: []
-  tlsClientFlows:
-    key:
-      srcIp: 192.168.111.13
-      ja3Fingerprint: 28a2c9bd18a11de089ef85a160da29e4
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.13
-        srcPt: 62129
-        dstIp: 20.191.46.211
-        dstPt: 443
-      meters:
-        packets: 12
-        octets: 1805
-        timeStart: 2021-10-16T17:02:18.7950000
-        duration: 00:00:00.1810000
-      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
-      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
-      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
-      processName: 
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.13
-        srcPt: 62130
-        dstIp: 104.120.111.248
-        dstPt: 443
-      meters:
-        packets: 8
-        octets: 1012
-        timeStart: 2021-10-16T17:02:18.9500000
-        duration: 00:00:00.2600000
-      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
-      tlsServerName: kv601.prod.do.dsp.mp.microsoft.com
-      tlsServerCommonName: cp601-prod.do.dsp.mp.microsoft.com
-      processName: 
-  bagOfFlows:
-    key:
-      dstIp: 20.191.46.211
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.13
-        srcPt: 62129
-        dstIp: 20.191.46.211
-        dstPt: 443
-      meters:
-        packets: 12
-        octets: 1805
-        timeStart: 2021-10-16T17:02:18.7950000
-        duration: 00:00:00.1810000
-      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
-      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
-      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
-      processName: 
-  flowBurst:
-    key:
-      srcIp: 192.168.111.13
-      dstIp: 20.191.46.211
-      dstPort: 443
-      protocol: Tcp
-    flows:
-    - flow:
-        proto: Tcp
-        srcIp: 192.168.111.13
-        srcPt: 62129
-        dstIp: 20.191.46.211
-        dstPt: 443
-      meters:
-        packets: 12
-        octets: 1805
-        timeStart: 2021-10-16T17:02:18.7950000
-        duration: 00:00:00.1810000
-      tlsJa3: 28a2c9bd18a11de089ef85a160da29e4
-      tlsServerName: array602.prod.do.dsp.mp.microsoft.com
-      tlsServerCommonName: '*.prod.do.dsp.mp.microsoft.com'
-      processName: 
-  plainHttpFlows:
-    key: 
-    flows: []
----
-id: Tcp@192.168.111.32:51430-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51430
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:51430-40.77.226.250:443
 window:
   start: 2021-10-16T17:02:20.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51430
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -1200,16 +1266,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51451-152.199.19.161:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51451
   dstIp: 152.199.19.161
   dstPt: 443
+id: Tcp@192.168.111.32:51451-152.199.19.161:443
 window:
   start: 2021-10-16T17:02:35.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51451
+  dstIp: 152.199.19.161
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -1312,16 +1384,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51470-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51470
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:51470-40.77.226.250:443
 window:
   start: 2021-10-16T17:02:40.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51470
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -1409,16 +1487,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51572-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51572
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:51572-40.77.226.250:443
 window:
   start: 2021-10-16T17:03:30.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51572
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -1521,16 +1605,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51611-40.77.226.250:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51611
   dstIp: 40.77.226.250
   dstPt: 443
+id: Tcp@192.168.111.32:51611-40.77.226.250:443
 window:
   start: 2021-10-16T17:03:50.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51611
+  dstIp: 40.77.226.250
+  dstPt: 443
 context:
   tlsRecord:
     flow:
@@ -1618,16 +1708,22 @@ context:
     key: 
     flows: []
 ---
-id: Tcp@192.168.111.32:51620-152.199.19.161:443
 flowKey:
   proto: Tcp
   srcIp: 192.168.111.32
   srcPt: 51620
   dstIp: 152.199.19.161
   dstPt: 443
+id: Tcp@192.168.111.32:51620-152.199.19.161:443
 window:
   start: 2021-10-16T17:03:55.0000000
   duration: 00:00:05
+target:
+  proto: Tcp
+  srcIp: 192.168.111.32
+  srcPt: 51620
+  dstIp: 152.199.19.161
+  dstPt: 443
 context:
   tlsRecord:
     flow:

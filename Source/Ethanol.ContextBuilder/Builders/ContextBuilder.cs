@@ -31,7 +31,7 @@ namespace Ethanol.ContextBuilder.Builders
         protected ContextBuilder(ObservableIngressStream<TSource> ingressStream)
         {
             _ingressStream = ingressStream;
-            _egressStream = new ObservableEgressStream<TIntermediate>(BuildContext(_ingressStream));
+            _egressStream = new ObservableEgressStream<TIntermediate>(BuildContext(_ingressStream), e => e.IsEnd);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <inheritdoc/>>
         public IDisposable Subscribe(IObserver<TTarget> observer)
         {
-            return _egressStream.Where(x=>x.IsEnd).Select(GetTarget).Subscribe(observer);
+            return _egressStream.Select(GetTarget).Subscribe(observer);
         }
 
         /// <summary>

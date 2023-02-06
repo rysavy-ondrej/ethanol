@@ -41,13 +41,15 @@ The list of available modules is get by the following command:
 ```
 > Ethanol.ContextBuilder.exe List-Modules
 READERS:
-  FlowmonJsonReader      reads JSON file with IPFIX data produced by flowmonexp5 tool.
+  FlowmonJson     Reads JSON file with IPFIX data produced by flowmonexp5 tool.
+  IpfixcolJson    Reads NDJSON exported from ipfixcol2 tool.
+  NfdumpCsv       Reads CSV file produced by nfdump.
 BUILDERS:
-  TlsFlowContextBuilder  builds the context for TLS flows in the source IPFIX stream.
-  IpHostContextBuilder   builds the context for Ip hosts identified in the source IPFIX stream.
+  HostContext     Builds the context for Ip hosts identified in the source IPFIX stream.
+  FlowContext     Builds the context for TLS flows in the source IPFIX stream.
 WRITERS:
-  JsonDataWriter         writes NDJSON formatted file for computed context.
-  YamlDataWriter         writes YAML formatted file for computed context.
+  JsonWriter      Writes NDJSON formatted file for computed context.
+  YamlWriter      Writes YAML formatted file for computed context.
 ```
 
 
@@ -56,7 +58,7 @@ WRITERS:
 Building flow context requires to use of the the available flow context builder modules: 
 
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJsonReader:file=test.flowmon.json,speed=1 -b TlsFlowContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=flow.context.yaml
+> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:file=test.flowmon.json,speed=1 -b FlowContext:window=00:00:10,hop=00:00:05 -w YamlWriter:file=flow.context.yaml
 ```
 
 ## Building Host Context
@@ -64,5 +66,5 @@ Building flow context requires to use of the the available flow context builder 
 Building host context is done by using host context builder module:
 
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJsonReader:file=test.flowmon.json -b IpHostContextBuilder:window=00:00:10,hop=00:00:05 -w YamlDataWriter:file=host.contex.yaml
+> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:file=test.flowmon.json -b HostContext:window=00:00:10,hop=00:00:05 -w YamlWriter:file=host.contex.yaml
 ```

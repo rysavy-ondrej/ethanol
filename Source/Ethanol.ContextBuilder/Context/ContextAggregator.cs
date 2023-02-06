@@ -1,4 +1,5 @@
-﻿using Ethanol.Streaming;
+﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,8 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// A default aggregator for the collection of items to be used together with <see cref="AggregateContextStreams"/>. 
         /// <para/>
-        /// It reads the source collection, expands all non-null elements, and collects it in a single output of the same type. The flow key for the resulting group is the first valid one found in the source flow groups.
+        /// It reads the source collection, expands all non-null elements, and collects it in a single output of the same type. 
+        /// The flow key for the resulting group is the first valid one found in the source flow groups.
         /// </summary>
         /// <typeparam name="TKey">The key type of the group.</typeparam>
         /// <typeparam name="TValue">The type of flow collection in the group.</typeparam>
@@ -30,20 +32,20 @@ namespace Ethanol.ContextBuilder.Context
             return new FlowGroup<TKey, TValue>(key, (removeDuplicities ? elements.Distinct() : elements).ToArray());
         }
 
-        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TTarget>(
-            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey, TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey, TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource2>> source2,
             Func<TSource1[], TSource2[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.Key, Item1 = m.Value, Item2 = default(TSource2) })
+                 .Union(source2.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = m.Value }));
 
             return union.GroupAggregate(
                 key => key.Flow,
                 agg1 => agg1.CollectList(x => x.Item1),
                 agg2 => agg2.CollectList(x => x.Item2),
-                (key, val1, val2) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2)));
+                (key, val1, val2) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2)));
         }
 
         /// <summary>
@@ -62,36 +64,36 @@ namespace Ethanol.ContextBuilder.Context
         /// <param name="source3">The third stream.</param>
         /// <param name="aggregator">A function used to merge records. The arguments are arrays of values. Note that these arrays may be sparse, i.e., some elements may be null.</param>
         /// <returns>A context flow stream of the <typeparamref name="TTarget"/> context type.</returns>
-        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TTarget>(
-            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey, TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey, TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource2>> source2,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource3>> source3,
             Func<TSource1[], TSource2[], TSource3[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3) }))
-                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.Key, Item1 = m.Value, Item2 = default(TSource2), Item3 = default(TSource3) })
+                 .Union(source2.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = m.Value, Item3 = default(TSource3) }))
+                 .Union(source3.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Value }));
 
             return union.GroupAggregate(
                 key => key.Flow,
                 agg1 => agg1.CollectList(x => x.Item1),
                 agg2 => agg2.CollectList(x => x.Item2),
                 agg3 => agg3.CollectList(x => x.Item3),
-                (key, val1, val2, val3) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3)));
+                (key, val1, val2, val3) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2, val3)));
         }
-        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
-            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
-                 IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
-                 IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
-                 IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
+                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
+                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
+                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
                  Func<TSource1[], TSource2[], TSource3[], TSource4[], TTarget> aggregator)
         where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4) }))
-                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4) }))
-                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.Key, Item1 = m.Value, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4) })
+                 .Union(source2.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = m.Value, Item3 = default(TSource3), Item4 = default(TSource4) }))
+                 .Union(source3.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Value, Item4 = default(TSource4) }))
+                 .Union(source4.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Value }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -99,7 +101,7 @@ namespace Ethanol.ContextBuilder.Context
                 agg2 => agg2.CollectList(x => x.Item2),
                 agg3 => agg3.CollectList(x => x.Item3),
                 agg4 => agg4.CollectList(x => x.Item4),
-                (key, val1, val2, val3, val4) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4)));
+                (key, val1, val2, val3, val4) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2, val3, val4)));
         }
 
         public static IStreamable<TStreamKey, TTarget> UnionGroupAggregate<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
@@ -132,20 +134,20 @@ namespace Ethanol.ContextBuilder.Context
                 (key, val1, val2, val3, val4, val5) => aggregator(key.Key, val1, val2, val3, val4, val5));
         }
 
-        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
-            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
-            IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
-            IStreamable<TStreamKey, InternalContextFlow<TSource5>> source5,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource5>> source5,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) }))
-                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5) }))
-                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5) }))
-                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.Key, Item1 = m.Value, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) })
+                 .Union(source2.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = m.Value, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5) }))
+                 .Union(source3.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Value, Item4 = default(TSource4), Item5 = default(TSource5) }))
+                 .Union(source4.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Value, Item5 = default(TSource5) }))
+                 .Union(source5.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Value }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -154,24 +156,24 @@ namespace Ethanol.ContextBuilder.Context
                 agg3 => agg3.CollectList(x => x.Item3),
                 agg4 => agg4.CollectList(x => x.Item4),
                  agg5 => agg5.CollectList(x => x.Item5),
-                (key, val1, val2, val3, val4, val5) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
+                (key, val1, val2, val3, val4, val5) => new KeyValuePair<TKey,TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
         }
-        public static IStreamable<TStreamKey, InternalContextFlow<TTarget>> AggregateContextStreams<TStreamKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6, TTarget>(
-            this IStreamable<TStreamKey, InternalContextFlow<TSource1>> source1,
-            IStreamable<TStreamKey, InternalContextFlow<TSource2>> source2,
-            IStreamable<TStreamKey, InternalContextFlow<TSource3>> source3,
-            IStreamable<TStreamKey, InternalContextFlow<TSource4>> source4,
-            IStreamable<TStreamKey, InternalContextFlow<TSource5>> source5,
-            IStreamable<TStreamKey, InternalContextFlow<TSource6>> source6,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource5>> source5,
+            IStreamable<TStreamKey, KeyValuePair<TKey,TSource6>> source6,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TSource6[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
-            var union = source1.Select(m => new { Flow = m.FlowKey, Item1 = m.Context, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
-                 .Union(source2.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = m.Context, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source3.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Context, Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source4.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Context, Item5 = default(TSource5), Item6 = default(TSource6) }))
-                 .Union(source5.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Context, Item6 = default(TSource6) }))
-                 .Union(source6.Select(m => new { Flow = m.FlowKey, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Context }));
+            var union = source1.Select(m => new { Flow = m.Key, Item1 = m.Value, Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) })
+                 .Union(source2.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = m.Value, Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source3.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = m.Value, Item4 = default(TSource4), Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source4.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = m.Value, Item5 = default(TSource5), Item6 = default(TSource6) }))
+                 .Union(source5.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = m.Value, Item6 = default(TSource6) }))
+                 .Union(source6.Select(m => new { Flow = m.Key, Item1 = default(TSource1), Item2 = default(TSource2), Item3 = default(TSource3), Item4 = default(TSource4), Item5 = default(TSource5), Item6 = m.Value }));
 
             return union.GroupAggregate(
                 key => key.Flow,
@@ -181,7 +183,7 @@ namespace Ethanol.ContextBuilder.Context
                 agg4 => agg4.CollectList(x => x.Item4),
                 agg5 => agg5.CollectList(x => x.Item5),
                 agg6 => agg6.CollectList(x => x.Item6),
-                (key, val1, val2, val3, val4, val5, val6) => new InternalContextFlow<TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
+                (key, val1, val2, val3, val4, val5, val6) => new KeyValuePair<TKey,TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
         }
     }
 }

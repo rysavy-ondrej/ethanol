@@ -54,7 +54,7 @@ namespace Ethanol.ContextBuilder.Context
         /// </remarks>
         /// <param name="flowStream"></param>
         /// <returns></returns>
-        public static IStreamable<Empty, InternalContextFlow<FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> flowStream)
+        public static IStreamable<Empty, KeyValuePair<IpfixKey,FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> flowStream)
         {
             var source = flowStream.Multicast(3);
 
@@ -63,7 +63,7 @@ namespace Ethanol.ContextBuilder.Context
                     key => new BagOfFlowsKey(key.DestinationIpAddress, key.DestinationPort, key.Protocol.ToString()),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f => f.Value, (k, v) => new InternalContextFlow<FlowGroup<BagOfFlowsKey, IpfixObject>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixObject>(v.Key, v.Value.ToArray())), k => k.FlowKey);
+                .Expand(f => f.Value, (k, v) => new KeyValuePair<IpfixKey,FlowGroup<BagOfFlowsKey, IpfixObject>>(k.FlowKey, new FlowGroup<BagOfFlowsKey, IpfixObject>(v.Key, v.Value.ToArray())), k => k.Key);
 
 
             var flowBurstStream = source[1]
@@ -71,9 +71,9 @@ namespace Ethanol.ContextBuilder.Context
                     key => new FlowBurstKey(key.SourceIpAddress, key.DestinationIpAddress, key.DestinationPort, key.Protocol.ToString()),
                     group => group.Aggregate(aggregate => aggregate.CollectSet(flow => flow)),
                     (key, value) => KeyValuePair.Create(key.Key, value))
-                .Expand(f => f.Value, (k, v) => new InternalContextFlow<FlowGroup<FlowBurstKey, IpfixObject>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixObject>(v.Key, v.Value.ToArray())), k => k.FlowKey);
+                .Expand(f => f.Value, (k, v) => new KeyValuePair<IpfixKey,FlowGroup<FlowBurstKey, IpfixObject>>(k.FlowKey, new FlowGroup<FlowBurstKey, IpfixObject>(v.Key, v.Value.ToArray())), k => k.Key);
 
-            var sourceFlowsStream = source[2].Select(f => new InternalContextFlow<IpfixObject>(f.FlowKey, f));
+            var sourceFlowsStream = source[2].Select(f => new KeyValuePair<IpfixKey,IpfixObject>(f.FlowKey, f));
 
             return sourceFlowsStream.AggregateContextStreams(bagOfFlowStream, flowBurstStream, MergeFunc);
         }

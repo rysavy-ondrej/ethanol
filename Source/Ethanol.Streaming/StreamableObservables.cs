@@ -28,9 +28,7 @@ namespace Ethanol.Streaming
             
             var source = observable.Select(x => StreamEvent.CreatePoint(RoundMinutes(getStartTime(x), windowPeriod.Ticks).Ticks, x));
             var stream = source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(windowSize.Ticks), FlushPolicy.FlushOnPunctuation);
-
             return stream.AlterEventDuration(windowPeriod.Ticks);
-            //return stream.QuantizeLifetime(windowSize.Ticks, windowPeriod.Ticks);
         }
         private static DateTime RoundMinutes(long arg, long roundTicks)
         {            
@@ -38,5 +36,7 @@ namespace Ethanol.Streaming
             var newDt = new DateTime(arg - sub);
             return newDt;
         }
+
+
     }
 }

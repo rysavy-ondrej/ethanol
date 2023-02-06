@@ -1,102 +1,117 @@
-hostKey: 192.168.100.52
+id: 408bf1de-26ff-4dad-8433-6e8366822f2d
 window:
   start: 2022-09-06T10:29:55.0000000
   duration: 00:00:05
-value:
-  http: []
-  https: []
-  dns:
-  - flow:
-      proto: Udp
-      srcIp: 192.168.100.52
-      srcPt: 57790
-      dstIp: 192.168.100.2
-      dstPt: 53
-    domainNane: pastebin.com
-    addresses:
-    - 104.20.68.143
-  tls:
-  - flow:
-      proto: Tcp
-      srcIp: 192.168.100.52
-      srcPt: 59591
-      dstIp: 104.20.68.143
-      dstPt: 443
-    requestHost: pastebin.com
-    tlsVersion: 769
-    jA3: 05AF1F5CA1B87CC9CC9B25185115607D
-    sNI: pastebin.com
-    commonName: sni.cloudflaressl.com
+object: 192.168.100.52
+context:
+  metadata: 
+  activity:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 57790
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: pastebin.com
+      addresses:
+      - 104.20.68.143
+    tls:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      requestHost: pastebin.com
+      tlsVersion: 769
+      jA3: 05AF1F5CA1B87CC9CC9B25185115607D
+      sNI: pastebin.com
+      commonName: sni.cloudflaressl.com
 ---
-hostKey: 192.168.100.52
+id: b12d81cd-8a0d-4160-b579-5721892111a9
 window:
   start: 2022-09-06T10:30:00.0000000
   duration: 00:00:05
-value:
-  http: []
-  https: []
-  dns:
-  - flow:
-      proto: Udp
-      srcIp: 192.168.100.52
-      srcPt: 63585
-      dstIp: 192.168.100.2
-      dstPt: 53
-    domainNane: 0.tcp.eu.ngrok.io
-    addresses:
-    - 18.192.31.165
-  tls: []
+object: 192.168.100.52
+context:
+  metadata: 
+  activity:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 63585
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: 0.tcp.eu.ngrok.io
+      addresses:
+      - 18.192.31.165
+    tls: []
 ---
-hostKey: 192.168.100.52
+id: 0ad73f19-cb9e-4dab-b476-0d87236f5dfc
 window:
   start: 2022-09-06T10:30:20.0000000
   duration: 00:00:05
-value:
-  http: []
-  https:
-  - flow:
-      proto: Tcp
-      srcIp: 192.168.100.52
-      srcPt: 59591
-      dstIp: 104.20.68.143
-      dstPt: 443
-    domainName: 
-  dns: []
-  tls: []
+object: 192.168.100.52
+context:
+  metadata: 
+  activity:
+    http: []
+    https:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      domainName: 
+    dns: []
+    tls: []
 ---
-hostKey: 192.168.100.52
+id: 652a895a-0375-4110-be4f-3f6a6fdf66ad
 window:
   start: 2022-09-06T10:30:40.0000000
   duration: 00:00:05
-value:
-  http: []
-  https:
-  - flow:
-      proto: Tcp
-      srcIp: 192.168.100.52
-      srcPt: 59591
-      dstIp: 104.20.68.143
-      dstPt: 443
-    domainName: 
-  dns: []
-  tls: []
+object: 192.168.100.52
+context:
+  metadata: 
+  activity:
+    http: []
+    https:
+    - flow:
+        proto: Tcp
+        srcIp: 192.168.100.52
+        srcPt: 59591
+        dstIp: 104.20.68.143
+        dstPt: 443
+      domainName: 
+    dns: []
+    tls: []
 ---
-hostKey: 192.168.100.52
+id: a25adf8d-2429-4e3d-a862-c0e43d2f5712
 window:
   start: 2022-09-06T10:31:05.0000000
   duration: 00:00:05
-value:
-  http: []
-  https: []
-  dns:
-  - flow:
-      proto: Udp
-      srcIp: 192.168.100.52
-      srcPt: 55708
-      dstIp: 192.168.100.2
-      dstPt: 53
-    domainNane: 0.tcp.eu.ngrok.io
-    addresses:
-    - 3.125.223.134
-  tls: []
+object: 192.168.100.52
+context:
+  metadata: 
+  activity:
+    http: []
+    https: []
+    dns:
+    - flow:
+        proto: Udp
+        srcIp: 192.168.100.52
+        srcPt: 55708
+        dstIp: 192.168.100.2
+        dstPt: 53
+      domainNane: 0.tcp.eu.ngrok.io
+      addresses:
+      - 3.125.223.134
+    tls: []
 ---

@@ -31,9 +31,9 @@ namespace Ethanol.ContextBuilder.Context
         public string ProcessName { get; set; }
 
         /// <summary>
-        /// Represents a string of recognized protocol using NBAR technique.
+        /// Represents a recognized application protocol.
         /// </summary>
-        public string Nbar { get; set; }
+        public string AppProtoName { get; set; }
         #region Standard flow Fields
         /// <summary>
         /// The L4 protocol name.

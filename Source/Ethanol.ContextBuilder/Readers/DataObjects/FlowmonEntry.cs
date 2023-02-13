@@ -88,6 +88,12 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [JsonPropertyName("L3_IPV4_SRC")]
         public string L3Ipv4Src { get; set; }
 
+        [JsonPropertyName("L3_IPV6_DST")]
+        public string L3Ipv6Dst { get; set; }
+
+        [JsonPropertyName("L3_IPV6_SRC")]
+        public string L3Ipv6Src { get; set; }
+
         [JsonPropertyName("L3_PROTO")]
         public int L3Proto { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Readers;
 using Ethanol.Streaming;
 using Microsoft.CodeAnalysis;
 using Microsoft.StreamProcessing;
@@ -52,10 +53,10 @@ namespace Ethanol.ContextBuilder.Builders
             };
         }
 
-        private static readonly string NBAR_DNS = "DNS_TCP";
-        private static readonly string NBAR_TLS = "SSL/TLS";
-        private static readonly string NBAR_HTTPS = "HTTPS";
-        private static readonly string NBAR_HTTP = "HTTP";
+        private static readonly string NBAR_DNS = ApplicationProtocols.DNS.ToString();
+        private static readonly string NBAR_TLS = ApplicationProtocols.SSL.ToString();
+        private static readonly string NBAR_HTTPS = ApplicationProtocols.HTTPS.ToString();
+        private static readonly string NBAR_HTTP = ApplicationProtocols.HTTP.ToString();
 
         static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpfixObject> flowStreamSource)
         {
@@ -114,10 +115,10 @@ namespace Ethanol.ContextBuilder.Builders
             return new KeyValuePair<string, NetworkActivity>
                 (x.Host, new NetworkActivity
                 {
-                    Http = x.Flows.Where(x => x.Nbar == NBAR_HTTP).Select(GetHttpRequest).ToArray(),
-                    Https = x.Flows.Where(x => x.Nbar == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
-                    Dns = x.Flows.Where(x => x.Nbar == NBAR_DNS).Select(GetDnsResolution).ToArray(),
-                    Tls = x.Flows.Where(x => x.Nbar == NBAR_TLS).Select(GetTlsData).ToArray()
+                    Http = x.Flows.Where(x => x.AppProtoName == NBAR_HTTP).Select(GetHttpRequest).ToArray(),
+                    Https = x.Flows.Where(x => x.AppProtoName == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
+                    Dns = x.Flows.Where(x => x.AppProtoName == NBAR_DNS).Select(GetDnsResolution).ToArray(),
+                    Tls = x.Flows.Where(x => x.AppProtoName == NBAR_TLS).Select(GetTlsData).ToArray()
                 });
         }
 
@@ -131,10 +132,10 @@ namespace Ethanol.ContextBuilder.Builders
         /// <returns>String representing the IP address or empty string if the flow </returns>
         public static string GetHostAddress(IpfixObject flow)
         {
-            if (flow.Nbar == NBAR_DNS) return flow.SourceIpAddress;
-            if (flow.Nbar == NBAR_TLS) return flow.SourceIpAddress;
-            if (flow.Nbar == NBAR_HTTPS) return flow.SourceIpAddress;
-            if (flow.Nbar == NBAR_HTTP) return flow.SourceIpAddress;
+            if (flow.AppProtoName == NBAR_DNS) return flow.SourceIpAddress;
+            if (flow.AppProtoName == NBAR_TLS) return flow.SourceIpAddress;
+            if (flow.AppProtoName == NBAR_HTTPS) return flow.SourceIpAddress;
+            if (flow.AppProtoName == NBAR_HTTP) return flow.SourceIpAddress;
             return string.Empty;
         }
 

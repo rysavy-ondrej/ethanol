@@ -3,6 +3,7 @@ using Elastic.Clients.Elasticsearch.IndexManagement;
 using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Readers;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
@@ -65,9 +66,9 @@ namespace Ethanol.ContextBuilder.Builders
             {
                 return source.Multicast(flowStream =>
                 {
-                    var tlsStream = flowStream.Where(x => !string.IsNullOrEmpty(x.TlsVersion) && x.SourceTransportPort > x.DestinationPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
-                    var dnsStream = flowStream.Where(x => x.Protocol == System.Net.Sockets.ProtocolType.Udp && x.SourceTransportPort == 53).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.Protocol == System.Net.Sockets.ProtocolType.Tcp && !string.IsNullOrWhiteSpace(x.HttpUrl)).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl, f.ProcessName));
+                    var tlsStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.SSL.ToString() && x.SourceTransportPort > x.DestinationPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
+                    var dnsStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.DNS.ToString()).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
+                    var httpStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.HTTP.ToString()).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl, f.ProcessName));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {

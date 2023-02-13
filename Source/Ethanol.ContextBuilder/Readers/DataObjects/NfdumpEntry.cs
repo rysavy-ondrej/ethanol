@@ -102,7 +102,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
             .ForMember(d => d.HttpUrl, o => o.MapFrom(s => s.HttpUrl))
             .ForMember(d => d.Packets, o => o.MapFrom(s => s.Packets))
             .ForMember(d => d.Protocol, o => o.MapFrom(s => GetProtocol(s.Protocol)))
-            .ForMember(d => d.Nbar, o => o.MapFrom(s => s.Nbar))
+            .ForMember(d => d.AppProtoName, o => o.MapFrom(s => GetApplicationProtocol(s.Nbar).ToString()))
             .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => s.SourceIpAddress))
             .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.SourceTransportPort))
             .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.TimeStart))
@@ -112,6 +112,15 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
             .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => NormalizeString(s.TlsServerCommonName)))
             .ForMember(d => d.TlsServerName, o => o.MapFrom(s => NormalizeString(s.TlsServerName)))
             ).CreateMapper();
+
+        private static ApplicationProtocols GetApplicationProtocol(string nbar) => nbar switch
+        {
+            "3:443"     => ApplicationProtocols.HTTPS,
+            "3:453"     => ApplicationProtocols.SSL,
+            "3:53"      => ApplicationProtocols.DNS,
+            "3:80"      => ApplicationProtocols.HTTP,
+            _           => ApplicationProtocols.Other
+        };
 
         private static string NormalizeString(string value)
         {

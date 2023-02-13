@@ -1,20 +1,11 @@
 ﻿using AutoMapper;
 using CsvHelper;
-using Elastic.Clients.Elasticsearch.Fluent;
-using Elastic.Clients.Elasticsearch.IndexManagement;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.Json.Serialization;
 using System.Threading;
-using YamlDotNet.Core.Tokens;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Readers

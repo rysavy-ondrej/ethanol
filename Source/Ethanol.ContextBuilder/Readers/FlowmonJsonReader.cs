@@ -2,7 +2,9 @@
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
+using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -51,7 +53,7 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 cfg.CreateMap<FlowmonexpEntry, IpfixObject>()
                 .ForMember(d => d.Bytes, o => o.MapFrom(s => s.Bytes))
-                .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.L3Ipv4Dst))
+                .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => GetIPAddress(s.L3Ipv4Dst, s.L3Ipv6Dst)))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.L4PortDst))
                 .ForMember(d => d.DnsQueryName, o => o.MapFrom(s => s.InveaDnsQname.Replace("\0", "")))
                 .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.InveaDnsCrrRdata.Replace("\0", "")))
@@ -61,8 +63,8 @@ namespace Ethanol.ContextBuilder.Readers
                 .ForMember(d => d.HttpUrl, o => o.MapFrom(s => s.HttpRequestUrl.ToString()))
                 .ForMember(d => d.Packets, o => o.MapFrom(s => s.Packets))
                 .ForMember(d => d.Protocol, o => o.MapFrom(s => (ProtocolType)s.L4Proto))
-                .ForMember(d => d.Nbar, o => o.MapFrom(s => s.NbarName))
-                .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => s.L3Ipv4Src))
+                .ForMember(d => d.AppProtoName, o => o.MapFrom(s => GetApplication(s.NbarName).ToString()))
+                .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => GetIPAddress(s.L3Ipv4Src,s.L3Ipv6Src)))
                 .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.L4PortSrc))
                 .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.StartNsec))
                 .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.EndNsec - s.StartNsec))
@@ -73,6 +75,27 @@ namespace Ethanol.ContextBuilder.Readers
             });
             mapper = configuration.CreateMapper();
         }
+
+        private string GetIPAddress(string ipv4, string ipv6)
+        {
+            return !String.IsNullOrWhiteSpace(ipv4) ? ipv4 : ipv6; 
+        }
+
+
+        /// <summary>
+        /// Maps the NBAR text to the applicaiton name.
+        /// </summary>
+        /// <param name="nbarName"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private ApplicationProtocols GetApplication(string nbarName) => nbarName switch
+        {
+            "DNS_TCP"   => ApplicationProtocols.DNS,
+            "SSL/TLS"   => ApplicationProtocols.SSL,
+            "HTTPS"     => ApplicationProtocols.HTTPS,
+            "HTTP"      => ApplicationProtocols.HTTP,
+            _           => ApplicationProtocols.Other
+        };
 
         /// <summary>
         /// Provides next record form the input or null.

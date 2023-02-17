@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Ethanol.Catalogs
+﻿namespace Ethanol.Catalogs
 {
 
     public class ContextBuilderCatalog

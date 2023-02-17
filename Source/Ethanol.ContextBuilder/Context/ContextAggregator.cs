@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder.Builders;
-using Ethanol.Streaming;
+﻿using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
@@ -82,11 +81,11 @@ namespace Ethanol.ContextBuilder.Context
                 agg3 => agg3.CollectList(x => x.Item3),
                 (key, val1, val2, val3) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2, val3)));
         }
-        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
-            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
-                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
-                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
-                 IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey, TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey, TSource1>> source1,
+                 IStreamable<TStreamKey, KeyValuePair<TKey, TSource2>> source2,
+                 IStreamable<TStreamKey, KeyValuePair<TKey, TSource3>> source3,
+                 IStreamable<TStreamKey, KeyValuePair<TKey, TSource4>> source4,
                  Func<TSource1[], TSource2[], TSource3[], TSource4[], TTarget> aggregator)
         where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
@@ -134,12 +133,12 @@ namespace Ethanol.ContextBuilder.Context
                 (key, val1, val2, val3, val4, val5) => aggregator(key.Key, val1, val2, val3, val4, val5));
         }
 
-        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
-            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource5>> source5,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey, TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey, TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource2>> source2,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource3>> source3,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource4>> source4,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource5>> source5,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
@@ -156,15 +155,15 @@ namespace Ethanol.ContextBuilder.Context
                 agg3 => agg3.CollectList(x => x.Item3),
                 agg4 => agg4.CollectList(x => x.Item4),
                  agg5 => agg5.CollectList(x => x.Item5),
-                (key, val1, val2, val3, val4, val5) => new KeyValuePair<TKey,TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
+                (key, val1, val2, val3, val4, val5) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5)));
         }
-        public static IStreamable<TStreamKey, KeyValuePair<TKey,TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6, TTarget>(
-            this IStreamable<TStreamKey, KeyValuePair<TKey,TSource1>> source1,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource2>> source2,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource3>> source3,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource4>> source4,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource5>> source5,
-            IStreamable<TStreamKey, KeyValuePair<TKey,TSource6>> source6,
+        public static IStreamable<TStreamKey, KeyValuePair<TKey, TTarget>> AggregateContextStreams<TStreamKey, TKey, TSource1, TSource2, TSource3, TSource4, TSource5, TSource6, TTarget>(
+            this IStreamable<TStreamKey, KeyValuePair<TKey, TSource1>> source1,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource2>> source2,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource3>> source3,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource4>> source4,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource5>> source5,
+            IStreamable<TStreamKey, KeyValuePair<TKey, TSource6>> source6,
             Func<TSource1[], TSource2[], TSource3[], TSource4[], TSource5[], TSource6[], TTarget> aggregator)
             where TSource1 : class where TSource2 : class where TSource3 : class where TSource4 : class
         {
@@ -183,7 +182,7 @@ namespace Ethanol.ContextBuilder.Context
                 agg4 => agg4.CollectList(x => x.Item4),
                 agg5 => agg5.CollectList(x => x.Item5),
                 agg6 => agg6.CollectList(x => x.Item6),
-                (key, val1, val2, val3, val4, val5, val6) => new KeyValuePair<TKey,TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
+                (key, val1, val2, val3, val4, val5, val6) => new KeyValuePair<TKey, TTarget>(key.Key, aggregator(val1, val2, val3, val4, val5, val6)));
         }
     }
 }

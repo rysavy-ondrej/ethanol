@@ -1,6 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
-
-namespace Ethanol.ContextBuilder.Builders
+﻿namespace Ethanol.ContextBuilder.Builders
 {
     /// <summary>
     /// Defines a context for a host.

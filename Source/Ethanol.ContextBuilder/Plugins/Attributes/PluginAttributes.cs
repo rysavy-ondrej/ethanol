@@ -13,7 +13,7 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class PluginAttribute : Attribute
     {
-        public PluginAttribute(PluginType pluginType, string Name, string Description, string DocUrl=null)
+        public PluginAttribute(PluginType pluginType, string Name, string Description, string DocUrl = null)
         {
             PluginType = pluginType;
             this.Name = Name;

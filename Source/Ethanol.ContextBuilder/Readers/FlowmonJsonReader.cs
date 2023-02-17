@@ -18,7 +18,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// properly formatted array of JSON objects.
     /// </summary>
     [Plugin(PluginType.Reader, "FlowmonJson", "Reads JSON file with IPFIX data produced by flowmonexp5 tool.")]
-    class FlowmonJsonReader : FlowReader<IpfixObject>
+    class FlowmonJsonReader : FlowReader<IpFlow>
     {
         private readonly TextReader _reader;
         private readonly IMapper mapper;
@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Readers
             _reader = reader;
             var configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<FlowmonexpEntry, IpfixObject>()
+                cfg.CreateMap<FlowmonexpEntry, IpFlow>()
                 .ForMember(d => d.Bytes, o => o.MapFrom(s => s.Bytes))
                 .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => GetIPAddress(s.L3Ipv4Dst, s.L3Ipv6Dst)))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.L4PortDst))
@@ -62,16 +62,16 @@ namespace Ethanol.ContextBuilder.Readers
                 .ForMember(d => d.HttpResponse, o => o.MapFrom(s => s.HttpResponseStatusCode.ToString()))
                 .ForMember(d => d.HttpUrl, o => o.MapFrom(s => s.HttpRequestUrl.ToString()))
                 .ForMember(d => d.Packets, o => o.MapFrom(s => s.Packets))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => (ProtocolType)s.L4Proto))
-                .ForMember(d => d.AppProtoName, o => o.MapFrom(s => GetApplication(s.NbarName).ToString()))
+                .ForMember(d => d.ProtocolIdentifier, o => o.MapFrom(s => (ProtocolType)s.L4Proto))
+                .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => GetApplication(s.NbarName).ToString()))
                 .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => GetIPAddress(s.L3Ipv4Src,s.L3Ipv6Src)))
                 .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.L4PortSrc))
                 .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.StartNsec))
                 .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.EndNsec - s.StartNsec))
                 .ForMember(d => d.TlsVersion, o => o.MapFrom(s => s.TlsClientVersion))
                 .ForMember(d => d.TlsJa3, o => o.MapFrom(s => s.TlsJa3Fingerprint))
-                .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => s.TlsSubjectCn.Replace("\0", "")))
-                .ForMember(d => d.TlsServerName, o => o.MapFrom(s => s.TlsSni.Replace("\0", "")));
+                .ForMember(d => d.TlsSubjectCommonName, o => o.MapFrom(s => s.TlsSubjectCn.Replace("\0", "")))
+                .ForMember(d => d.TlsServerNameIndication, o => o.MapFrom(s => s.TlsSni.Replace("\0", "")));
             });
             mapper = configuration.CreateMapper();
         }
@@ -102,14 +102,14 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="ipfixRecord">The record that was read or null.</param>
         /// <returns>true if recrod was read or null for EOF reached.</returns>
-        public bool TryReadNextEntry(out IpfixObject ipfixRecord)
+        public bool TryReadNextEntry(out IpFlow ipfixRecord)
         {
             ipfixRecord = null;
             var line = ReadJsonRecord(_reader);
             if (line == null) return false;
             if (FlowmonexpEntry.TryDeserialize(line, out var entry))
             {
-                ipfixRecord = mapper.Map<IpfixObject>(entry);
+                ipfixRecord = mapper.Map<IpFlow>(entry);
                 return true;
             }
             return false;
@@ -152,7 +152,7 @@ namespace Ethanol.ContextBuilder.Readers
 
         }
         /// <inheritdoc/>
-        protected override bool TryGetNextRecord(CancellationToken ct, out IpfixObject record)
+        protected override bool TryGetNextRecord(CancellationToken ct, out IpFlow record)
         {
             return TryReadNextEntry(out record);
         }

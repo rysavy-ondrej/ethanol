@@ -486,7 +486,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string pgsqlerrc { get; set; }
         [Name("pgsqlsql")]
         public string pgsqlsql { get; set; }
-
+        #region TLS
         [Name("tlscont")]
         public string tlscont { get; set; }
         [Name("tlshshk")]
@@ -504,12 +504,12 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [Name("tlsalpn")]
         public string tlsalpn { get; set; }
         [Name("tlssni")]
-        public string TlsServerName { get; set; }
+        public string tlssni { get; set; }
 
         [Name("tlssnlen")]
         public string tlssnlen { get; set; }
         [Name("tlscver")]
-        public string TlsClientVersion { get; set; }
+        public string tlscver { get; set; }
         [Name("tlsciphs")]
         public string tlsciphs { get; set; }
         [Name("tlscrnd")]
@@ -530,7 +530,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [Name("tlsicn")]
         public string tlsicn { get; set; }
         [Name("tlsscn")]
-        public string TlsServerCommonName { get; set; }
+        public string tlsscn { get; set; }
         [Name("tlsson")]
         public string tlsson { get; set; }
         [Name("tlsvfrom")]
@@ -545,13 +545,17 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string tlspklen { get; set; }
 
         [Name("tlsja3")]
-        public string TlsJa3 { get; set; }
+        public string tlsja3 { get; set; }
         [Name("tlssnum")]
         public string tlssnum { get; set; }
         [Name("tlssan")]
         public string tlssan { get; set; }
         [Name("tlsscm")]
         public string tlsscm { get; set; }
+        #endregion
+
+
+
         [Name("iec104pktlen")]
         public string iec104pktlen { get; set; }
         [Name("iec104fmt")]

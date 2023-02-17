@@ -63,7 +63,7 @@ namespace Ethanol.ContextBuilder.Builders
         public void OnError(Exception error)
         {
             _ingressStream.OnError(error);
-        }        
+        }
         /// <inheritdoc/>>
         public void OnNext(TSource value)
         {
@@ -76,7 +76,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <summary>
     /// Factory class supporting to instantiating flow readers.
     /// </summary>
-    public class ContextBuilderFactory : PluginFactory<IContextBuilder<IpfixObject, object>>
+    public class ContextBuilderFactory : PluginFactory<IContextBuilder<IpFlow, object>>
     {
         /// <inheritdoc/>>
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)

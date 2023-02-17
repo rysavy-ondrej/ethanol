@@ -57,7 +57,7 @@ namespace Ethanol.Streaming
         /// <param name="window">The source window consisting of objects.</param>
         /// <param name="selector">Function to project from <typeparamref name="TSource"/> to <typeparamref name="TResult"/> objects.</param>
         /// <returns>An array of object collected in the given <paramref name="window"/>.</returns>
-        public static IAggregate<TSource, List<TResult>, TResult[]> CollectList<TKey,TSource,TResult>(
+        public static IAggregate<TSource, List<TResult>, TResult[]> CollectList<TKey, TSource, TResult>(
             this Window<TKey, TSource> window, Expression<Func<TSource, TResult>> selector)
         {
             var aggregate = new __AggregateList<TResult>();

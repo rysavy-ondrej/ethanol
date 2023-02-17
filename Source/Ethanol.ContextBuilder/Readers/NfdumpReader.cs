@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using CsvHelper;
+﻿using CsvHelper;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
@@ -16,7 +15,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// properly formatted array of JSON objects.
     /// </summary>
     [Plugin(PluginType.Reader, "NfdumpCsv", "Reads CSV file produced by nfdump.")]
-    class NfdumpReader : FlowReader<IpfixObject>
+    class NfdumpReader : FlowReader<IpFlow>
     {
         public class Configuration
         {
@@ -25,7 +24,6 @@ namespace Ethanol.ContextBuilder.Readers
         }
 
         private readonly CsvReader _csvReader;
-        private readonly IMapper mapper;
 
         /// <summary>
         /// Creates a new reader for the given arguments.
@@ -46,7 +44,7 @@ namespace Ethanol.ContextBuilder.Readers
         public NfdumpReader(TextReader reader)
         {
             _csvReader = new CsvReader(reader, CultureInfo.InvariantCulture);
-            
+
         }
 
         /// <summary>
@@ -54,14 +52,14 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="ipfixRecord">The record that was read or null.</param>
         /// <returns>true if recrod was read or null for EOF reached.</returns>
-        public bool TryReadNextEntry(out IpfixObject ipfixRecord)
+        public bool TryReadNextEntry(out IpFlow ipfixRecord)
         {
             ipfixRecord = null;
             if (_csvReader.Read())
             {
                 var record = _csvReader.GetRecord<NfdumpEntry>();
                 if (record == null) return false;
-                ipfixRecord = record.ToIpfix();
+                ipfixRecord = record.ConvertToFlow();
                 return true;
             }
             return false;
@@ -74,7 +72,7 @@ namespace Ethanol.ContextBuilder.Readers
             _csvReader.ReadHeader();
         }
         /// <inheritdoc/>
-        protected override bool TryGetNextRecord(CancellationToken ct, out IpfixObject record)
+        protected override bool TryGetNextRecord(CancellationToken ct, out IpFlow record)
         {
             return TryReadNextEntry(out record);
         }

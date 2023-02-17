@@ -1,7 +1,6 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -42,12 +41,12 @@ namespace Ethanol.Providers
             return Task.Run(() =>
             {
                 OnStartLoading?.Invoke(this, filename);
-                foreach(var record in LoadAll(stream))
+                foreach (var record in LoadAll(stream))
                 {
                     FlowCount++;
                     OnReadRecord?.Invoke(this, record);
                 }
-                OnFinish?.Invoke(this,filename);
+                OnFinish?.Invoke(this, filename);
             });
         }
 

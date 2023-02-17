@@ -25,7 +25,7 @@ namespace Ethanol.ContextBuilder.Classifiers
         public override string Label => "TOR";
 
         /// <inheritdoc/>
-        public override double Score(KeyValuePair<IpfixKey,TlsContext> arg)
+        public override double Score(KeyValuePair<FlowKey, TlsContext> arg)
         {
             var dnsResolved = 1 - MinMaxScale(arg.Value.Domains.Flows.Count(), 0, 3, 0, 1);
             var tlsServerName = arg.Value.TlsClientFlows.Flows.Select(fact => MinMaxScale(Statistics.ComputeDnsEntropy(fact.TlsServerCommonName).Max(), 0, 4, 0, 1)).Average();

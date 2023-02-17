@@ -1,11 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Ethanol.ContextBuilder.Plugins.Attributes;
 using System.IO;
-using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
-using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.ContextBuilder.Builders;
-using Ethanol.ContextBuilder.Context;
-using System.Text.Json.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -16,7 +12,7 @@ namespace Ethanol.ContextBuilder.Writers
     public class YamlDataWriter : ContextWriter<object>
     {
         private readonly TextWriter _writer;
-        private readonly ISerializer _yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).DisableAliases().Build();
+        private readonly ISerializer _yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new IPAddressTypeConverter()).DisableAliases().Build();
 
         /// <summary>
         /// Creates a new <see cref="YamlDataWriter"/> object. 
@@ -37,7 +33,7 @@ namespace Ethanol.ContextBuilder.Writers
         public class Configuration
         {
             [PluginParameter(Name: "file", PluginParameterFlag.Optional, Description: "The file name with YAML data to write.")]
-            [YamlMember(Alias="file")]
+            [YamlMember(Alias = "file")]
             public string FileName { get; set; }
         }
         /// <summary>

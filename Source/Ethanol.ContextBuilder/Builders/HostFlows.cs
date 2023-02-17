@@ -8,6 +8,6 @@ namespace Ethanol.ContextBuilder.Builders
     public record HostFlows
     {
         public string Host { get; set; }
-        public IpfixObject[] Flows { get; set; }
+        public InternetFlow[] Flows { get; set; }
     }
 }

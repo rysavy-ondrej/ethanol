@@ -7,7 +7,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// </summary>
     public record DnsResolution
     {
-        public IpfixKey Flow { get; set; }
+        public FlowKey Flow { get; set; }
         public string DomainNane { get; set; }
         public string[] Addresses { get; set; }
     }

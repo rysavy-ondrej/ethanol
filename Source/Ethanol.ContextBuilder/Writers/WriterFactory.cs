@@ -1,6 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.ContextBuilder.Readers;
 using System;
 
 namespace Ethanol.ContextBuilder.Writers

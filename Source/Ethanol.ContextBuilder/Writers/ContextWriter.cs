@@ -13,7 +13,7 @@ namespace Ethanol.ContextBuilder.Writers
         TaskCompletionSource _taskCompletionSource;
         protected ContextWriter()
         {
-            _taskCompletionSource = new TaskCompletionSource();           
+            _taskCompletionSource = new TaskCompletionSource();
         }
 
         /// <inheritdoc/>

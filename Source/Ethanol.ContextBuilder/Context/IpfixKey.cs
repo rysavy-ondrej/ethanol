@@ -1,39 +1,21 @@
-﻿using Ethanol.ContextBuilder.Math;
-using System;
+﻿using System;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Ethanol.ContextBuilder.Context
 {
     /// <summary>
-    /// Represents a flow key.
+    /// The IPFIX key is a set of one or more fields that are used to uniquely identify a flow.
+    /// <para/>
+    /// This includes fields such as the source IP address, destination IP address, source port, destination port, and protocol. 
     /// </summary>
-    public record IpfixKey
+    public record FlowKey(ProtocolType Pt, IPAddress SrcIp, ushort SrcPt, IPAddress DstIp, ushort DstPt)
     {
-        /// <summary>
-        /// Flow protocol.
-        /// </summary>
-        public string Proto { get; set; }
-        /// <summary>
-        /// Source IP address.
-        /// </summary>
-        public string SrcIp { get; set; }
-        /// <summary>
-        /// Source L4 port.
-        /// </summary>
-        public int SrcPt { get; set; }
-        /// <summary>
-        /// Destination IP address.
-        /// </summary>
-        public string DstIp { get; set; }
-        /// <summary>
-        /// Destionation L4 port.
-        /// </summary>
-        public int DstPt { get; set; }
-
         /// <summary>
         /// A string representation of the flow key.
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => $"{Proto}@{SrcIp}:{SrcPt}-{DstIp}:{DstPt}";
+        public override string ToString() => $"{Pt}@{SrcIp}:{SrcPt}-{DstIp}:{DstPt}";
         /// <summary>
         /// Parses the input string to flow key.
         /// </summary>

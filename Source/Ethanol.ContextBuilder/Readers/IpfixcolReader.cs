@@ -14,10 +14,10 @@ using YamlDotNet.Serialization;
 namespace Ethanol.ContextBuilder.Readers
 {
     /// <summary>
-    /// Reads <see cref="IpfixObject"/> collection as exported from Ipfixcol2 tool (https://github.com/CESNET/ipfixcol2), which is basically NDJSON.
+    /// Reads <see cref="IpFlow"/> collection as exported from Ipfixcol2 tool (https://github.com/CESNET/ipfixcol2), which is basically NDJSON.
     /// </summary>
     [Plugin(PluginType.Reader, "IpfixcolJson", "Reads NDJSON exported from ipfixcol2 tool.")]
-    class IpfixcolReader : FlowReader<IpfixObject>
+    class IpfixcolReader : FlowReader<IpFlow>
     {
 
         public class Configuration
@@ -52,7 +52,7 @@ namespace Ethanol.ContextBuilder.Readers
             this._textReader = textReader;
             _configuration = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<IpfixcolEntry, IpfixObject>()
+                cfg.CreateMap<IpfixcolEntry, IpFlow>()
                 .ForMember(d => d.Bytes, o => o.MapFrom(s => s.IanaOctetDeltaCount))
                 .ForMember(d => d.DestinationIpAddress, o => o.MapFrom(s => s.IanaDestinationIPv4Address))
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.IanaDestinationTransportPort))
@@ -60,15 +60,15 @@ namespace Ethanol.ContextBuilder.Readers
                 .ForMember(d => d.DnsResponseData, o => o.MapFrom(s => s.FlowmonDnsCrrRdata.Replace("\0", "")))
                 .ForMember(d => d.HttpHost, o => o.MapFrom(s => s.FlowmonHttpHost.Replace("\0", "")))
                 .ForMember(d => d.Packets, o => o.MapFrom(s => s.IanaPacketDeltaCount))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.IanaProtocolIdentifier))
+                .ForMember(d => d.ProtocolIdentifier, o => o.MapFrom(s => s.IanaProtocolIdentifier))
                 .ForMember(d => d.SourceIpAddress, o => o.MapFrom(s => s.IanaSourceIPv4Address))
                 .ForMember(d => d.SourceTransportPort, o => o.MapFrom(s => s.IanaSourceTransportPort))
                 .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.IanaFlowStartMilliseconds))
                 .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.IanaFlowEndMilliseconds - s.IanaFlowStartMilliseconds))
                 .ForMember(d => d.TlsVersion, o => o.MapFrom(s => s.FlowmonTlsClientVersion))
                 .ForMember(d => d.TlsJa3, o => o.MapFrom(s => s.FlowmonTlsJa3Fingerprint))
-                .ForMember(d => d.TlsServerCommonName, o => o.MapFrom(s => s.FlowmonTlsSubjectCn.Replace("\0", "")))
-                .ForMember(d => d.TlsServerName, o => o.MapFrom(s => s.FlowmonTlsSni.Replace("\0", "")));
+                .ForMember(d => d.TlsSubjectCommonName, o => o.MapFrom(s => s.FlowmonTlsSubjectCn.Replace("\0", "")))
+                .ForMember(d => d.TlsServerNameIndication, o => o.MapFrom(s => s.FlowmonTlsSni.Replace("\0", "")));
             });
             _mapper = _configuration.CreateMapper();
         }
@@ -78,7 +78,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="ipfixRecord">The record that was read or null.</param>
         /// <returns>true if recrod was read or null for EOF reached.</returns>
-        public bool TryReadNextEntry(out IpfixObject ipfixRecord)
+        public bool TryReadNextEntry(out IpFlow ipfixRecord)
         {
             ipfixRecord = null;
             var line = _textReader.ReadLine();
@@ -88,7 +88,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
             if (IpfixcolEntry.TryDeserialize(line, out var entry))
             {
-                ipfixRecord = _mapper.Map<IpfixObject>(entry);
+                ipfixRecord = _mapper.Map<IpFlow>(entry);
                 return true;
             }
             return false;
@@ -100,7 +100,7 @@ namespace Ethanol.ContextBuilder.Readers
 
         }
         /// <inheritdoc/>
-        protected override bool TryGetNextRecord(CancellationToken ct, out IpfixObject record)
+        protected override bool TryGetNextRecord(CancellationToken ct, out IpFlow record)
         {
             return TryReadNextEntry(out record);
         }

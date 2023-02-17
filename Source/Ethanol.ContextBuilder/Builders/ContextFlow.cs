@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <param name="FlowKey"></param>
     /// <param name="Window"></param>
     /// <param name="Context"></param>
-    public record FlowWithContext(string Id, IpfixKey FlowKey, WindowSpan Window, TlsContext Context) : ContextObject<IpfixKey, TlsContext>(Id, Window, FlowKey, Context);
+    public record FlowWithContext(string Id, FlowKey FlowKey, WindowSpan Window, TlsContext Context) : ContextObject<FlowKey, TlsContext>(Id, Window, FlowKey, Context);
 
-    public record ClassifiedContextFlow<TContext>(IpfixKey FlowKey, ClassificationResult[] Tags, TContext Context);
+    public record ClassifiedContextFlow<TContext>(FlowKey FlowKey, ClassificationResult[] Tags, TContext Context);
 }

@@ -12,8 +12,8 @@ namespace Ethanol.Streaming
     public class ObservableEgressStream<TPayload> : IObservable<StreamEvent<TPayload>>
     {
         IObservable<StreamEvent<TPayload>> _observable;
-           
-        public ObservableEgressStream(IStreamable<Empty,TPayload> stream, Func<StreamEvent<TPayload>, bool> eventFilter)
+
+        public ObservableEgressStream(IStreamable<Empty, TPayload> stream, Func<StreamEvent<TPayload>, bool> eventFilter)
         {
             _observable = stream.ToStreamEventObservable().Where(eventFilter);
         }

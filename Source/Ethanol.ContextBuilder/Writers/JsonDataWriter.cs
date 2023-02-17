@@ -1,10 +1,6 @@
-﻿using Elastic.Clients.Elasticsearch.Fluent;
-using Elastic.Clients.Elasticsearch.IndexManagement;
-using Ethanol.ContextBuilder.Plugins.Attributes;
-using System.Collections.Generic;
+﻿using Ethanol.ContextBuilder.Plugins.Attributes;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
@@ -29,7 +25,7 @@ namespace Ethanol.ContextBuilder.Writers
         /// <returns>The new  <see cref="JsonDataWriter"/> object. </returns>
         public static JsonDataWriter Create(Configuration configuration)
         {
-                var writer = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
+            var writer = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
             return new JsonDataWriter(writer);
         }
 

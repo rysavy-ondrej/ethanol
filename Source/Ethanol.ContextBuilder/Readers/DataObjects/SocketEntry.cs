@@ -1,6 +1,7 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using Ethanol.ContextBuilder.Context;
 using System;
+using System.Net;
 
 namespace Ethanol.ContextBuilder.Readers.DataObjects
 {
@@ -14,19 +15,19 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string FlowKeyString { get; set; }
 
         [Ignore]
-        public IpfixKey FlowKey => new IpfixKey { Proto = "TCP", SrcIp = LocalAddress, SrcPt = LocalPort, DstIp = RemoteAddress, DstPt = RemotePort };
+        public FlowKey FlowKey => new FlowKey(System.Net.Sockets.ProtocolType.Tcp, LocalAddress, LocalPort, RemoteAddress, RemotePort);
 
         [Name("LocalAddress")]
-        public string LocalAddress { get; set; }
+        public IPAddress LocalAddress { get; set; }
 
         [Name("LocalPort")]
-        public int LocalPort { get; set; }
+        public ushort LocalPort { get; set; }
 
         [Name("RemoteAddress")]
-        public string RemoteAddress { get; set; }
+        public IPAddress RemoteAddress { get; set; }
 
         [Name("RemotePort")]
-        public int RemotePort { get; set; }
+        public ushort RemotePort { get; set; }
 
         [Name("State")]
         public string State { get; set; }

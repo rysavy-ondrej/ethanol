@@ -7,7 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Readers\FlowmonJsonReader.cs" />
+    <Compile Remove="Readers\IpfixcolReader.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="icons8-pine-cone-100.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Readers\FlowmonJsonReader.cs" />
+    <None Include="Readers\IpfixcolReader.cs" />
   </ItemGroup>
 
 	
@@ -52,6 +62,10 @@
     <None Update="Samples\tls.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>

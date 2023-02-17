@@ -1,26 +1,21 @@
-﻿using Elastic.Clients.Elasticsearch.Fluent;
-using Elastic.Clients.Elasticsearch.IndexManagement;
-using Ethanol.Catalogs;
+﻿using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.ContextBuilder.Readers;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
     public record FlowMeters(int Packets, int Octets, DateTime TimeStart, TimeSpan Duration);
     public record EndpointsKey(string SrcIp, string DstIp);
-    public record TlsFlowRecord(IpfixKey Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName, string ProcessName);
-    public record DnsFlowRecord(IpfixKey Flow, FlowMeters Meters, string QueryName, string ResponseData);
-    public record HttpFlowRecord(IpfixKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
-    public record HttpsFlowRecord(IpfixKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
+    public record TlsFlowRecord(FlowKey Flow, FlowMeters Meters, string TlsJa3, string TlsServerName, string TlsServerCommonName, string ProcessName);
+    public record DnsFlowRecord(FlowKey Flow, FlowMeters Meters, string QueryName, string ResponseData);
+    public record HttpFlowRecord(FlowKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
+    public record HttpsFlowRecord(FlowKey Flow, FlowMeters Meters, string Method, string HostName, string Url, string ProcessName);
     public record TlsContext(TlsFlowRecord TlsRecord,
         FlowGroup<EndpointsKey, DnsFlowRecord> Domains,
         FlowGroup<TlsClientKey, TlsFlowRecord> TlsClientFlows,
@@ -34,7 +29,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// Implements TLS flow context builder.
     /// </summary>
     [Plugin(PluginType.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
-    public class FlowContextBuilder : ContextBuilder<IpfixObject, KeyValuePair<IpfixKey, TlsContext>, FlowWithContext>
+    public class FlowContextBuilder : ContextBuilder<IpFlow, KeyValuePair<FlowKey, TlsContext>, FlowWithContext>
     {
 
         public FlowContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
@@ -50,75 +45,75 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         [PluginCreate]
-        internal static IContextBuilder<IpfixObject, object> Create(Configuration configuration)
+        internal static IContextBuilder<IpFlow, object> Create(Configuration configuration)
         {
             return new FlowContextBuilder(configuration.Window, configuration.Hop);
         }
 
-        public override IStreamable<Empty, KeyValuePair<IpfixKey,TlsContext>> BuildContext(IStreamable<Empty, IpfixObject> source)
+        public override IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildContext(IStreamable<Empty, IpFlow> source)
         {
             return BuildTlsContext(source);
         }
 
-        private IStreamable<Empty, KeyValuePair<IpfixKey,TlsContext>> BuildTlsContext(IStreamable<Empty, IpfixObject> source)
+        private IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(IStreamable<Empty, IpFlow> source)
         {
             try
             {
                 return source.Multicast(flowStream =>
                 {
-                    var tlsStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.SSL.ToString() && x.SourceTransportPort > x.DestinationPort).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.TlsJa3, f.TlsServerName, f.TlsServerCommonName, f.ProcessName));
-                    var dnsStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.DNS.ToString()).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.DnsQueryName, f.DnsResponseData));
-                    var httpStream = flowStream.Where(x => x.AppProtoName == ApplicationProtocols.HTTP.ToString()).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.HttpMethod, f.HttpHost, f.HttpUrl, f.ProcessName));
+                    var tlsStream = flowStream.Where(x => x is TlsFlow && x.SourcePort > x.DestinationPort).Select(f => f as TlsFlow).Select(f => new TlsFlowRecord(f.FlowKey, f.GetMeters(), f.JA3Fingerprint, f.ServerNameIndication, f.SubjectCommonName, f.ApplicationTag));
+                    var dnsStream = flowStream.Where(x => x is DnsFlow).Select(f => f as DnsFlow).Select(f => new DnsFlowRecord(f.FlowKey, f.GetMeters(), f.QuestionName, f.ResponseData));
+                    var httpStream = flowStream.Where(x => x is HttpFlow).Select(f => f as HttpFlow).Select(f => new HttpFlowRecord(f.FlowKey, f.GetMeters(), f.Method, f.Hostname, f.URL, f.ApplicationTag));
 
                     var flowContextStream = tlsStream.Multicast(stream =>
                     {
                         var dnsClientFlowsStream = stream
                             .Join(dnsStream,
-                                flow => new EndpointsKey(flow.Flow.SrcIp, flow.Flow.DstIp),
-                                flow => new EndpointsKey(flow.Flow.DstIp, flow.ResponseData),
-                                (left, right) => new { left.Flow, Key = new EndpointsKey(right.Flow.DstIp, right.ResponseData), Value = right })
+                                flow => new EndpointsKey(flow.Flow.SrcIp.ToString(), flow.Flow.DstIp.ToString()),
+                                flow => new EndpointsKey(flow.Flow.DstIp.ToString(), flow.ResponseData),
+                                (left, right) => new { left.Flow, Key = new EndpointsKey(right.Flow.DstIp.ToString(), right.ResponseData), Value = right })
                             .GroupApply(
                                 flow => new { flow.Flow, flow.Key },
                                 group => group.Aggregate(aggregate => aggregate.CollectList(flow => flow.Value)),
-                                (key, value) => new KeyValuePair<IpfixKey,FlowGroup<EndpointsKey, DnsFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, DnsFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
+                                (key, value) => new KeyValuePair<FlowKey, FlowGroup<EndpointsKey, DnsFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, DnsFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
                                );
 
                         var httpClientFlowsStream = stream
                             .Join(httpStream,
-                                flow => new EndpointsKey(flow.Flow.SrcIp, flow.Flow.DstIp),
-                                flow => new EndpointsKey(flow.Flow.SrcIp, flow.Flow.DstIp),
-                                (left, right) => new { left.Flow, Key = new EndpointsKey(right.Flow.SrcIp, right.Flow.DstIp), Value = right })
+                                flow => new EndpointsKey(flow.Flow.SrcIp.ToString(), flow.Flow.DstIp.ToString()),
+                                flow => new EndpointsKey(flow.Flow.SrcIp.ToString(), flow.Flow.DstIp.ToString()),
+                                (left, right) => new { left.Flow, Key = new EndpointsKey(right.Flow.SrcIp.ToString(), right.Flow.DstIp.ToString()), Value = right })
                             .GroupApply(
                                 flow => new { flow.Flow, flow.Key },
                                 group => group.Aggregate(aggregate => aggregate.CollectList(flow => flow.Value)),
-                                (key, value) => new KeyValuePair<IpfixKey,FlowGroup<EndpointsKey, HttpFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, HttpFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
+                                (key, value) => new KeyValuePair<FlowKey, FlowGroup<EndpointsKey, HttpFlowRecord>>(key.Key.Flow, new FlowGroup<EndpointsKey, HttpFlowRecord>(key.Key.Key, value.Distinct().ToArray()))
                                );
 
                         var tlsClientFlowsStream = stream.MatchGroupApply(
-                        flow => new TlsClientKey(flow.Flow.SrcIp, flow.TlsJa3),
-                        flow => ValueTuple.Create(flow.Flow, new TlsClientKey(flow.Flow.SrcIp, flow.TlsJa3)),
-                        grouping => new KeyValuePair<IpfixKey,FlowGroup<TlsClientKey, TlsFlowRecord>>(
+                        flow => new TlsClientKey(flow.Flow.SrcIp.ToString(), flow.TlsJa3),
+                        flow => ValueTuple.Create(flow.Flow, new TlsClientKey(flow.Flow.SrcIp.ToString(), flow.TlsJa3)),
+                        grouping => new KeyValuePair<FlowKey, FlowGroup<TlsClientKey, TlsFlowRecord>>(
                             grouping.Key.Item1,
                             new FlowGroup<TlsClientKey, TlsFlowRecord>(grouping.Key.Item2, grouping.OrderBy(t => System.Math.Abs(grouping.Key.Item1.SrcPt - t.Flow.SrcPt)).ToArray())
                         ));
 
                         var bagOfFlowsStream = stream.MatchGroupApply(
-                        flow => new BagOfFlowsKey(flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto),
-                        flow => ValueTuple.Create(flow.Flow, new BagOfFlowsKey(flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto)),
-                        grouping => new KeyValuePair<IpfixKey,FlowGroup<BagOfFlowsKey, TlsFlowRecord>>(
+                        flow => new BagOfFlowsKey(flow.Flow.DstIp.ToString(), flow.Flow.DstPt, flow.Flow.Pt.ToString()),
+                        flow => ValueTuple.Create(flow.Flow, new BagOfFlowsKey(flow.Flow.DstIp.ToString(), flow.Flow.DstPt, flow.Flow.Pt.ToString())),
+                        grouping => new KeyValuePair<FlowKey, FlowGroup<BagOfFlowsKey, TlsFlowRecord>>(
                             grouping.Key.Item1,
                             new FlowGroup<BagOfFlowsKey, TlsFlowRecord>(grouping.Key.Item2, grouping.ToArray())
                         ));
 
                         var flowBurstStream = stream.MatchGroupApply(
-                            flow => new FlowBurstKey(flow.Flow.SrcIp, flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto),
-                            flow => ValueTuple.Create(flow.Flow, new FlowBurstKey(flow.Flow.SrcIp, flow.Flow.DstIp, flow.Flow.DstPt, flow.Flow.Proto)),
-                            grouping => new KeyValuePair<IpfixKey,FlowGroup<FlowBurstKey, TlsFlowRecord>>(grouping.Key.Item1,
+                            flow => new FlowBurstKey(flow.Flow.SrcIp.ToString(), flow.Flow.DstIp.ToString(), flow.Flow.DstPt, flow.Flow.Pt.ToString()),
+                            flow => ValueTuple.Create(flow.Flow, new FlowBurstKey(flow.Flow.SrcIp.ToString(), flow.Flow.DstIp.ToString(), flow.Flow.DstPt, flow.Flow.Pt.ToString())),
+                            grouping => new KeyValuePair<FlowKey, FlowGroup<FlowBurstKey, TlsFlowRecord>>(grouping.Key.Item1,
                                 new FlowGroup<FlowBurstKey, TlsFlowRecord>(grouping.Key.Item2, grouping.ToArray())
                             ));
 
                         return stream
-                            .Select(f => new KeyValuePair<IpfixKey,TlsFlowRecord>(f.Flow, f))
+                            .Select(f => new KeyValuePair<FlowKey, TlsFlowRecord>(f.Flow, f))
                             .AggregateContextStreams(dnsClientFlowsStream, tlsClientFlowsStream, bagOfFlowsStream, flowBurstStream, httpClientFlowsStream, AggregateContext);
                     });
                     return flowContextStream;
@@ -143,7 +138,7 @@ namespace Ethanol.ContextBuilder.Builders
             return new TlsContext(arg1.FirstOrDefault(x => x != null), arg2.Aggregate(), arg3.Aggregate(), arg4.Aggregate(), arg5.Aggregate(), arg6.Aggregate());
         }
 
-        protected override FlowWithContext GetTarget(StreamEvent<KeyValuePair<IpfixKey,TlsContext>> arg)
+        protected override FlowWithContext GetTarget(StreamEvent<KeyValuePair<FlowKey, TlsContext>> arg)
         {
             return new FlowWithContext(arg.Payload.Key.ToString(), arg.Payload.Key, WindowSpan.FromLong(arg.StartTime, arg.EndTime), arg.Payload.Value);
         }
@@ -160,7 +155,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, KeyValuePair<IpfixKey,TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> source, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
         {
             var builder = new FlowContextBuilder(windowSize, windowHop);
             return builder.BuildContext(source);

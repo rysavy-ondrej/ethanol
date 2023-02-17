@@ -3,9 +3,9 @@ using System;
 
 namespace Ethanol.ContextBuilder.Context
 {
-    public class IpfixObservableStream : ObservableIngressStream<IpfixObject>
+    public class IpfixObservableStream : ObservableIngressStream<IpFlow>
     {
-        static long GetTimestamp(IpfixObject ipfixRecord)
+        static long GetTimestamp(IpFlow ipfixRecord)
         {
             return ipfixRecord.TimeStart.Ticks;
         }

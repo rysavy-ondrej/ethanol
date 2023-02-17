@@ -1,0 +1,37 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!csharp
+
+struct Foo
+{
+public int x;
+public string y;
+}
+class Wrapper
+{
+public Foo FooField;
+}
+
+var x=new Wrapper();
+
+x.Display();
+
+x.FooField.x=10;
+
+x.Display();
+
+#!csharp
+
+public struct Samba
+{
+public string SMB1Command;
+public string SMB2Command;
+public string SMB2TreePath;
+public string SMB2FilePath;
+public string SMB2FileType;
+public string SMB2Operation;
+public string SMB2Delete;
+public string SMB2Error;
+}

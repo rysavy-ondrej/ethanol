@@ -31,7 +31,7 @@ namespace Ethanol.ContextBuilder.Classifiers
         /// </summary>
         /// <param name="arg">An input context flow to be classified.</param>
         /// <returns>The value of score represented as double.</returns>
-        double Score(KeyValuePair<IpfixKey, TContext> arg);
+        double Score(KeyValuePair<FlowKey, TContext> arg);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ namespace Ethanol.ContextBuilder.Classifiers
         /// <typeparam name="TContext">The type of the context.</typeparam>
         /// <param name="classifiers">The classifiers to use for the classification.</param>
         /// <returns>An expression that can be used as an operator in <see cref="Streamable.Select{TKey, TPayload, TResult}(IStreamable{TKey, TPayload}, Expression{Func{TPayload, TResult}})"/> method.</returns>
-        public static Expression<Func<KeyValuePair<IpfixKey, TContext>, ClassifiedContextFlow<TContext>>> Classify(params IContextFlowClassifier<TContext>[] classifiers)
+        public static Expression<Func<KeyValuePair<FlowKey, TContext>, ClassifiedContextFlow<TContext>>> Classify(params IContextFlowClassifier<TContext>[] classifiers)
         {
             return (arg) =>
               new ClassifiedContextFlow<TContext>(arg.Key, classifiers.Select(classifier => new ClassificationResult(classifier.Label, classifier.Score(arg))).ToArray(), arg.Value);
@@ -57,7 +57,7 @@ namespace Ethanol.ContextBuilder.Classifiers
         /// Provides an expression that can be used to compute the score of the context flow.
         /// </summary>
         /// <returns>An expression that computes the score for the current classifier.</returns>
-        public abstract double Score(KeyValuePair<IpfixKey, TContext> arg);
+        public abstract double Score(KeyValuePair<FlowKey, TContext> arg);
         /// <summary>
         /// A label of the current classifier.
         /// </summary>

@@ -1,14 +1,13 @@
 ﻿using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.ContextBuilder.Readers;
 using Ethanol.Streaming;
 using Microsoft.CodeAnalysis;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using YamlDotNet.Core.Tokens;
+using System.Net;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
@@ -17,7 +16,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// Builds the context for Ip hosts identified in the source IPFIX stream.
     /// </summary>
     [Plugin(PluginType.Builder, "HostContext", "Builds the context for IP hosts identified in the source IPFIX stream.")]
-    public class HostContextBuilder : ContextBuilder<IpfixObject, KeyValuePair<string,NetworkActivity>, ContextObject<string, HostContext>>
+    public class HostContextBuilder : ContextBuilder<IpFlow, KeyValuePair<string, NetworkActivity>, ContextObject<string, HostContext>>
     {
         public class Configuration
         {
@@ -32,41 +31,36 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         [PluginCreate]
-        internal static IContextBuilder<IpfixObject, object> Create(Configuration configuration)
+        internal static IContextBuilder<IpFlow, object> Create(Configuration configuration)
         {
             return new HostContextBuilder(configuration.Window, configuration.Hop);
         }
 
-        public override IStreamable<Empty, KeyValuePair<string,NetworkActivity>> BuildContext(IStreamable<Empty, IpfixObject> source)
+        public override IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildContext(IStreamable<Empty, IpFlow> source)
         {
             return BuildHostContext(source);
         }
 
-        protected override ContextObject<string, HostContext> GetTarget(StreamEvent<KeyValuePair<string,NetworkActivity>> arg)
+        protected override ContextObject<string, HostContext> GetTarget(StreamEvent<KeyValuePair<string, NetworkActivity>> arg)
         {
             return new ContextObject<string, HostContext>
             {
-                Id =      Guid.NewGuid().ToString(),
-                Window =  WindowSpan.FromLong(arg.StartTime, arg.EndTime),
-                Object =  arg.Payload.Key,
+                Id = Guid.NewGuid().ToString(),
+                Window = WindowSpan.FromLong(arg.StartTime, arg.EndTime),
+                Object = arg.Payload.Key,
                 Context = new HostContext { Activity = arg.Payload.Value }
             };
         }
 
-        private static readonly string NBAR_DNS = ApplicationProtocols.DNS.ToString();
-        private static readonly string NBAR_TLS = ApplicationProtocols.SSL.ToString();
-        private static readonly string NBAR_HTTPS = ApplicationProtocols.HTTPS.ToString();
-        private static readonly string NBAR_HTTP = ApplicationProtocols.HTTP.ToString();
-
-        static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpfixObject> flowStreamSource)
+        static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpFlow> flowStreamSource)
         {
             try
             {
                 var xy = flowStreamSource.Multicast(flowStream =>
                 {
-                    var hostAddressStream = flowStream.Select(r => r.SourceIpAddress).Distinct();
+                    var hostAddressStream = flowStream.Select(r => r.SourceAddress.ToString()).Distinct();
                     var hostRelatedFlows = hostAddressStream
-                        .Join(flowStream, hostIp => hostIp, flow => GetHostAddress(flow), (host, flow) => new { Host = host, Flow = flow })
+                        .Join(flowStream, hostIp => hostIp, flow => GetHostAddress(flow).ToString(), (host, flow) => new { Host = host, Flow = flow })
                         .GroupApply(
                                     obj => obj.Host,
                                     group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj.Flow)),
@@ -110,53 +104,56 @@ namespace Ethanol.ContextBuilder.Builders
             }
         }
 
-        private static KeyValuePair<string,NetworkActivity> GetNetworkActivity(HostFlows x)
+        /// <summary>
+        /// Split the input flows to separate collection according to their types.
+        /// </summary>
+        /// <param name="flows"></param>
+        /// <returns></returns>
+        private static KeyValuePair<string, NetworkActivity> GetNetworkActivity(HostFlows flows)
         {
             return new KeyValuePair<string, NetworkActivity>
-                (x.Host, new NetworkActivity
+                (flows.Host, new NetworkActivity
                 {
-                    Http = x.Flows.Where(x => x.AppProtoName == NBAR_HTTP).Select(GetHttpRequest).ToArray(),
-                    Https = x.Flows.Where(x => x.AppProtoName == NBAR_HTTPS).Select(GetHttpsConnection).ToArray(),
-                    Dns = x.Flows.Where(x => x.AppProtoName == NBAR_DNS).Select(GetDnsResolution).ToArray(),
-                    Tls = x.Flows.Where(x => x.AppProtoName == NBAR_TLS).Select(GetTlsData).ToArray()
+                    PlainWeb = flows.Flows.Where(x => x is HttpFlow).Select(x => GetHttpRequest(x as HttpFlow)).Distinct().ToArray(),
+                    Domains = flows.Flows.Where(x => x is DnsFlow).Select(x => GetDnsResolution(x as DnsFlow)).Distinct().ToArray(),
+                    Encrypted = flows.Flows.Where(x => x is TlsFlow).Select(x => GetTlsData(x as TlsFlow)).Distinct().ToArray()
                 });
         }
 
         /// <summary>
         /// Gets the host address from the supported <paramref name="flow"/>. 
-        /// The flow should be NBAR annotated as DNS, TLS, HTTP or HTTPS.
         /// <para/>
         /// Note that this method needs to be public because it is used from stream pipeline.
         /// </summary>
-        /// <param name="flow">The IPFIX flow object.</param>
-        /// <returns>String representing the IP address or empty string if the flow </returns>
-        public static string GetHostAddress(IpfixObject flow)
+        /// <param name="flow">The flow object.</param>
+        /// <returns>IP Addess of the flow. It gets source ip address except for DNS flows in which case it returns destinaiton address.</returns>
+        public static IPAddress GetHostAddress(InternetFlow flow) => flow switch
         {
-            if (flow.AppProtoName == NBAR_DNS) return flow.SourceIpAddress;
-            if (flow.AppProtoName == NBAR_TLS) return flow.SourceIpAddress;
-            if (flow.AppProtoName == NBAR_HTTPS) return flow.SourceIpAddress;
-            if (flow.AppProtoName == NBAR_HTTP) return flow.SourceIpAddress;
-            return string.Empty;
+            DnsFlow d => d.DestinationAddress,
+            _ => flow.SourceAddress
+        };
+
+        private static HttpRequest GetHttpRequest(HttpFlow record)
+        {
+            return new HttpRequest { Flow = record.FlowKey, Url = record.Hostname + record.URL, Method = record.Method, Response = record.ResultCode };
         }
 
-        private static HttpsConnection GetHttpsConnection(IpfixObject record)
+        private static DnsResolution GetDnsResolution(DnsFlow record)
         {
-            return new HttpsConnection { Flow = record.FlowKey, DomainName = record.HttpHost };
+            return new DnsResolution { Flow = record.FlowKey, DomainNane = record.QuestionName, Addresses = record.ResponseData?.Split(',') ?? Array.Empty<string>() };
         }
 
-        private static HttpRequest GetHttpRequest(IpfixObject record)
+        private static TlsConnection GetTlsData(TlsFlow record)
         {
-            return new HttpRequest { Flow = record.FlowKey, Url = record.HttpHost + record.HttpUrl, Method = record.HttpMethod, Response = record.HttpResponse };
-        }
-
-        private static DnsResolution GetDnsResolution(IpfixObject record)
-        {
-            return new DnsResolution { Flow = record.FlowKey, DomainNane = record.DnsQueryName, Addresses = record.DnsResponseData?.Split(',') ?? Array.Empty<string>() };
-        }
-
-        private static TlsData GetTlsData(IpfixObject record)
-        {
-            return new TlsData { Flow = record.FlowKey, RequestHost = record.HttpHost, TlsVersion = record.TlsVersion, JA3 = record.TlsJa3, SNI = record.TlsServerName, CommonName = record.TlsServerCommonName };
+            return new TlsConnection
+            {
+                Flow = record.FlowKey,
+                Version = record.ServerVersion,
+                JA3 = record.JA3Fingerprint,
+                ServerNameIndication = record.ServerNameIndication,
+                SubjectCommonName = record.SubjectCommonName,
+                ApplicationLayerProtocolNegotiation = record.ApplicationLayerProtocolNegotiation
+            };
         }
     }
     static class IpHostContextBuilderCatalogueExtensions
@@ -167,7 +164,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, KeyValuePair<string,NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpfixObject> source, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
         {
             var builder = new HostContextBuilder(windowSize, windowHop);
             return builder.BuildContext(source);

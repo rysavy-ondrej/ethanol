@@ -105,7 +105,7 @@ namespace Ethanol.ContextBuilder
         public void ListModulesCommand()
         {
             Console.WriteLine("READERS:");
-            foreach(var obj in ReaderFactory.Instance.PluginObjects)
+            foreach (var obj in ReaderFactory.Instance.PluginObjects)
             {
                 Console.WriteLine($"  {obj.Name}    {obj.Description}");
             }

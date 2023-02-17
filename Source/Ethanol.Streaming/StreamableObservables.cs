@@ -1,11 +1,7 @@
 ﻿using Microsoft.StreamProcessing;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Ethanol.Streaming
 {
@@ -25,13 +21,13 @@ namespace Ethanol.Streaming
         /// <returns>A stream of events with defined start times adjusted to hopping windows.</returns>
         public static IStreamable<Empty, T> GetWindowedEventStream<T>(this IObservable<T> observable, Func<T, long> getStartTime, TimeSpan windowSize, TimeSpan windowPeriod)
         {
-            
+
             var source = observable.Select(x => StreamEvent.CreatePoint(RoundMinutes(getStartTime(x), windowPeriod.Ticks).Ticks, x));
             var stream = source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(windowSize.Ticks), FlushPolicy.FlushOnPunctuation);
             return stream.AlterEventDuration(windowPeriod.Ticks);
         }
         private static DateTime RoundMinutes(long arg, long roundTicks)
-        {            
+        {
             var sub = arg % roundTicks;
             var newDt = new DateTime(arg - sub);
             return newDt;

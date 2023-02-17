@@ -80,7 +80,7 @@ namespace Ethanol.Providers
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
-                var processTask  = process.WaitForExitAsync();
+                var processTask = process.WaitForExitAsync();
                 await Task.WhenAll(processTask, tcs.Task);
                 sw.Stop();
                 _logger?.LogTrace($"Command execution finished (duration: {sw.Elapsed}).");

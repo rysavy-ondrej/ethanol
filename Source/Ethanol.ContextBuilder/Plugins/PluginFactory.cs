@@ -1,6 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.ContextBuilder.Readers;
+﻿using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +19,7 @@ namespace Ethanol.ContextBuilder.Plugins
 
         protected PluginFactory()
         {
-           var items  = Plugins.Value.Where(FilterPlugins).Select(p => new KeyValuePair<string, (Type Type, PluginAttribute Plugin)>(p.Plugin.Name,(p.Type, p.Plugin)));
+            var items = Plugins.Value.Where(FilterPlugins).Select(p => new KeyValuePair<string, (Type Type, PluginAttribute Plugin)>(p.Plugin.Name, (p.Type, p.Plugin)));
             __factoryPlugins = new Dictionary<string, (Type Type, PluginAttribute Plugin)>(items);
         }
 

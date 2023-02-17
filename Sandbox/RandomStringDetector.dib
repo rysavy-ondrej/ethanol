@@ -1,0 +1,68 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!csharp
+
+using System;
+using System.Linq;
+
+public static class RandomStringDetector
+{
+    // Define a threshold value for entropy (bits per character)
+    private const double EntropyThreshold = 4.0;
+
+    // Define a function to compute the entropy of a string
+    public static double ComputeEntropy(string s)
+    {
+        // Compute the frequency of each character in the string
+        var charFreqs = s.GroupBy(c => c)
+                         .Select(g => (Char: g.Key, Freq: (double)g.Count() / s.Length))
+                         .ToList();
+
+        // Compute the Shannon entropy of the frequency distribution
+        var entropy = -charFreqs.Sum(cf => cf.Freq * Math.Log(cf.Freq, 2));
+
+        // Compute the entropy per character
+        var entropyPerChar = entropy / Math.Log(2, s.Length);
+
+        return entropyPerChar;
+    }
+
+        public static double ComputeEntropy2(string message)
+        {
+            if (message == null) return 0;
+            Dictionary<char, int> K = message.GroupBy(c => c).ToDictionary(g => g.Key, g => g.Count());
+            double entropyValue = 0;
+            foreach (var character in K)
+            {
+                double PR = character.Value / (double)message.Length;
+                entropyValue -= PR * System.Math.Log(PR, 2);
+            }
+            return entropyValue;
+        }
+    public static double[] ComputeDnsEntropy(string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain)) return new double[] { 0.0 };
+            var parts = domain.Split('.');
+            return parts.Select(ComputeEntropy).ToArray();
+        }
+    // Define a function to detect random strings
+    public static bool IsRandomString(string s)
+    {
+        var entropy = ComputeEntropy(s);
+
+        return entropy > EntropyThreshold;
+    }
+}
+
+#!csharp
+
+RandomStringDetector.ComputeEntropy("www.jkolv3z53x5yh5.net").Display();
+RandomStringDetector.ComputeEntropy("www.bjqclqatrxe6vexyjc.com").Display();
+RandomStringDetector.ComputeEntropy("fp-afd.azureedge.us").Display();
+RandomStringDetector.ComputeEntropy("login.microsoftonline.com").Display();
+RandomStringDetector.ComputeEntropy2("www.jkolv3z53x5yh5.net").Display();
+RandomStringDetector.ComputeEntropy2("www.bjqclqatrxe6vexyjc.com").Display();
+RandomStringDetector.ComputeEntropy2("fp-afd.azureedge.us").Display();
+RandomStringDetector.ComputeEntropy2("login.microsoftonline.com").Display();

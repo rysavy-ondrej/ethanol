@@ -201,17 +201,17 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 .ForMember(d => d.AnswerCount,      o => o.MapFrom(s => Convert.ToInt(s.dnsancnt)))
                 .ForMember(d => d.AuthorityCount,   o => o.MapFrom(s => Convert.ToInt(s.dnsaucnt)))
                 .ForMember(d => d.AdditionalCount,  o => o.MapFrom(s => Convert.ToInt(s.dnsadcnt)))
-                .ForMember(d => d.ResponseType,     o => o.MapFrom(s => Convert.ToString(s.dnsrtype)))
-                .ForMember(d => d.ResponseClass,    o => o.MapFrom(s => Convert.ToString(s.dnsrclass)))
+                .ForMember(d => d.ResponseType,     o => o.MapFrom(s => Convert.ToInt(s.dnsrtype)))
+                .ForMember(d => d.ResponseClass,    o => o.MapFrom(s => Convert.ToInt(s.dnsrclass)))
                 .ForMember(d => d.ResponseTTL,      o => o.MapFrom(s => Convert.ToInt(s.dnsrttl)))
                 .ForMember(d => d.ResponseName,     o => o.MapFrom(s => Convert.ToString(s.dnsrname)))
-                .ForMember(d => d.ResponseCode,     o => o.MapFrom(s => Convert.ToString(s.dnsrcode)))
+                .ForMember(d => d.ResponseCode,     o => o.MapFrom(s => Convert.ToInt(s.dnsrcode)))
                 .ForMember(d => d.ResponseData,     o => o.MapFrom(s => Convert.ToString(s.dnsrdata)))
-                .ForMember(d => d.QuestionType,     o => o.MapFrom(s => Convert.ToString(s.dnsqtype)))
-                .ForMember(d => d.QuestionClass,    o => o.MapFrom(s => Convert.ToString(s.dnsqclass)))
+                .ForMember(d => d.QuestionType,     o => o.MapFrom(s => Convert.ToInt(s.dnsqtype)))
+                .ForMember(d => d.QuestionClass,    o => o.MapFrom(s => Convert.ToInt(s.dnsqclass)))
                 .ForMember(d => d.QuestionName,     o => o.MapFrom(s => Convert.ToString(s.dnsqname)))
                 .ForMember(d => d.Flags,            o => o.MapFrom(s => Convert.ToString(s.dnsflags)))
-                .ForMember(d => d.Opcode,           o => o.MapFrom(s => Convert.ToString(s.dnsopcode)))
+                .ForMember(d => d.Opcode,           o => o.MapFrom(s => Convert.ToInt(s.dnsopcode)))
                 .ForMember(d => d.QueryResponseFlag,o => o.MapFrom(s => Convert.ToString(s.dnsqrflag)));
 
             cfg.CreateMap<NfdumpEntry, HttpFlow>()
@@ -219,7 +219,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 .ForMember(d => d.Hostname,                 o => o.MapFrom(s => Convert.ToString(s.hhost)))
                 .ForMember(d => d.Method,                   o => o.MapFrom(s => Convert.ToString(s.hmethod)))
                 .ForMember(d => d.ResultCode,               o => o.MapFrom(s => Convert.ToHttpResultCode(s.hrcode)))
-                .ForMember(d => d.URL,                      o => o.MapFrom(s => Convert.ToString(s.hurl)))
+                .ForMember(d => d.Url,                      o => o.MapFrom(s => Convert.ToString(s.hurl)))
                 .ForMember(d => d.OperatingSystem,          o => o.MapFrom(s => Convert.ToString(s.hos)))
                 .ForMember(d => d.ApplicationInformation,   o => o.MapFrom(s => Convert.ToString(s.happ)));
 

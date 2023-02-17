@@ -7,7 +7,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// </summary>
     public record HttpRequest
     {
-        public FlowKey Flow { get; set; }
+        public FlowKey FlowKey { get; set; }
         public string Url { get; set; }
         public string Method { get; set; }
         public string Response { get; set; }

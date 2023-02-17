@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <summary>
         /// The IPFIX key to identify the current TLS connection.
         /// </summary>
-        public FlowKey Flow { get; set; }
+        public FlowKey FlowKey { get; set; }
 
         /// <summary>
         /// JA3 is a type of fingerprinting method that is used to identify the client-side software that is initiating a TLS (Transport Layer Security) connection.

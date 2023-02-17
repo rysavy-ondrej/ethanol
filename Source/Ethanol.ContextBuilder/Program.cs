@@ -8,7 +8,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -83,6 +85,18 @@ namespace Ethanol.ContextBuilder
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
 
+            int inputCount = 0;
+            int outputCount = 0;
+            async Task MyTimer(CancellationToken ct)
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    Console.Error.WriteLine($"[{sw.Elapsed}] in={inputCount}, out={outputCount}             \r");
+                    await Task.Delay(1000); 
+                }
+            }
+
+
             var reader = ReaderFactory.Instance.CreatePluginObject(readerRecipe.Name, readerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Reader {readerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Reader: {reader}");
             var builder = ContextBuilderFactory.Instance.CreatePluginObject(builderRecipe.Name, builderRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {builderRecipe.Name} not found!");
@@ -91,10 +105,17 @@ namespace Ethanol.ContextBuilder
             Console.Error.WriteLine($"                   Writer: {writer}");
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
-            using var d1 = reader.Subscribe(builder);
-            using var d2 = builder.Subscribe(writer);
+            
+            reader.Do(x=>inputCount++).Subscribe(builder);
+            builder.Do(x=>outputCount++).Subscribe(writer);
+
             Console.Error.WriteLine($"[{sw.Elapsed}] Pipeline is ready, processing input flows...");
-            await Task.WhenAll(reader.StartReading(), writer.Completed);
+
+            var cts = new CancellationTokenSource();
+            var t = MyTimer(cts.Token);
+
+            await Task.WhenAll(reader.StartReading(), writer.Completed).ContinueWith( t => cts.Cancel());
+
             Console.Error.WriteLine($"[{sw.Elapsed}] Finished!");
         }
 

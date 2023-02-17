@@ -16,17 +16,24 @@ namespace Ethanol.Streaming
         /// <typeparam name="T">The type of event payloads.</typeparam>
         /// <param name="observable">The input observable.</param>
         /// <param name="getStartTime">The function to get start time of a record.</param>
-        /// <param name="windowSize">SWindow size.</param>
+        /// <param name="windowSize">Window size.</param>
         /// <param name="windowPeriod">Window period.</param>
         /// <returns>A stream of events with defined start times adjusted to hopping windows.</returns>
         public static IStreamable<Empty, T> GetWindowedEventStream<T>(this IObservable<T> observable, Func<T, long> getStartTime, TimeSpan windowSize, TimeSpan windowPeriod)
         {
-
-            var source = observable.Select(x => StreamEvent.CreatePoint(RoundMinutes(getStartTime(x), windowPeriod.Ticks).Ticks, x));
+            StreamEvent<T> CreateIntervalForItem(T x)
+            {
+                var startTime = RoundTicks(getStartTime(x), windowPeriod.Ticks).Ticks;
+                return StreamEvent.CreateInterval(startTime, startTime+windowSize.Ticks, x);
+            }
+            var source = observable.Select(x => CreateIntervalForItem(x));
             var stream = source.ToStreamable(disorderPolicy: DisorderPolicy.Adjust(windowSize.Ticks), FlushPolicy.FlushOnPunctuation);
-            return stream.AlterEventDuration(windowPeriod.Ticks);
+            return stream;
         }
-        private static DateTime RoundMinutes(long arg, long roundTicks)
+
+
+
+        private static DateTime RoundTicks(long arg, long roundTicks)
         {
             var sub = arg % roundTicks;
             var newDt = new DateTime(arg - sub);

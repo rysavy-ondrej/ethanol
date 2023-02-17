@@ -4,6 +4,7 @@ using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.CodeAnalysis;
 using Microsoft.StreamProcessing;
+using NRules.Fluent.Dsl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// Builds the context for Ip hosts identified in the source IPFIX stream.
     /// </summary>
     [Plugin(PluginType.Builder, "HostContext", "Builds the context for IP hosts identified in the source IPFIX stream.")]
-    public class HostContextBuilder : ContextBuilder<IpFlow, KeyValuePair<string, NetworkActivity>, ContextObject<string, HostContext>>
+    public class HostContextBuilder : ContextBuilder<IpFlow, KeyValuePair<IPAddress, NetworkActivity>, ContextObject<IPAddress, HostContext>>
     {
         public class Configuration
         {
@@ -36,14 +37,14 @@ namespace Ethanol.ContextBuilder.Builders
             return new HostContextBuilder(configuration.Window, configuration.Hop);
         }
 
-        public override IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildContext(IStreamable<Empty, IpFlow> source)
+        public override IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildContext(IStreamable<Empty, IpFlow> source)
         {
             return BuildHostContext(source);
         }
 
-        protected override ContextObject<string, HostContext> GetTarget(StreamEvent<KeyValuePair<string, NetworkActivity>> arg)
+        protected override ContextObject<IPAddress, HostContext> GetTarget(StreamEvent<KeyValuePair<IPAddress, NetworkActivity>> arg)
         {
-            return new ContextObject<string, HostContext>
+            return new ContextObject<IPAddress, HostContext>
             {
                 Id = Guid.NewGuid().ToString(),
                 Window = WindowSpan.FromLong(arg.StartTime, arg.EndTime),
@@ -52,23 +53,30 @@ namespace Ethanol.ContextBuilder.Builders
             };
         }
 
-        static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpFlow> flowStreamSource)
+        static IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpFlow> flowStreamSource)
         {
             try
             {
-                var xy = flowStreamSource.Multicast(flowStream =>
+                var hostBasedStream = flowStreamSource.Multicast(flowStream =>
                 {
-                    var hostAddressStream = flowStream.Select(r => r.SourceAddress.ToString()).Distinct();
-                    var hostRelatedFlows = hostAddressStream
-                        .Join(flowStream, hostIp => hostIp, flow => GetHostAddress(flow).ToString(), (host, flow) => new { Host = host, Flow = flow })
-                        .GroupApply(
-                                    obj => obj.Host,
-                                    group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj.Flow)),
-                                    (key, value) => new HostFlows { Host = key.Key, Flows = value });
+                    var upFlowsStream = flowStream.GroupApply(
+                                                    obj => obj.SourceAddress,
+                                                    group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj)),
+                                                    (key, value) => new { Host = key.Key, Flows = value });
+
+                    var downFlowsStream = flowStream.GroupApply(
+                                                    obj => obj.DestinationAddress,
+                                                    group => group.Aggregate(aggregate => aggregate.CollectList(obj => obj)),
+                                                    (key, value) => new { Host = key.Key, Flows = value });
+
+                    var hostRelatedFlows = upFlowsStream.Join(downFlowsStream,
+                    h => h.Host,
+                    h => h.Host,
+                        (up, down) => new HostConversations { Host = up.Host, Conversations = CreateConversations(up.Flows, down.Flows).ToArray() });
 
                     return hostRelatedFlows;
                 });
-                return xy.Select(x => GetNetworkActivity(x));
+                return hostBasedStream.Select(x => GetNetworkActivity(x));
             }
             catch (Exception e)
             {
@@ -76,6 +84,15 @@ namespace Ethanol.ContextBuilder.Builders
                 throw;
             }
         }
+
+        private static IEnumerable<Conversation> CreateConversations(IpFlow[] flows1, IpFlow[] flows2)
+        {
+            return flows1.Join(flows2, 
+                k => k.FlowKey.GetHashCode(),
+                k => k.FlowKey.GetReverseFlowKey().GetHashCode(), 
+                (left,right) => new Conversation { UpFlow = left, DownFlow = right } );
+        }
+
         /// <summary>
         /// Enriches the records in <paramref name="hostContextStream"/> with data from <paramref name="metadataStream"/> using host IP address as the join key.
         /// </summary>
@@ -109,47 +126,65 @@ namespace Ethanol.ContextBuilder.Builders
         /// </summary>
         /// <param name="flows"></param>
         /// <returns></returns>
-        private static KeyValuePair<string, NetworkActivity> GetNetworkActivity(HostFlows flows)
+        private static KeyValuePair<IPAddress, NetworkActivity> GetNetworkActivity(HostConversations flows)
         {
-            return new KeyValuePair<string, NetworkActivity>
+            return new KeyValuePair<IPAddress, NetworkActivity>
                 (flows.Host, new NetworkActivity
                 {
-                    PlainWeb = flows.Flows.Where(x => x is HttpFlow).Select(x => GetHttpRequest(x as HttpFlow)).Distinct().ToArray(),
-                    Domains = flows.Flows.Where(x => x is DnsFlow).Select(x => GetDnsResolution(x as DnsFlow)).Distinct().ToArray(),
-                    Encrypted = flows.Flows.Where(x => x is TlsFlow).Select(x => GetTlsData(x as TlsFlow)).Distinct().ToArray()
+                    PlainWeb = flows.Conversations.Where(x => x.UpFlow is HttpFlow).Select(x => (x.UpFlow as HttpFlow)).Select(GetHttpRequest).ToArray(),
+                    Domains = flows.Conversations.Where(x => x.DownFlow is DnsFlow).Select(x => (x.DownFlow as DnsFlow)).Select(GetDnsResolution).ToArray(),
+                    Encrypted = flows.Conversations.Where(x => x.UpFlow is TlsFlow).Select(x => (x.UpFlow as TlsFlow)).Select(GetTlsConnection).Where(x=> !String.IsNullOrEmpty(x.Version)).ToArray(),
+                    RemoteHosts = flows.Conversations.Where(x=>x.ConversationKey.DestinationAddress != flows.Host).GroupBy(x => x.ConversationKey.DestinationAddress).Select(GetRemotehostStats).ToArray()
                 });
         }
-
-        /// <summary>
-        /// Gets the host address from the supported <paramref name="flow"/>. 
-        /// <para/>
-        /// Note that this method needs to be public because it is used from stream pipeline.
-        /// </summary>
-        /// <param name="flow">The flow object.</param>
-        /// <returns>IP Addess of the flow. It gets source ip address except for DNS flows in which case it returns destinaiton address.</returns>
-        public static IPAddress GetHostAddress(InternetFlow flow) => flow switch
+        private static RemoteHostConnections GetRemotehostStats(IGrouping<IPAddress, Conversation> x)
         {
-            DnsFlow d => d.DestinationAddress,
-            _ => flow.SourceAddress
-        };
-
+            return new RemoteHostConnections
+            {
+                HostAddress = x.Key,
+                Flows = x.Count(),
+                Ports = x.Select(f=>f.ConversationKey.DestinationPort).Distinct().ToArray(),
+                AverageConnectionTime = TimeSpan.FromMilliseconds(x.Average(t=> t.UpFlow.TimeDuration.TotalMilliseconds)),
+                MinConnectionTime = TimeSpan.FromMilliseconds(x.Min(t => t.UpFlow.TimeDuration.TotalMilliseconds)),
+                MaxConnectionTime = TimeSpan.FromMilliseconds(x.Max(t => t.UpFlow.TimeDuration.TotalMilliseconds)),
+                SendPackets = x.Sum(p => p.UpFlow.PacketDeltaCount),
+                SendBytes = x.Sum(p => p.UpFlow.OctetDeltaCount),
+                RecvPackets = x.Sum(p => p.DownFlow.PacketDeltaCount),
+                RecvBytes = x.Sum(p => p.DownFlow.OctetDeltaCount)
+            };
+        }
+    
         private static HttpRequest GetHttpRequest(HttpFlow record)
         {
-            return new HttpRequest { Flow = record.FlowKey, Url = record.Hostname + record.URL, Method = record.Method, Response = record.ResultCode };
+            return new HttpRequest { 
+                FlowKey = record.FlowKey, 
+                Url = record.Hostname + record.Url, 
+                Method = record.Method, 
+                Response = record.ResultCode 
+            };
         }
 
         private static DnsResolution GetDnsResolution(DnsFlow record)
         {
-            return new DnsResolution { Flow = record.FlowKey, DomainNane = record.QuestionName, Addresses = record.ResponseData?.Split(',') ?? Array.Empty<string>() };
+            return new DnsResolution { 
+                FlowKey = record.FlowKey,
+                QueryClass = record.QuestionClass,
+                QueryType = record.QuestionType,
+                QuestionName= record.QuestionName,
+                ResponseCode= record.ResponseCode,
+                AnswerRecord = record.ResponseData?.Split(',') ?? Array.Empty<string>(),
+                ResponseTTL = record.ResponseTTL
+            };
         }
 
-        private static TlsConnection GetTlsData(TlsFlow record)
+        private static TlsConnection GetTlsConnection(TlsFlow record)
         {
             return new TlsConnection
             {
-                Flow = record.FlowKey,
+                FlowKey = record.FlowKey,
                 Version = record.ServerVersion,
                 JA3 = record.JA3Fingerprint,
+                CipherSuite = record.ServerCipherSuite,
                 ServerNameIndication = record.ServerNameIndication,
                 SubjectCommonName = record.SubjectCommonName,
                 ApplicationLayerProtocolNegotiation = record.ApplicationLayerProtocolNegotiation
@@ -164,7 +199,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, KeyValuePair<string, NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
         {
             var builder = new HostContextBuilder(windowSize, windowHop);
             return builder.BuildContext(source);

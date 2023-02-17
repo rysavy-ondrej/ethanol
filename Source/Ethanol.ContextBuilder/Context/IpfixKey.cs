@@ -9,22 +9,15 @@ namespace Ethanol.ContextBuilder.Context
     /// <para/>
     /// This includes fields such as the source IP address, destination IP address, source port, destination port, and protocol. 
     /// </summary>
-    public record FlowKey(ProtocolType Pt, IPAddress SrcIp, ushort SrcPt, IPAddress DstIp, ushort DstPt)
+    public record FlowKey(ProtocolType Protocol, IPAddress SourceAddress, ushort SourcePort, IPAddress DestinationAddress, ushort DestinationPort)
     {
         /// <summary>
         /// A string representation of the flow key.
         /// </summary>
         /// <returns></returns>
-        public override string ToString() => $"{Pt}@{SrcIp}:{SrcPt}-{DstIp}:{DstPt}";
-        /// <summary>
-        /// Parses the input string to flow key.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>true if parsed; false on parsing error.</returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static bool TryParse(string input)
-        {
-            throw new NotImplementedException();
-        }
+        public override string ToString() => $"{Protocol}@{SourceAddress}:{SourcePort}-{DestinationAddress}:{DestinationPort}";
+
+        public FlowKey GetReverseFlowKey() => new FlowKey(Protocol, DestinationAddress, DestinationPort, SourceAddress, SourcePort);
+
     }
 }

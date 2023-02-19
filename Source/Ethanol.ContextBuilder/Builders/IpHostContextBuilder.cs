@@ -1,28 +1,41 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
-using Ethanol.Streaming;
-using Microsoft.Extensions.Hosting;
 using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Runtime.InteropServices.JavaScript;
-using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
-
+    // TODO: Generate "compact" context using the following records:
+    // Host { ha = 192.168.111.32}: 
+    //   Flow { pr = UDP, sa = 192.168.111.32, sp = 54698, da = 192.168.111.1, dp = 53, ts = 11/9/2021 6:00:02 AM, te = 11/9/2021 6:00:02 AM, pkt = 1, byt = 77 }
+    //   Flow { pr = UDP, sa = 192.168.111.32, sp = 50994, da = 192.168.111.1, dp = 53, ts = 11/9/2021 6:00:22 AM, te = 11/9/2021 6:00:22 AM, pkt = 1, byt = 69 }
+    //   Flow { pr = ARP, sa = 192.168.111.1, sp = 0, da = 192.168.111.32, dp = 0, ts = 11/9/2021 6:00:02 AM, te = 11/9/ 2021 6:00:02 AM, pkt = 1, byt = 28 }
+    //   WebReq { hurl = www.google.com }
+    //   DnsMap { dn = www.google.com, ip = 134.25.53.5 }
+    //   TlsCon { ... }
+    //
+    public record DnsMap(string dn, string ip);
+    public record WebReq(string hurl);
+    public record TlsCon(string ver, string sni, string scn, string icn, string ja3);
+    public record Netflow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
     public record IpHostContext(IPAddress HostAddress, IpFlow[] Flows)
     {
-        IEnumerable<TlsConnection> TlsConnections = Flows.Where(f => f is TlsFlow).Select(f => TlsConnection.Create(f as TlsFlow));
-
-        IEnumerable<DnsResolution> DomainResolutions = Flows.Where(f => f is DnsFlow).Select(f => DnsResolution.Create(f as DnsFlow));
+        /// <summary>
+        /// Gets flows of type <typeparamref name="TFlow"/> using <paramref name="select"/> function. 
+        /// </summary>
+        /// <typeparam name="TResult">The type of result.</typeparam>
+        /// <typeparam name="TFlow">The type of flows to retrieve.</typeparam>
+        /// <param name="select">The result mapping function.</param>
+        /// <returns>Get the enumerablw of flow object created using <paramref name="select"/> funciton.</returns>
+        IEnumerable<TResult> GetFlowsAs<TResult, TFlow>(Func<TFlow, TResult> select) where TFlow : IpFlow
+            => Flows.Where(f => f is TFlow).Select(f => select(f as TFlow));
     }
     /// <summary>
     /// Builds the context for Ip hosts identified in the source IPFIX stream.

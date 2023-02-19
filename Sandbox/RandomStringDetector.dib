@@ -45,7 +45,7 @@ public static class RandomStringDetector
         {
             if (string.IsNullOrWhiteSpace(domain)) return new double[] { 0.0 };
             var parts = domain.Split('.');
-            return parts.Select(ComputeEntropy).ToArray();
+            return parts.Select(ComputeEntropy2).ToArray();
         }
     // Define a function to detect random strings
     public static bool IsRandomString(string s)
@@ -61,8 +61,22 @@ public static class RandomStringDetector
 RandomStringDetector.ComputeEntropy("www.jkolv3z53x5yh5.net").Display();
 RandomStringDetector.ComputeEntropy("www.bjqclqatrxe6vexyjc.com").Display();
 RandomStringDetector.ComputeEntropy("fp-afd.azureedge.us").Display();
-RandomStringDetector.ComputeEntropy("login.microsoftonline.com").Display();
+RandomStringDetector.ComputeEntropy("d27xxe7juh1us6.cloudfront.net").Display();
 RandomStringDetector.ComputeEntropy2("www.jkolv3z53x5yh5.net").Display();
 RandomStringDetector.ComputeEntropy2("www.bjqclqatrxe6vexyjc.com").Display();
 RandomStringDetector.ComputeEntropy2("fp-afd.azureedge.us").Display();
-RandomStringDetector.ComputeEntropy2("login.microsoftonline.com").Display();
+RandomStringDetector.ComputeEntropy2("d27xxe7juh1us6.cloudfront.net").Display();
+RandomStringDetector.ComputeDnsEntropy("www.jkolv3z53x5yh5.net").Display();
+RandomStringDetector.ComputeDnsEntropy("www.bjqclqatrxe6vexyjc.com").Display();
+RandomStringDetector.ComputeDnsEntropy("fp-afd.azureedge.us").Display();
+RandomStringDetector.ComputeDnsEntropy("d27xxe7juh1us6.cloudfront.net").Display();
+
+#!csharp
+
+using System.Net;
+var ip1 = IPAddress.Parse("129.56.35.6");
+var ip2 = IPAddress.Parse("129.56.35.6");
+(ip1 == ip2).Display();
+ip1.Equals(ip2).Display();
+ip1.GetHashCode().Display();
+ip2.GetHashCode().Display();

@@ -1,0 +1,166 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":null,"items":[{"name":"csharp","languageName":"C#","aliases":["c#","cs"]},{"name":"fsharp","languageName":"F#","aliases":["f#","fs"]},{"name":"pwsh","languageName":"PowerShell","aliases":["powershell"]},{"name":"javascript","languageName":"JavaScript","aliases":["js"]},{"name":"html","languageName":"HTML"},{"name":"sql","languageName":"SQL"},{"name":"kql","languageName":"KQL"},{"name":"mermaid","languageName":"Mermaid"},{"name":"httpRequest","languageName":"http"},{"name":"value"}]}}
+
+#!csharp
+
+using System.Reactive.Subjects;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+
+public record StreamEvent<TPayload>(TPayload Payload, long StartTime, long EndTime);
+
+public class WindowHopImplementation<T> : IObserver<StreamEvent<T>>, IObservable<StreamEvent<IObservable<T>>>
+{
+    long _timeSpan;
+    long _currentEpoch = 0;
+
+    Subject<T> _currentWindow = null;
+    List<IObserver<StreamEvent<IObservable<T>>>> _observers;
+
+    public WindowHopImplementation(TimeSpan timeSpan)
+    {
+        _timeSpan = timeSpan.Ticks;
+        _observers = new List<IObserver<StreamEvent<IObservable<T>>>>();
+    }
+    public IDisposable Subscribe(IObserver<StreamEvent<IObservable<T>>> observer)
+    {
+        _observers.Add(observer);
+        return Disposable.Create(() => { observer.OnCompleted(); _observers.Remove(observer); });
+    }
+    public void OnCompleted()
+    {
+        _currentWindow?.OnCompleted();
+        var observers = _observers.ToArray();
+        foreach(var o in observers) o.OnCompleted();
+    }
+    public void OnError(Exception e)
+    {
+    }
+
+    void EmitWindow()
+    {
+        var observers = _observers.ToArray();
+        foreach(var o in observers) o.OnNext(new StreamEvent<IObservable<T>>(_currentWindow, _currentEpoch * _timeSpan,_currentEpoch * _timeSpan + _timeSpan));
+    }
+
+
+    public void OnNext(StreamEvent<T> evt)
+    {
+        if (_currentWindow == null) // this is the very first event received.
+        {
+            _currentWindow = new Subject<T>();
+            _currentEpoch = evt.StartTime / _timeSpan;
+            EmitWindow();
+        }
+        else
+        {
+            while(evt.StartTime >= _currentEpoch * _timeSpan + _timeSpan)
+            {
+                ShiftWindow(); 
+            }
+        }
+        _currentWindow.OnNext(evt.Payload);
+    }
+    void ShiftWindow()
+    {
+        _currentWindow.OnCompleted();
+        _currentEpoch++;
+        var newWindow = new Subject<T>();
+        _currentWindow = newWindow;
+        EmitWindow();
+    }
+    private static long RoundTicks(long timeTicks, long roundTicks)
+    {
+        var sub = timeTicks % roundTicks;
+        return (timeTicks - sub);
+    }
+}
+
+public static IObservable<StreamEvent<IObservable<T>>> WindowHop<T>(this IObservable<StreamEvent<T>> source, TimeSpan timeSpan)
+{
+    if (source == null) throw new ArgumentNullException(nameof(source));
+    return Observable.Create<StreamEvent<IObservable<T>>>(observer =>
+    {
+        var window = new WindowHopImplementation<T>(timeSpan);
+        source.Subscribe(window);
+        return window.Subscribe(observer);    
+    });
+}
+
+#!csharp
+
+var seq = new [] { 5,10, 12,14,14,14,15, 16,16, 17, 23, 25, 24, 31, 33, 35, 37, 43, 46, 48, 49, 55, 57, 57, 58, 59 };
+var evt = seq.Select(x=> new StreamEvent<(int Key,string Val)>((x,$"evt[{x}]"), x, x+5));
+//evt.Display();
+var r = evt.ToObservable().WindowHop(new TimeSpan(10));
+var wins = r.Select(x => (Start: x.StartTime, End: x.EndTime, Vals:  x.Payload.GroupBy(k=>k.Key, e => e.Val)));
+
+wins.Subscribe(w => 
+{
+    Console.WriteLine($"{w.Start}-{w.End}");
+    w.Vals.Subscribe(g => 
+        {
+            Console.WriteLine($"  {g.Key}");
+            g.Subscribe(v => Console.WriteLine($"    {v}"));
+        });
+    });
+
+#!markdown
+
+# Loading from CSV file and computing windows:
+
+#!csharp
+
+#r "nuget:CsvHelper"
+using System.IO;
+using System.Globalization;
+using CsvHelper;
+
+record Host(string sa);
+record Flow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
+
+var reader = new StreamReader("../TestData/test.nfdump.csv");
+var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+var recs = csv.GetRecords<dynamic>().Take(100).Select(x => new Flow(x.pr, x.sa, ushort.Parse(x.sp), (string)x.da, ushort.Parse(x.dp), DateTime.Parse(x.ts),  DateTime.Parse(x.te), int.Parse(x.ipkt), int.Parse(x.ibyt))).ToList();
+
+#!csharp
+
+var flowStream = recs.Select(x=> new StreamEvent<Flow>(x, x.ts.Ticks, x.te.Ticks)).ToObservable();
+//var windows = flowStream.WindowHop(TimeSpan.FromSeconds(30));
+/*
+windows.Subscribe(w => 
+    { 
+        $"[{new DateTime(w.StartTime)}-{new DateTime(w.EndTime)}]".Display(); 
+        w.Payload.Subscribe(x => $"  {x.pr}@{x.sa}:{x.sp}-{x.da}:{x.dp}".Display());
+    });
+    */
+
+#!csharp
+
+public record Window(DateTime Start, DateTime End)
+{
+    public static Window FromStreamEvent<T>(StreamEvent<T> s)
+    {
+        return new Window(new DateTime(s.StartTime), new DateTime(s.EndTime)); 
+    }
+}
+
+var hosts = windows.Select(win => 
+    new StreamEvent<IObservable<IGroupedObservable<Host,Flow>>>(win.Payload.GroupBy(f => new Host(f.sa)), win.StartTime, win.EndTime)
+);
+hosts.Subscribe(win => 
+{ 
+    Console.WriteLine($"  {Window.FromStreamEvent(win)}:");
+    win.Payload.Subscribe(
+    group =>
+        { 
+            var grpList = new List<Flow>();  
+            group.Subscribe(
+                next =>  grpList.Add(next), 
+                error => {},
+                () => { Console.WriteLine($"  {group.Key}:"); foreach(var x in grpList) Console.WriteLine($"    {x}:"); }
+                );
+        }
+    );
+});

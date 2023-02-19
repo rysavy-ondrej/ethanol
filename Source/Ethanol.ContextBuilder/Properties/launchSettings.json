@@ -23,6 +23,11 @@
       "commandName": "Project",
       "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b HostContext:{window=00:05:00,hop=00:05:00} -w YamlWriter:{file=host-csv.contex.yaml}",
       "workingDirectory": "..\\..\\TestData\\"
+    },
+    "Build-IpHostContext(CSV)": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -w YamlWriter:{file=iphost-csv.contex.yaml}",
+      "workingDirectory": "..\\..\\TestData\\"
     }
   }
 }

@@ -13,6 +13,7 @@ using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
+
     /// <summary>
     /// Builds the context for Ip hosts identified in the source IPFIX stream.
     /// </summary>
@@ -131,9 +132,9 @@ namespace Ethanol.ContextBuilder.Builders
             return new KeyValuePair<IPAddress, NetworkActivity>
                 (flows.Host, new NetworkActivity
                 {
-                    PlainWeb = flows.Conversations.Where(x => x.UpFlow is HttpFlow).Select(x => (x.UpFlow as HttpFlow)).Select(GetHttpRequest).ToArray(),
-                    Domains = flows.Conversations.Where(x => x.DownFlow is DnsFlow).Select(x => (x.DownFlow as DnsFlow)).Select(GetDnsResolution).ToArray(),
-                    Encrypted = flows.Conversations.Where(x => x.UpFlow is TlsFlow).Select(x => (x.UpFlow as TlsFlow)).Select(GetTlsConnection).Where(x=> !String.IsNullOrEmpty(x.Version)).ToArray(),
+                    PlainWeb = flows.Conversations.Where(x => x.UpFlow is HttpFlow).Select(x => (x.UpFlow as HttpFlow)).Select(HttpRequest.Create).ToArray(),
+                    Domains = flows.Conversations.Where(x => x.DownFlow is DnsFlow).Select(x => (x.DownFlow as DnsFlow)).Select(DnsResolution.Create).ToArray(),
+                    Encrypted = flows.Conversations.Where(x => x.UpFlow is TlsFlow).Select(x => (x.UpFlow as TlsFlow)).Select(TlsConnection.Create).Where(x=> !String.IsNullOrEmpty(x.Version)).ToArray(),
                     RemoteHosts = flows.Conversations.Where(x=>x.ConversationKey.DestinationAddress != flows.Host).GroupBy(x => x.ConversationKey.DestinationAddress).Select(GetRemotehostStats).ToArray()
                 });
         }
@@ -151,43 +152,6 @@ namespace Ethanol.ContextBuilder.Builders
                 SendBytes = x.Sum(p => p.UpFlow.OctetDeltaCount),
                 RecvPackets = x.Sum(p => p.DownFlow.PacketDeltaCount),
                 RecvBytes = x.Sum(p => p.DownFlow.OctetDeltaCount)
-            };
-        }
-    
-        private static HttpRequest GetHttpRequest(HttpFlow record)
-        {
-            return new HttpRequest { 
-                FlowKey = record.FlowKey, 
-                Url = record.Hostname + record.Url, 
-                Method = record.Method, 
-                Response = record.ResultCode 
-            };
-        }
-
-        private static DnsResolution GetDnsResolution(DnsFlow record)
-        {
-            return new DnsResolution { 
-                FlowKey = record.FlowKey,
-                QueryClass = record.QuestionClass,
-                QueryType = record.QuestionType,
-                QuestionName= record.QuestionName,
-                ResponseCode= record.ResponseCode,
-                AnswerRecord = record.ResponseData?.Split(',') ?? Array.Empty<string>(),
-                ResponseTTL = record.ResponseTTL
-            };
-        }
-
-        private static TlsConnection GetTlsConnection(TlsFlow record)
-        {
-            return new TlsConnection
-            {
-                FlowKey = record.FlowKey,
-                Version = record.ServerVersion,
-                JA3 = record.JA3Fingerprint,
-                CipherSuite = record.ServerCipherSuite,
-                ServerNameIndication = record.ServerNameIndication,
-                SubjectCommonName = record.SubjectCommonName,
-                ApplicationLayerProtocolNegotiation = record.ApplicationLayerProtocolNegotiation
             };
         }
     }

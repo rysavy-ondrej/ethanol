@@ -1,4 +1,6 @@
-﻿namespace Ethanol.ContextBuilder.Builders
+﻿using Ethanol.ContextBuilder.Context;
+
+namespace Ethanol.ContextBuilder.Builders
 {
     /// <summary>
     /// Defines a context for a host.
@@ -10,9 +12,6 @@
         /// </summary>
         public HostMetadata[] Metadata { get; set; }
 
-        /// <summary>
-        /// Selected network activites of the host.
-        /// </summary>
         public NetworkActivity Activity { get; set; }
     }
 }

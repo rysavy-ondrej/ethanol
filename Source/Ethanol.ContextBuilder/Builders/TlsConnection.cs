@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using System.Diagnostics;
 
 namespace Ethanol.ContextBuilder.Builders
 {
@@ -8,6 +9,22 @@ namespace Ethanol.ContextBuilder.Builders
     /// </summary>
     public record TlsConnection
     {
+        public TlsConnection(FlowKey flowKey, string jA3, string version, string cipherSuite, string serverNameIndication, string applicationLayerProtocolNegotiation, string issuerCommonName, string subjectCommonName, string subjectOrganizationName)
+        {
+            FlowKey = flowKey;
+            JA3 = jA3;
+            Version = version;
+            CipherSuite = cipherSuite;
+            ServerNameIndication = serverNameIndication;
+            ApplicationLayerProtocolNegotiation = applicationLayerProtocolNegotiation;
+            IssuerCommonName = issuerCommonName;
+            SubjectCommonName = subjectCommonName;
+            SubjectOrganizationName = subjectOrganizationName;
+        }
+
+        public static TlsConnection Create(TlsFlow tlsFlow) =>
+            new TlsConnection(tlsFlow.FlowKey, tlsFlow.JA3Fingerprint, tlsFlow.ServerVersion, tlsFlow.CipherSuites, tlsFlow.ServerNameIndication, tlsFlow.ApplicationLayerProtocolNegotiation, tlsFlow.IssuerCommonName, tlsFlow.SubjectCommonName, tlsFlow.SubjectOrganisationName);
+
         /// <summary>
         /// The IPFIX key to identify the current TLS connection.
         /// </summary>
@@ -53,5 +70,10 @@ namespace Ethanol.ContextBuilder.Builders
         /// The subject organization name field can be used to identify the organization that owns or operates the website or service that is associated with the TLS certificate (e.g., Microsoft).
         /// </summary>
         public string SubjectOrganizationName { get; set; }
+
+        private string GetDebuggerDisplay()
+        {
+            return ToString();
+        }
     }
 }

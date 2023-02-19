@@ -117,8 +117,8 @@ using System.IO;
 using System.Globalization;
 using CsvHelper;
 
-record Host(string sa);
-record Flow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
+public record Host(string ha);
+public record Flow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
 
 var reader = new StreamReader("../TestData/test.nfdump.csv");
 var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
@@ -127,39 +127,43 @@ var recs = csv.GetRecords<dynamic>().Take(100).Select(x => new Flow(x.pr, x.sa, 
 #!csharp
 
 var flowStream = recs.Select(x=> new StreamEvent<Flow>(x, x.ts.Ticks, x.te.Ticks)).ToObservable();
-//var windows = flowStream.WindowHop(TimeSpan.FromSeconds(30));
+var windows = flowStream.WindowHop(TimeSpan.FromMinutes(1));
 /*
 windows.Subscribe(w => 
     { 
         $"[{new DateTime(w.StartTime)}-{new DateTime(w.EndTime)}]".Display(); 
         w.Payload.Subscribe(x => $"  {x.pr}@{x.sa}:{x.sp}-{x.da}:{x.dp}".Display());
     });
-    */
+*/
 
 #!csharp
 
-public record Window(DateTime Start, DateTime End)
+public enum Dir { Send, Recv } 
+public record Window(DateTime ts, DateTime te)
 {
     public static Window FromStreamEvent<T>(StreamEvent<T> s)
     {
         return new Window(new DateTime(s.StartTime), new DateTime(s.EndTime)); 
     }
 }
-
-var hosts = windows.Select(win => 
-    new StreamEvent<IObservable<IGroupedObservable<Host,Flow>>>(win.Payload.GroupBy(f => new Host(f.sa)), win.StartTime, win.EndTime)
+var hosts = windows.Select(window => 
+{
+    var fhost = window.Payload.SelectMany(flow => (new[]{ new KeyValuePair<string,Flow>(flow.sa, flow), new KeyValuePair<string,Flow>(flow.da, flow)}).ToObservable()); 
+    return new StreamEvent<IObservable<IGroupedObservable<Host,Flow>>>(fhost.GroupBy(flow => new Host(flow.Key), flow => flow.Value), window.StartTime, window.EndTime);
+}
 );
-hosts.Subscribe(win => 
+hosts.Subscribe(window => 
 { 
-    Console.WriteLine($"  {Window.FromStreamEvent(win)}:");
-    win.Payload.Subscribe(
-    group =>
+    Console.WriteLine($"{Window.FromStreamEvent(window)}:");
+    window.Payload.Subscribe(
+    host =>
         { 
-            var grpList = new List<Flow>();  
-            group.Subscribe(
-                next =>  grpList.Add(next), 
+            var flowList = new List<Flow>();  
+            host.Subscribe(
+                flow =>  flowList.Add(flow), 
                 error => {},
-                () => { Console.WriteLine($"  {group.Key}:"); foreach(var x in grpList) Console.WriteLine($"    {x}:"); }
+                // on completed:
+                () => { Console.WriteLine($"  {host.Key}:"); foreach(var x in flowList) Console.WriteLine($"    {x}"); }
                 );
         }
     );

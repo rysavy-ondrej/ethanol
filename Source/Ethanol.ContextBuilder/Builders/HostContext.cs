@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers;
 
 namespace Ethanol.ContextBuilder.Builders
 {
@@ -10,7 +11,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <summary>
         /// An array of metadata related to the host. 
         /// </summary>
-        public HostMetadata[] Metadata { get; set; }
+        public HostTag[] Metadata { get; set; }
 
         public NetworkActivity Activity { get; set; }
     }

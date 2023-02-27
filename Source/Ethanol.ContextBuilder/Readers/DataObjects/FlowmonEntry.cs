@@ -268,7 +268,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 entry = JsonSerializer.Deserialize<FlowmonexpEntry>(input, options);
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 entry = default;
                 return false;

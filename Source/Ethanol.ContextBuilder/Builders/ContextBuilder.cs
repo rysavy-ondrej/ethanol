@@ -11,20 +11,12 @@ namespace Ethanol.ContextBuilder.Builders
 {
 
     /// <summary>
-    /// An interface of all context builder. 
-    /// It is observer for source data and observable for computed context data.
-    /// </summary>
-    /// <typeparam name="TSource">The type of source data.</typeparam>
-    /// <typeparam name="TTarget">The type of generated context.</typeparam>
-    public interface IContextBuilder<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget> { }
-
-    /// <summary>
     /// The abstract class for implementing context builder classes.
     /// </summary>
     /// <typeparam name="TSource">The type of source data.</typeparam>
     /// <typeparam name="TIntermediate">The type of intermediate data.</typeparam>
     /// <typeparam name="TTarget">The type of generated context.</typeparam>
-    public abstract class ContextBuilder<TSource, TIntermediate, TTarget> : IContextBuilder<TSource, TTarget>
+    public abstract class ContextBuilder<TSource, TIntermediate, TTarget> : IObservableTransformer<TSource, TTarget>
     {
         private ObservableIngressStream<TSource> _ingressStream;
         private ObservableEgressStream<TIntermediate> _egressStream;
@@ -76,7 +68,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <summary>
     /// Factory class supporting to instantiating flow readers.
     /// </summary>
-    public class ContextBuilderFactory : PluginFactory<IContextBuilder<IpFlow, object>>
+    public class ContextBuilderFactory : PluginFactory<IObservableTransformer<IpFlow, object>>
     {
         /// <inheritdoc/>>
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)

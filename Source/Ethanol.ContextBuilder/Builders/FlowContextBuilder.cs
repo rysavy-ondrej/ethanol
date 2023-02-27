@@ -45,7 +45,7 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         [PluginCreate]
-        internal static IContextBuilder<IpFlow, object> Create(Configuration configuration)
+        internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
         {
             return new FlowContextBuilder(configuration.Window, configuration.Hop);
         }

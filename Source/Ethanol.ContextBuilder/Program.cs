@@ -1,5 +1,4 @@
-﻿using ConsoleAppFramework;              //----> https://github.com/Cysharp/ConsoleAppFramework
-using Ethanol.ContextBuilder.Builders;
+﻿using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
@@ -17,53 +16,22 @@ using System.Threading.Tasks;
 namespace Ethanol.ContextBuilder
 {
     /// <summary>
-    /// The program class. It sets up the environment and registers available commands.
+    /// The program class containing the main entry point.
     /// </summary>
-    partial class Program : ConsoleAppBase
+    public class Program : ConsoleAppBase
     {
-        static readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-        private readonly ILogger _logger;
-        static IServiceProvider _services;
-        public Program(ILogger<Program> logger)
-        {
-            _logger = logger;
-        }
-
         /// <summary>
-        /// The entry point of the program.
+        /// Entry point to the console application.
         /// </summary>
-        /// <param name="args">Input arguments.</param>
-        /// <returns>A task that ends when the program is finished/terminated.</returns>
-        static async Task Main(string[] args)
+        /// <param name="args">Command line arguments.</param>
+        public static void Main(string[] args)
         {
-            System.Console.CancelKeyPress += new ConsoleCancelEventHandler(CancelHandler);
-            var verbose = args.Contains("-v");
-            var hostBuilder = Host.CreateDefaultBuilder()
-                .ConfigureLogging(b => ConfigureLogging(b, verbose ? LogLevel.Trace : LogLevel.Information))
-                .UseConsoleAppFramework<Program>(args);
-            var host = hostBuilder.Build();
-            _services = host.Services;
-            try
-            {
-                await host.RunAsync(_cancellationTokenSource.Token);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error: {ex.Message}$");
-            }
+            ConsoleApp.Run<ProgramCommands>(args);
         }
+    }
 
-        private static void ConfigureLogging(ILoggingBuilder loggingBuilder, LogLevel logLevel)
-        {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.AddSimpleConsole().SetMinimumLevel(logLevel);
-        }
-
-        private static void CancelHandler(object sender, ConsoleCancelEventArgs e)
-        {
-            _cancellationTokenSource.Cancel();
-        }
-
+    class ProgramCommands : ConsoleAppBase
+    {
         /// <summary>
         /// Builds the context for input read by <paramref name="inputReader"/> using <paramref name="contextBuilder"/>. The output is written using <paramref name="outputWriter"/>.
         /// </summary>

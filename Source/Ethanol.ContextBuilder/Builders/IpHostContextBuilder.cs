@@ -39,15 +39,17 @@ namespace Ethanol.ContextBuilder.Builders
     }
     /// <summary>
     /// Builds the context for Ip hosts identified in the source IPFIX stream.
+    /// <para/>
+    /// This implementation directly use Observable contrary to <see cref="HostContextBuilder"/> which is based on Streamable.
     /// </summary>
     [Plugin(PluginType.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
-    public class IpHostContextBuilder : IContextBuilder<IpFlow, ObservableEvent<IpHostContext>>
+    public class IpHostContextBuilder : IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>>
     {
         public TimeSpan WindowSize { get; }
         public TimeSpan WindowHop { get; }
-        
+
         private Subject<IpFlow> _ingressObservable;
-        
+
         private Subject<ObservableEvent<IpHostContext>> _egressObservable;
 
         public class Configuration
@@ -65,13 +67,13 @@ namespace Ethanol.ContextBuilder.Builders
 
             _ingressObservable = new Subject<IpFlow>();
             _egressObservable = new Subject<ObservableEvent<IpHostContext>>();
-            
+
             // hardwire the pipeline...
             PublishContext(BuildHostFlowContext(_ingressObservable));
         }
 
         /// <summary>
-        /// Consumes the computed context and publis it through output observable as <see cref="IpHostContext"/>.
+        /// Consumes the computed context and publish it through output observable as <see cref="IpHostContext"/>.
         /// <para/>
         /// In fact it implements SelectMany on observable of windows. The result
         /// is an observable of context objects embedded within <see cref="ObservableEvent{TPayload}"/>. 
@@ -103,12 +105,10 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         [PluginCreate]
-        internal static IContextBuilder<IpFlow, object> Create(Configuration configuration)
+        internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
         {
             return new IpHostContextBuilder(configuration.Window, configuration.Hop);
         }
-
-
 
         /// <summary>
         /// Collects flows to hosts within each window.

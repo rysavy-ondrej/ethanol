@@ -1,5 +1,6 @@
 ﻿using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.CodeAnalysis;
@@ -33,7 +34,7 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         [PluginCreate]
-        internal static IContextBuilder<IpFlow, object> Create(Configuration configuration)
+        internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
         {
             return new HostContextBuilder(configuration.Window, configuration.Hop);
         }
@@ -100,7 +101,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="hostContextStream">The host context stream.</param>
         /// <param name="metadataStream">The metadata stream.</param>
         /// <returns>The stream with enriched host context.</returns>
-        static IStreamable<Empty, Tuple<string, NetworkActivity, HostMetadata[]>> EnrichHostContext(IStreamable<Empty, KeyValuePair<string, NetworkActivity>> hostContextStream, IStreamable<Empty, HostMetadata> metadataStream)
+        static IStreamable<Empty, Tuple<string, NetworkActivity, HostTag[]>> EnrichHostContext(IStreamable<Empty, KeyValuePair<string, NetworkActivity>> hostContextStream, IStreamable<Empty, HostTag> metadataStream)
         {
             try
             {
@@ -108,11 +109,11 @@ namespace Ethanol.ContextBuilder.Builders
                 {
                     // collect metadata for the hosts for which we have context...
                     var metadata = contextStream
-                    .Join(metadataStream, left => left.Key, right => right.HostAddress, (context, metadata) => new Tuple<string, HostMetadata>(context.Key, metadata))
+                    .Join(metadataStream, left => left.Key, right => right.HostAddress, (context, metadata) => new Tuple<string, HostTag>(context.Key, metadata))
                     .GroupApply(x => x.Item1, group => group.Aggregate(aggregate => aggregate.CollectList(x => x.Item2)),
-                    (key, val) => new Tuple<string, HostMetadata[]>(key.Key, val));
+                    (key, val) => new Tuple<string, HostTag[]>(key.Key, val));
                     // join host context and collected metadata
-                    return contextStream.Join(metadata, x => x.Key, y => y.Item1, (x, y) => new Tuple<string, NetworkActivity, HostMetadata[]>(x.Key, x.Value, y.Item2));
+                    return contextStream.Join(metadata, x => x.Key, y => y.Item1, (x, y) => new Tuple<string, NetworkActivity, HostTag[]>(x.Key, x.Value, y.Item2));
                 });
             }
             catch (Exception e)

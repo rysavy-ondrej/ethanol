@@ -15,6 +15,20 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <summary>
     /// Represents an environment data stored in Postgre SQL database.
     /// </summary>
+    /// <remarks>
+    /// It is expected that the table has the following structure:
+    /// <code>
+    /// CREATE TABLE SomeTableName (
+    ///   KeyType VARCHAR(8),
+    ///   KeyValue VARCHAR(32),
+    ///   Source VARCHAR(40),
+    ///   Reliability REAL,
+    ///   Module VARCHAR(40),
+    ///   Data JSON,
+    ///   Validity TSRANGE
+    /// );
+    /// </code>
+    /// </remarks>
     public class PostgresHostTagProvider : IHostDataProvider<HostTag>
     {
         private readonly NpgsqlConnection _connection;
@@ -57,13 +71,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE Host ='{host}' AND Validity @> '[{start},{end})'";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
             var reader = await cmd.ExecuteReaderAsync();
             var rowList = new List<HostTag>();
             while (await reader.ReadAsync())
             {
-                var row = new HostTag(reader["Host"] as string,
-                                      reader["Name"] as string,
+                var row = new HostTag(reader["KeyValue"] as string,
+                                      reader["Source"] as string,
                                       reader["Reliability"] as double? ?? 1.0,
                                       reader["Data"] as string);
                 rowList.Add(row);
@@ -74,13 +88,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE Host ='{host}' AND Validity @> '[{start},{end})'";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
             var reader = cmd.ExecuteReader();
             var rowList = new List<HostTag>();
             while (reader.Read())
             {
-                var row = new HostTag(reader["Host"] as string,
-                                      reader["Name"] as string,
+                var row = new HostTag(reader["KeyValue"] as string,
+                                      reader["Source"] as string,
                                       reader["Reliability"] as double? ?? 1.0,
                                       reader["Data"] as string);
                 rowList.Add(row);

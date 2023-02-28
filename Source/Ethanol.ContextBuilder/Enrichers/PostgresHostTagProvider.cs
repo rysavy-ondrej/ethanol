@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Threading.Tasks;
 using System.Reflection.PortableExecutable;
+using System.Globalization;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -45,7 +46,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             var connection = new NpgsqlConnection(connectionString);
             connection.Open();
-            if (connection.State != System.Data.ConnectionState.Open) throw new InvalidOperationException("Cannot open connectio to the database.");
+            if (connection.State != System.Data.ConnectionState.Open) throw new InvalidOperationException("Cannot open connection to the database.");
             return new PostgresHostTagProvider(connection, tableName);
         }
 
@@ -86,9 +87,11 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
         public IEnumerable<HostTag> Get(string host, DateTime start, DateTime end)
         {
+            var startString = start.ToString("o", CultureInfo.InvariantCulture);
+            var endString = end.ToString("o", CultureInfo.InvariantCulture);
             var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{startString},{endString})'";
             var reader = cmd.ExecuteReader();
             var rowList = new List<HostTag>();
             while (reader.Read())
@@ -99,6 +102,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                                       reader["Data"] as string);
                 rowList.Add(row);
             }
+            reader.Close();
             return rowList;
         }
     }

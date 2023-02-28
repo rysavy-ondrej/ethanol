@@ -1,0 +1,39 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":[]}]}}
+
+#!csharp
+
+#r "nuget:npgsql"
+using Npgsql;
+
+#!csharp
+
+var connection = new NpgsqlConnection("Server=192.168.8.25;Port=5432;Database=ethanol;User Id=postgres;Password=ethanol-password;");
+connection.Open();
+connection.State.Display();
+
+public record HostTag(string HostAddress, string Name, double Reliability, string Value);
+
+#!csharp
+
+using System.Globalization;
+var cmd = connection.CreateCommand();
+var host = "147.229.176.80";
+var start = DateTime.Now.ToString("o", CultureInfo.InvariantCulture);
+var end = DateTime.Now.ToString("o", CultureInfo.InvariantCulture);
+cmd.CommandText = $"SELECT * FROM smartads WHERE KeyValue = '{host}' AND Validity @> '[2021-11-09,2021-11-09]'";
+cmd.CommandText.Display();
+var reader = cmd.ExecuteReader();
+reader.HasRows.Display();
+var rowList = new List<HostTag>();
+while (reader.Read())
+{
+    var row = new HostTag(reader["KeyValue"] as string,
+                            reader["Source"] as string,
+                            reader["Reliability"] as double? ?? 1.0,
+                            reader["Data"] as string);
+    rowList.Add(row);
+}
+reader.Close();
+rowList.Display();

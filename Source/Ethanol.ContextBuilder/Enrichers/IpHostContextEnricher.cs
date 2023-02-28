@@ -1,10 +1,13 @@
-﻿using Ethanol.ContextBuilder.Builders;
+﻿using Elastic.Clients.Elasticsearch.Fluent;
+using Elastic.Clients.Elasticsearch.IndexManagement;
+using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using System;
 using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {

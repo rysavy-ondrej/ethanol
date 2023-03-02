@@ -5,7 +5,7 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
     /// <summary>
     /// The type of plugin object.
     /// </summary>
-    public enum PluginType { Reader, Writer, Builder }
+    public enum PluginType { Reader, Writer, Builder, Enricher }
 
     /// <summary>
     /// A class attribute providing meta infomrmation on the plugin implementation.

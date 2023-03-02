@@ -81,4 +81,5 @@ namespace Ethanol.ContextBuilder.Builders
         /// </summary>
         static public ContextBuilderFactory Instance { get; } = new ContextBuilderFactory();
     }
+
 }

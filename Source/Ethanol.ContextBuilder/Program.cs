@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
@@ -41,6 +42,8 @@ namespace Ethanol.ContextBuilder
                 string inputReader,
         [Option("b", "The builder module to create a context.")]
                 string contextBuilder,
+        [Option("e", "The enricher module to extend a context with additional information.")]
+                string contextEnricher,
         [Option("w", "The writer module for producing the output.")]
                 string outputWriter
         )
@@ -49,6 +52,7 @@ namespace Ethanol.ContextBuilder
             sw.Start();
             var readerRecipe = PluginCreateRecipe.Parse(inputReader);
             var builderRecipe = PluginCreateRecipe.Parse(contextBuilder);
+            var enricherRecipe = PluginCreateRecipe.Parse(contextEnricher);
             var writerRecipe = PluginCreateRecipe.Parse(outputWriter);
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
@@ -69,14 +73,16 @@ namespace Ethanol.ContextBuilder
             Console.Error.WriteLine($"                   Reader: {reader}");
             var builder = ContextBuilderFactory.Instance.CreatePluginObject(builderRecipe.Name, builderRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {builderRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Builder: {builder}");
+            var enricher = ContextEnricherFactory.Instance.CreatePluginObject(enricherRecipe.Name, enricherRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {enricherRecipe.Name} not found!");
+            Console.Error.WriteLine($"                   Enricher: {enricher}");
             var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Writer: {writer}");
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
             
             reader.Do(x=>inputCount++).Subscribe(builder);
-            builder.Do(x=>outputCount++).Subscribe(writer);
-
+            builder.Subscribe(enricher);
+            enricher.Do(x => outputCount++).Subscribe(writer);
             Console.Error.WriteLine($"[{sw.Elapsed}] Pipeline is ready, processing input flows...");
 
             var cts = new CancellationTokenSource();
@@ -100,6 +106,11 @@ namespace Ethanol.ContextBuilder
             }
             Console.WriteLine("BUILDERS:");
             foreach (var obj in ContextBuilderFactory.Instance.PluginObjects)
+            {
+                Console.WriteLine($"  {obj.Name}    {obj.Description}");
+            }
+            Console.WriteLine("ENRICHERS:");
+            foreach (var obj in ContextEnricherFactory.Instance.PluginObjects)
             {
                 Console.WriteLine($"  {obj.Name}    {obj.Description}");
             }

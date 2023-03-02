@@ -3,6 +3,7 @@ using Elastic.Clients.Elasticsearch.IndexManagement;
 using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
 using System.Linq;
 using System.Net;
@@ -11,17 +12,31 @@ using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    /// <summary>
-    /// Represents a record for enriched host contexts.
-    /// </summary>
-    /// <param name="HostAddress">The host address, which stands for the key of the record.</param>
-    /// <param name="Flows">The array of associated flows.</param>
-    /// <param name="Metadata">The array of metadata related to the host.</param>
-    public record IpRichHostContext(IPAddress HostAddress, IpFlow[] Flows, HostTag[] Metadata);
+    [Plugin(PluginType.Enricher, "VoidContextEnricher", "Does not enrich the context. Used to fill the space in the processing pipeline.")]
+    public class VoidContextEnricher<T> : IdentityTransformer<T>
+    {
+        public class Configuration
+        {
+        }
+        [PluginCreate]
+        internal static VoidContextEnricher<object> Create(Configuration configuration)
+        {
+            return new VoidContextEnricher<object>();
+        }
+    }
+
+        /// <summary>
+        /// Represents a record for enriched host contexts.
+        /// </summary>
+        /// <param name="HostAddress">The host address, which stands for the key of the record.</param>
+        /// <param name="Flows">The array of associated flows.</param>
+        /// <param name="Metadata">The array of metadata related to the host.</param>
+        public record IpRichHostContext(IPAddress HostAddress, IpFlow[] Flows, HostTag[] Metadata);
 
     /// <summary>
     /// Enrich the computed context with additional known information.
     /// </summary>
+    [Plugin(PluginType.Enricher, "IpHostContextEnricher", "Enriches the context for IP hosts from the provided data.")]
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpRichHostContext>>
     {
         private readonly Subject<ObservableEvent<IpRichHostContext>> _subject;
@@ -70,6 +85,30 @@ namespace Ethanol.ContextBuilder.Enrichers
         public IDisposable Subscribe(IObserver<ObservableEvent<IpRichHostContext>> observer)
         {
             return _subject.Subscribe(observer);
+        }
+
+        public class Configuration
+        {
+            [YamlMember(Alias = "source", Description = "The data source (postgres).")]
+            public string DataSource { get; set; } = String.Empty;
+            [YamlMember(Alias = "connectionString", Description = "The connection string for connecting to the data source.")]
+            public string ConnectionString { get; set; } = String.Empty;
+            [YamlMember(Alias = "tableName", Description = "The name of the table in the database to get the host tags from.")]
+            public string TableName { get; set; } = String.Empty;
+        }
+        [PluginCreate]
+        internal static IpHostContextEnricher Create(Configuration configuration)
+        {
+            if (configuration.DataSource == null) throw new ArgumentNullException($"{nameof(configuration.DataSource)} cannot be null!");
+            // depending on the provided configuration we need to instantiate the enricher:
+            switch(configuration.DataSource.ToLowerInvariant())
+            {
+                case "postgres":
+                    var postgres = PostgresHostTagProvider.Create(configuration.ConnectionString, configuration.TableName);
+                    return new IpHostContextEnricher(postgres, null);
+                default:
+                    throw new NotImplementedException($"Data source '{configuration.DataSource}' is not supported (yet).");
+            }
         }
     }
 }

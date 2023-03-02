@@ -60,9 +60,31 @@ namespace Ethanol.ContextBuilder.Plugins
                                     .FirstOrDefault();
             if (createMethod == null) return null;
             var configurationType = createMethod.GetParameters().First().ParameterType;
-            var parametersValue = _configurationDeserializer.Deserialize(configurationString, configurationType);
+            var parametersValue = GetParameterValues(configurationString, configurationType);
             var newObject = createMethod?.Invoke(null, new object[] { parametersValue });
             return newObject;
+        }
+
+        /// <summary>
+        /// Gets the configuration object. If configuration string is empty then it creates a default configuration object of the given <paramref name="configType"/>. 
+        /// </summary>
+        private object GetParameterValues(string configString, Type configType)
+        {
+            if (String.IsNullOrWhiteSpace(configString))
+            {
+                return configType.GetConstructor(Array.Empty<Type>()).Invoke(null);
+            }
+            else
+            {
+                try
+                { 
+                    return _configurationDeserializer.Deserialize(configString, configType);
+                }
+                catch (Exception e)
+                {
+                    throw new Exception($"ERROR: Cannot parse input arguments {configString}!");
+                }
+            }
         }
 
         /// <summary>

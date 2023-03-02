@@ -30,7 +30,7 @@ namespace Ethanol.ContextBuilder.Plugins
             }
             else
             {
-                return new PluginCreateRecipe(input, "{ }");
+                return new PluginCreateRecipe(input, string.Empty);
             }
         }
 

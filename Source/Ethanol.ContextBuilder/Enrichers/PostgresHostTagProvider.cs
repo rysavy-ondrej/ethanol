@@ -10,6 +10,7 @@ using System;
 using System.Threading.Tasks;
 using System.Reflection.PortableExecutable;
 using System.Globalization;
+using System.Collections;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -47,6 +48,19 @@ namespace Ethanol.ContextBuilder.Enrichers
             var connection = new NpgsqlConnection(connectionString);
             connection.Open();
             if (connection.State != System.Data.ConnectionState.Open) throw new InvalidOperationException("Cannot open connection to the database.");
+
+            // Test that required database and table exists...
+            try
+            {
+                var cmd = connection.CreateCommand();
+                cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
+                var rowCount = cmd.ExecuteScalar();
+                Console.WriteLine($"Postgres connected '{connectionString}', available rows {rowCount}.");
+            }
+            catch(Exception ex)
+            {
+                throw new InvalidOperationException($"Cannot create postgres tag provider:{ex.Message}");
+            }
             return new PostgresHostTagProvider(connection, tableName);
         }
 

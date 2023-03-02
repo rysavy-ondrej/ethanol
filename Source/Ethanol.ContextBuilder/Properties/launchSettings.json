@@ -26,7 +26,12 @@
     },
     "Build-IpHostContext(CSV)": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -w YamlWriter:{file=iphost-csv.contex.yaml}",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e VoidContextEnricher -w YamlWriter:{file=iphost-csv.contex.yaml}",
+      "workingDirectory": "..\\..\\TestData\\"
+    },
+    "Build-IpHostContext(CSV+Postgres)": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e IpHostContextEnricher:{source=postgres,connection={server=localhost,port=5432,database=ethanol,user=postgres,password=ethanol-password},tableName=smartads} -w YamlWriter:{file=iphost-csv.contex.yaml}",
       "workingDirectory": "..\\..\\TestData\\"
     }
   }

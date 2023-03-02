@@ -88,24 +88,6 @@ public static IObservable<StreamEvent<IObservable<T>>> WindowHop<T>(this IObserv
     });
 }
 
-#!csharp
-
-var seq = new [] { 5,10, 12,14,14,14,15, 16,16, 17, 23, 25, 24, 31, 33, 35, 37, 43, 46, 48, 49, 55, 57, 57, 58, 59 };
-var evt = seq.Select(x=> new StreamEvent<(int Key,string Val)>((x,$"evt[{x}]"), x, x+5));
-//evt.Display();
-var r = evt.ToObservable().WindowHop(new TimeSpan(10));
-var wins = r.Select(x => (Start: x.StartTime, End: x.EndTime, Vals:  x.Payload.GroupBy(k=>k.Key, e => e.Val)));
-
-wins.Subscribe(w => 
-{
-    Console.WriteLine($"{w.Start}-{w.End}");
-    w.Vals.Subscribe(g => 
-        {
-            Console.WriteLine($"  {g.Key}");
-            g.Subscribe(v => Console.WriteLine($"    {v}"));
-        });
-    });
-
 #!markdown
 
 # Loading from CSV file and computing windows:
@@ -138,7 +120,6 @@ windows.Subscribe(w =>
 
 #!csharp
 
-public enum Dir { Send, Recv } 
 public record Window(DateTime ts, DateTime te)
 {
     public static Window FromStreamEvent<T>(StreamEvent<T> s)
@@ -150,8 +131,7 @@ var hosts = windows.Select(window =>
 {
     var fhost = window.Payload.SelectMany(flow => (new[]{ new KeyValuePair<string,Flow>(flow.sa, flow), new KeyValuePair<string,Flow>(flow.da, flow)}).ToObservable()); 
     return new StreamEvent<IObservable<IGroupedObservable<Host,Flow>>>(fhost.GroupBy(flow => new Host(flow.Key), flow => flow.Value), window.StartTime, window.EndTime);
-}
-);
+});
 hosts.Subscribe(window => 
 { 
     Console.WriteLine($"{Window.FromStreamEvent(window)}:");

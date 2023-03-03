@@ -1,0 +1,11 @@
+window-size: 00:05:00
+window-hop: 00:05:00
+enricher:
+    source: postgres
+    connection: 
+        server: localhost
+        port: 5432
+        database: ethanol
+        user: postgres
+        password: ethanol-password
+    tableName: smartads

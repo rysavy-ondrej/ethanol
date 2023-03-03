@@ -7,13 +7,30 @@ using System.Reactive.Subjects;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ethanol.ContextBuilder.Builders;
 
 namespace Ethanol.ContextBuilder.Observable
 {
-    public record ObservableEvent<TPayload>(TPayload Payload, DateTime StartTime, DateTime EndTime)
+    public record ObservableEvent<TPayload>
     {
-        public ObservableEvent(TPayload payload, long startTime, long endTime) : this(payload, new DateTime(startTime), new DateTime(endTime))
-        { }
+        private IpHostContext ipHostContext;
+
+        public DateTime StartTime { get; init; }
+        public DateTime EndTime { get; init; }
+        public TPayload Payload { get; init; }
+        public ObservableEvent(TPayload payload, long startTime, long endTime)
+        {
+            Payload = payload;
+            StartTime = new DateTime(startTime);
+            EndTime = new DateTime(endTime);
+        }
+
+        public ObservableEvent(TPayload payload, DateTime startTime, DateTime endTime)
+        {
+            Payload = payload;
+            StartTime = startTime;
+            EndTime = endTime;
+        }
     }
 
     public class WindowHopImplementation<T> : IObserver<ObservableEvent<T>>, IObservable<ObservableEvent<IObservable<T>>>

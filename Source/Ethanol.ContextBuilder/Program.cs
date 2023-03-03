@@ -2,17 +2,15 @@
 using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
+using Ethanol.ContextBuilder.Simplifier;
 using Ethanol.ContextBuilder.Writers;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder
 {
@@ -27,10 +25,28 @@ namespace Ethanol.ContextBuilder
         /// <param name="args">Command line arguments.</param>
         public static void Main(string[] args)
         {
-            ConsoleApp.Run<ProgramCommands>(args);
+            try
+            {
+                ConsoleApp.Run<ProgramCommands>(args);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+            }           
         }
     }
 
+    class CommandLineArgumentException : Exception
+    {
+        public CommandLineArgumentException(string argument, string reason) : base($"Invalid Argument: Argument:{argument}, Error: {reason}.")
+        {
+            Argument = argument;
+            Reason = reason;
+        }
+
+        public string Argument { get; }
+        public string Reason { get; }
+    }
     class ProgramCommands : ConsoleAppBase
     {
         /// <summary>
@@ -40,20 +56,18 @@ namespace Ethanol.ContextBuilder
         public async Task BuildContextCommand(
         [Option("r", "The reader module for processing input stream.")]
                 string inputReader,
-        [Option("b", "The builder module to create a context.")]
-                string contextBuilder,
-        [Option("e", "The enricher module to extend a context with additional information.")]
-                string contextEnricher,
+        [Option("c", "The configuration file used to configure the processing.")]
+                string configurationFile,
         [Option("w", "The writer module for producing the output.")]
                 string outputWriter
         )
         {
             var sw = new Stopwatch();
             sw.Start();
-            var readerRecipe = PluginCreateRecipe.Parse(inputReader);
-            var builderRecipe = PluginCreateRecipe.Parse(contextBuilder);
-            var enricherRecipe = PluginCreateRecipe.Parse(contextEnricher);
-            var writerRecipe = PluginCreateRecipe.Parse(outputWriter);
+
+            var readerRecipe = PluginCreateRecipe.Parse(inputReader) ?? throw new CommandLineArgumentException(nameof(inputReader), "Invalid recipe specified.");
+            var writerRecipe = PluginCreateRecipe.Parse(outputWriter) ?? throw new CommandLineArgumentException(nameof(outputWriter), "Invalid recipe specified.");
+            var configuration = PipelineConfiguration.LoadFrom(System.IO.File.ReadAllText(configurationFile)) ?? throw new CommandLineArgumentException(nameof(configurationFile), "Could not load the configuration.");
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
 
@@ -68,21 +82,29 @@ namespace Ethanol.ContextBuilder
                 }
             }
 
-
             var reader = ReaderFactory.Instance.CreatePluginObject(readerRecipe.Name, readerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Reader {readerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Reader: {reader}");
-            var builder = ContextBuilderFactory.Instance.CreatePluginObject(builderRecipe.Name, builderRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {builderRecipe.Name} not found!");
-            Console.Error.WriteLine($"                   Builder: {builder}");
-            var enricher = ContextEnricherFactory.Instance.CreatePluginObject(enricherRecipe.Name, enricherRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Builder {enricherRecipe.Name} not found!");
-            Console.Error.WriteLine($"                   Enricher: {enricher}");
             var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
             Console.Error.WriteLine($"                   Writer: {writer}");
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
+
+
+            var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
+            var enricher = new IpHostContextEnricher(PostgresHostTagProvider.Create(configuration.EnricherConfiguration.Connection.ToPostgresConnectionString(), configuration.EnricherConfiguration.TableName), null);
+            var simplifier = new IpHostContextSimplifier();
+
+
+            reader.Do(x=>inputCount++)
+                .Subscribe(builder);
+            builder
+                .Subscribe(enricher);
+            enricher.Do(x => outputCount++)
+                .Subscribe(simplifier);
+            simplifier
+                .Subscribe(writer);
             
-            reader.Do(x=>inputCount++).Subscribe(builder);
-            builder.Subscribe(enricher);
-            enricher.Do(x => outputCount++).Subscribe(writer);
+            
             Console.Error.WriteLine($"[{sw.Elapsed}] Pipeline is ready, processing input flows...");
 
             var cts = new CancellationTokenSource();
@@ -119,6 +141,23 @@ namespace Ethanol.ContextBuilder
             {
                 Console.WriteLine($"  {obj.Name}    {obj.Description}");
             }
+        }
+    }
+
+    public record PipelineConfiguration
+    {
+        static YamlDotNet.Serialization.Deserializer deserializer = new YamlDotNet.Serialization.Deserializer();
+        [YamlMember(Alias = "window-size", Description = "The time interval of the analysis window.")]
+        public TimeSpan WindowSize { get; set; }
+        [YamlMember(Alias = "window-hop", Description = "The hop interval of the window. ")]
+        public TimeSpan WindowHop { get; set; }
+        [YamlMember(Alias = "enricher", Description = "The enricher configuration.")]
+        public IpHostContextEnricherPlugin.Configuration EnricherConfiguration { get; set; }
+
+        public static PipelineConfiguration LoadFrom(string text)
+        {
+            var config = deserializer.Deserialize<PipelineConfiguration>(text);
+            return config;
         }
     }
 }

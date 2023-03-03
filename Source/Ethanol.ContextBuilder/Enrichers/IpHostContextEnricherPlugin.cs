@@ -37,10 +37,15 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
         public record DatabaseConnection
         {
+            [YamlMember(Alias = "server", Description = "The server ip address.")]
             public string Server { get; set; }
+            [YamlMember(Alias = "port", Description = "The port on which the server listen.")]
             public int Port { get; set; }
+            [YamlMember(Alias = "database", Description = "The database to open on the server.")]
             public string Database { get; set; }
+            [YamlMember(Alias = "user", Description = "The user name used for login.")]
             public string User { get; set; }
+            [YamlMember(Alias = "password", Description = "The password used for login.")]
             public string Password { get; set; }
 
             public DatabaseConnection(string server, int port, string database, string user, string password)

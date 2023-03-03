@@ -82,6 +82,6 @@
         public string QuestionName { get; set; }
         public string Flags { get; set; }
         public DnsOpCode Opcode { get; set; }
-        public string QueryResponseFlag { get; set; }
+        public DnsQueryResponseFlag QueryResponseFlag { get; set; }
     }
 }

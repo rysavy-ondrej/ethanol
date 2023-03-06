@@ -9,7 +9,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// <summary>
     /// Factory class supporting to instantiating flow readers.
     /// </summary>
-    public class ReaderFactory : PluginFactory<FlowReader<IpFlow>>
+    public class ReaderFactory : PluginFactory<IFlowReader<IpFlow>>
     {
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {

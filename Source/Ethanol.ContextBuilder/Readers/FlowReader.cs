@@ -6,6 +6,15 @@ using System.Threading.Tasks;
 namespace Ethanol.ContextBuilder.Readers
 {
     /// <summary>
+    /// And interface for all reader objects.
+    /// </summary>
+    /// <typeparam name="TRecord"></typeparam>
+    public interface IFlowReader<TRecord> : IObservable<TRecord>, IPipelineNode
+    {
+        Task StartReading();
+    }
+
+    /// <summary>
     /// A base abstract class for input data readers.
     /// <para/>
     /// Input readers provide access to data sources. The type of data source is not limited 
@@ -13,11 +22,13 @@ namespace Ethanol.ContextBuilder.Readers
     /// abstract from implementation details and provide data as observable sequence.
     /// </summary>
     /// <typeparam name="TRecord">The type of recrods to read.</typeparam>
-    public abstract class FlowReader<TRecord> : IObservable<TRecord>
+    public abstract class FlowReader<TRecord> : IFlowReader<TRecord>
     {
         CancellationTokenSource _cts;
         Subject<TRecord> _subject;
         private Task _readingTask;
+
+        public PipelineNodeType NodeType => PipelineNodeType.Producer;
 
         protected FlowReader()
         {

@@ -1,0 +1,40 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","C#"]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"javascript","aliases":["js"],"languageName":"JavaScript"},{"name":"webview","aliases":[]}]}}
+
+#!csharp
+
+#r "nuget:automapper"
+using AutoMapper;
+
+#!csharp
+
+record IpFlow(int ip);
+record TlsFlow(int ip, int t) : IpFlow(ip);
+record DnsFlow(int ip, int d) : IpFlow(ip);
+record HttpFlow(int ip, int h) : IpFlow(ip);
+
+class Wrap<T>
+{
+    public int Ip { get; set; } 
+    public int Tls { get; set; }
+    public int Dns { get; set; }
+    public int Http { get; set; }
+}
+
+
+var config = new MapperConfiguration(cfg => {
+    cfg.CreateMap<IpFlow, Wrap<IpFlow>>()
+    .ForMember(d => d.Ip, o => o.MapFrom(s => s.ip));
+    
+    cfg.CreateMap<DnsFlow, Wrap<DnsFlow>>()
+    .IncludeBase<IpFlow, Wrap<DnsFlow>>()
+    .ForMember(d => d.Ip, o => o.MapFrom(s => s.ip));
+});
+
+
+// Create the mapper
+var mapper = config.CreateMapper();
+
+mapper.Map<Wrap<IpFlow>>(new IpFlow(1)).Display();
+mapper.Map<Wrap<DnsFlow>>(new DnsFlow(1,2)).Display();

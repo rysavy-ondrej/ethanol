@@ -1,6 +1,9 @@
 ﻿using Ethanol.ContextBuilder.Plugins.Attributes;
+using System;
 using System.IO;
+using System.Net;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
@@ -23,6 +26,7 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         /// <param name="arguments">The arguments used in object creation.</param>
         /// <returns>The new  <see cref="JsonDataWriter"/> object. </returns>
+        [PluginCreate]
         public static JsonDataWriter Create(Configuration configuration)
         {
             var writer = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
@@ -31,7 +35,8 @@ namespace Ethanol.ContextBuilder.Writers
 
         public class Configuration
         {
-            [YamlMember(Alias = "file", Description = "The file name with NDJSON data to write.")]
+            [PluginParameter(Name: "file", PluginParameterFlag.Optional, Description: "The file name with YAML data to write.")]
+            [YamlMember(Alias = "file")]
             public string FileName { get; set; }
         }
         /// <summary>
@@ -40,8 +45,10 @@ namespace Ethanol.ContextBuilder.Writers
         /// <param name="writer">The text writer to produce the output.</param>
         public JsonDataWriter(TextWriter writer)
         {
-            this._writer = writer;
-            this._jsonOptions = new JsonSerializerOptions { };
+            _writer = writer;
+            _jsonOptions = new JsonSerializerOptions { };
+            _jsonOptions.AddIPAddressConverter();
+
         }
         /// <inheritdoc/>
         protected override void Close()
@@ -56,7 +63,27 @@ namespace Ethanol.ContextBuilder.Writers
         /// <inheritdoc/>
         protected override void Write(object value)
         {
-            _writer.WriteLine(JsonSerializer.Serialize(value));
+            _writer.WriteLine(JsonSerializer.Serialize(value, _jsonOptions));
+        }
+    }
+    public class IPAddressConverter : JsonConverter<IPAddress>
+    {
+        public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string ipAddressString = reader.GetString();
+            return IPAddress.Parse(ipAddressString);
+        }
+
+        public override void Write(Utf8JsonWriter writer, IPAddress value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
+    }
+    public static class JsonSerializerOptionsExtensions
+    {
+        public static void AddIPAddressConverter(this JsonSerializerOptions options)
+        {
+            options.Converters.Add(new IPAddressConverter());
         }
     }
 }

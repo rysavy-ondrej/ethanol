@@ -10,40 +10,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Ethanol.ContextBuilder.Simplifier
 {
-    public class IpHostContextSimplifierPlugin : IObservableTransformer
-    {
-        public string TransformerName => nameof(IpHostContextSimplifier);
-
-        public Type SourceType => typeof(IpRichHostContext);
-
-        public Type TargetType => typeof(IpSimpleHostContext);
-
-        public void OnCompleted()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnError(Exception error)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnNext(object value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IDisposable Subscribe(IObserver<object> observer)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class IpHostContextSimplifier : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpSimpleHostContext>>
+ 
+    public class IpHostContextSimplifier : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpSimpleHostContext>>, IPipelineNode
     {
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<ObservableEvent<IpSimpleHostContext>> _subject;
+
+        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         public IpHostContextSimplifier()
         {
@@ -63,44 +37,57 @@ namespace Ethanol.ContextBuilder.Simplifier
         public void OnNext(ObservableEvent<IpRichHostContext> value)
         {
             var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
-                .Where(x=>x.QueryResponseFlag == DnsQueryResponseFlag.Response)
                 .Select(x=>new ResolvedDomainInfo(x.SourceAddress, x.QuestionName, x.ResponseData, x.ResponseCode))
                 .ToArray();
             
             var resolvedDictionary = GetDomainDictionary(domains);
+
             var resolveDomain = (IPAddress x) => resolvedDictionary.TryGetValue(x.ToString(), out var name) ? name : null;
 
             var osInfo = value.Payload.Metadata.Where(x => x.Name == "os_by_tcpip").FirstOrDefault()?.Value;
+
             var upflows = value.Payload.Flows.Where(x => x.SourceAddress.Equals(value.Payload.HostAddress)).ToList();
+            
             var downflows = value.Payload.Flows.Where(x => x.DestinationAddress.Equals(value.Payload.HostAddress)).ToList();
 
-            var connections = PairFlows(upflows, downflows, resolveDomain)
-                .GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
-                        (key,val) =>
+            var initiatedConnections = GetInitiatedConnections(upflows, resolveDomain).ToArray();
+
+            var acceptedConnections = GetAcceptedConnections(downflows, resolveDomain).ToArray();
+
+            var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress, resolveDomain(x.DestinationAddress), x.DestinationPort, x.Method, x.Hostname + x.Url)).ToArray();
+            
+            var secured = upflows.SelectFlows<TlsFlow, TlsConnectionInfo>(x => new TlsConnectionInfo(x.DestinationAddress, resolveDomain(x.DestinationAddress), x.DestinationPort, x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName)).ToArray();
+            
+            var simpleContext = new IpSimpleHostContext(value.Payload.HostAddress, osInfo, initiatedConnections, acceptedConnections, domains, webUrls, secured);
+            
+            _subject.OnNext(new ObservableEvent<IpSimpleHostContext>(simpleContext, value.StartTime, value.EndTime));
+        }
+
+        private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain)
+        { 
+            var con =  flows.Select(f =>
+                        new IpConnectionInfo(f.DestinationAddress, resolveDomain(f.DestinationAddress), f.DestinationPort, f.ApplicationTag, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+            return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
+                        (key, val) =>
                         {
                             var first = val.FirstOrDefault();
                             return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.Service, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
                                 val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
                         }
-                    )
-                .ToArray();   
-            
-
-
-            var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress, resolveDomain(x.DestinationAddress), x.DestinationPort, x.Method, x.Hostname + x.Url)).ToArray();
-            var secured = upflows.SelectFlows<TlsFlow, TlsConnectionInfo>(x => new TlsConnectionInfo(x.DestinationAddress, resolveDomain(x.DestinationAddress), x.DestinationPort, x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName)).ToArray();
-            var simpleContext = new IpSimpleHostContext(value.Payload.HostAddress, osInfo, connections, domains, webUrls, secured);
-            _subject.OnNext(new ObservableEvent<IpSimpleHostContext>(simpleContext, value.StartTime, value.EndTime));
+                    );
         }
-
-        private IEnumerable<IpConnectionInfo> PairFlows(IEnumerable<IpFlow> upflows, IEnumerable<IpFlow> downFlows, Func<IPAddress,string> resolveDomain)
-        { 
-            var biflows = upflows.Join(downFlows, 
-                    f => (f.SourceAddress, f.SourcePort), 
-                    f => (f.DestinationAddress, f.DestinationPort), 
-                    (f1, f2) =>
-                        new IpConnectionInfo(f2.SourceAddress, resolveDomain(f2.SourceAddress), f2.SourcePort, f2.ApplicationTag, 1, f1.PacketDeltaCount, f1.OctetDeltaCount, f2.PacketDeltaCount, f2.OctetDeltaCount));
-            return biflows;
+        private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain)
+        {
+            var con = flows.Select(f =>
+                        new IpConnectionInfo(f.SourceAddress, resolveDomain(f.SourceAddress), f.SourcePort, f.ApplicationTag, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+            return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
+                        (key, val) =>
+                        {
+                            var first = val.FirstOrDefault();
+                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.Service, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                                val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                        }
+                    );
         }
 
         private Dictionary<string, string> GetDomainDictionary(ResolvedDomainInfo[] domains)
@@ -121,13 +108,13 @@ namespace Ethanol.ContextBuilder.Simplifier
     }
 
 
-    public record IpSimpleHostContext(IPAddress HostAddress, string OperatingSystem, IpConnectionInfo[] ConnectsTo, ResolvedDomainInfo[] ResolvedDomains, WebRequestInfo[] WebUrls, TlsConnectionInfo[] Secured);
+    public record IpSimpleHostContext(IPAddress HostAddress, string OperatingSystem, IpConnectionInfo[] InitiatedConnections, IpConnectionInfo[]AcceptedConnections, ResolvedDomainInfo[] ResolvedDomains, WebRequestInfo[] WebUrls, TlsConnectionInfo[] Secured);
 
     public record IpConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Service, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
 
     public record WebRequestInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Method, string Url);
 
-    public record ResolvedDomainInfo(IPAddress RemoteHost, string QueryString, string ResponseData, DnsResponseCode ResponseCode);
+    public record ResolvedDomainInfo(IPAddress DnsServer, string QueryString, string ResponseData, DnsResponseCode ResponseCode);
 
     public record TlsConnectionInfo
     {

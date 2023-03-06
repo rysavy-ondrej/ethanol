@@ -89,7 +89,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <returns>A collection of meters for the given IPFIX record.</returns>
         public static FlowMeters GetMeters(this IpFlow f)
         {
-            return new FlowMeters(f.PacketDeltaCount, f.OctetDeltaCount, f.TimeStart, f.TimeDuration);
+            return new FlowMeters(f.RecvPackets, f.RecvOctets, f.TimeStart, f.TimeDuration);
         }
     }
 }

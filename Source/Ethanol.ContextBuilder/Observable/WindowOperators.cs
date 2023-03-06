@@ -13,8 +13,6 @@ namespace Ethanol.ContextBuilder.Observable
 {
     public record ObservableEvent<TPayload>
     {
-        private IpHostContext ipHostContext;
-
         public DateTime StartTime { get; init; }
         public DateTime EndTime { get; init; }
         public TPayload Payload { get; init; }

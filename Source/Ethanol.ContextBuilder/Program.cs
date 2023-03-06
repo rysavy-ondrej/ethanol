@@ -2,12 +2,10 @@
 using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
-using Ethanol.ContextBuilder.Simplifier;
 using Ethanol.ContextBuilder.Writers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
@@ -47,7 +45,7 @@ namespace Ethanol.ContextBuilder
         public string Argument { get; }
         public string Reason { get; }
     }
-    class ProgramCommands : ConsoleAppBase
+    public class ProgramCommands : ConsoleAppBase
     {
         /// <summary>
         /// Builds the context for input read by <paramref name="inputReader"/> using <paramref name="contextBuilder"/>. The output is written using <paramref name="outputWriter"/>.
@@ -62,6 +60,7 @@ namespace Ethanol.ContextBuilder
                 string outputWriter
         )
         {
+            var environment = new EthanolEnvironment();
             var sw = new Stopwatch();
             sw.Start();
 
@@ -78,7 +77,7 @@ namespace Ethanol.ContextBuilder
                 while (!ct.IsCancellationRequested)
                 {
                     Console.Error.WriteLine($"[{sw.Elapsed}] in={inputCount}, out={outputCount}             \r");
-                    await Task.Delay(1000); 
+                    await Task.Delay(1000);
                 }
             }
 
@@ -89,31 +88,21 @@ namespace Ethanol.ContextBuilder
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
 
+            var pipeline = environment.ContextBuilder.CreateIpHostContextBuilderPipeline(configuration, reader, writer, (x) => inputCount+=x, (x) => outputCount+=x);
 
-            var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
-            var enricher = new IpHostContextEnricher(PostgresHostTagProvider.Create(configuration.EnricherConfiguration.Connection.ToPostgresConnectionString(), configuration.EnricherConfiguration.TableName), null);
-            var simplifier = new IpHostContextSimplifier();
-
-
-            reader.Do(x=>inputCount++)
-                .Subscribe(builder);
-            builder
-                .Subscribe(enricher);
-            enricher.Do(x => outputCount++)
-                .Subscribe(simplifier);
-            simplifier
-                .Subscribe(writer);
-            
-            
             Console.Error.WriteLine($"[{sw.Elapsed}] Pipeline is ready, processing input flows...");
 
             var cts = new CancellationTokenSource();
             var t = MyTimer(cts.Token);
 
-            await Task.WhenAll(reader.StartReading(), writer.Completed).ContinueWith( t => cts.Cancel());
+            await Task.WhenAll(reader.StartReading(), writer.Completed).ContinueWith(t => cts.Cancel());
 
             Console.Error.WriteLine($"[{sw.Elapsed}] Finished!");
+            Console.Error.WriteLine($"Processed {inputCount} input flows and wrote {outputCount} context objects.");
+
         }
+
+
 
         /// <summary>
         /// Gets the list of all available modules. 

@@ -17,8 +17,8 @@ namespace Ethanol.ContextBuilder.Context
         public string CipherSuites { get; set; }
         public string ClientRandomID { get; set; }
         public string ClientSessionID { get; set; }
-        public string ExtensionTypes { get; set; }
-        public int ExtensionLengths { get; set; }
+        public ushort[] ExtensionTypes { get; set; }
+        public ushort[] ExtensionLengths { get; set; }
         public string EllipticCurves { get; set; }
         public string EcPointFormats { get; set; }
         public int ClientKeyLength { get; set; }

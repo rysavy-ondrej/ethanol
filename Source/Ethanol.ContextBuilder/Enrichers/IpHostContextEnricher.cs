@@ -12,7 +12,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <summary>
     /// Implements a transformer that enrich <see cref="IpHostContext"/> and produces <see cref="IpRichHostContext"/>.
     /// </summary>
-    public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpRichHostContext>>
+    public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpRichHostContext>>, IPipelineNode
     { 
         private readonly Subject<ObservableEvent<IpRichHostContext>> _subject;
         private readonly IHostDataProvider<HostTag> _environmentQuerable;
@@ -29,6 +29,8 @@ namespace Ethanol.ContextBuilder.Enrichers
             _environmentQuerable = environmentQuerable;
             _stateQueryable = stateQueryable;
         }
+
+        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         /// <inheritdoc/>
         public void OnCompleted()

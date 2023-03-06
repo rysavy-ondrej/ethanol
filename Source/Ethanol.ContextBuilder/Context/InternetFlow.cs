@@ -3,6 +3,9 @@ using System.Net.Sockets;
 
 namespace Ethanol.ContextBuilder.Context
 {
+    /// <summary>
+    /// Represents the Internet protocol version.
+    /// </summary>
     public enum IPVersion
     {
         /// <summary>Internet protocol version 4.</summary>

@@ -6,8 +6,24 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Ethanol.ContextBuilder.Context
 {
+    public enum FlowType
+    {
+        RequestFlow,
+        ResponseFlow, 
+        BidirectionFlow,
+    }
+    /// <summary>
+    /// Represents a (possibly) bidirectional internet flow. 
+    /// </summary>
     public class IpFlow : InternetFlow
     {
+        /// <summary>
+        /// The type of flow: request flow, response flow, or bidirectional flow.
+        /// </summary>
+        public FlowType FlowType { get; set; }
+        /// <summary>
+        /// Stands for the recognized application protocol. 
+        /// </summary>
         public string ApplicationTag { get; set; }
 
         public DateTime TimeStart { get; set; }
@@ -19,12 +35,21 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Packet Delta Count field is a data field that represents the number of packets that have been sent between two network devices during a particular flow.
         /// </summary>
-        public int PacketDeltaCount { get; set; }
+        public int SentPackets { get; set; }
 
         /// <summary>
         /// Octet Delta Count field is a data field that represents the number of octets (bytes) that have been sent between two network devices during a particular flow. 
         /// </summary>
-        public int OctetDeltaCount { get; set; }
+        public int SentOctets { get; set; }
+        /// <summary>
+        /// Packet Delta Count field is a data field that represents the number of packets that have been sent between two network devices during a particular flow.
+        /// </summary>
+        public int RecvPackets { get; set; }
+
+        /// <summary>
+        /// Octet Delta Count field is a data field that represents the number of octets (bytes) that have been sent between two network devices during a particular flow. 
+        /// </summary>
+        public int RecvOctets { get; set; }
     }
 
     public static class IpFlowExtensions

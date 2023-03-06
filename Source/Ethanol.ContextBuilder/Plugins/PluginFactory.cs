@@ -58,7 +58,7 @@ namespace Ethanol.ContextBuilder.Plugins
             var createMethod = pluginType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                                     .Where(m => m.GetCustomAttributes(typeof(PluginCreateAttribute), false).Length > 0)
                                     .FirstOrDefault();
-            if (createMethod == null) return null;
+            if (createMethod == null) throw new InvalidOperationException($"The {pluginType} has not Create method annotated with [PluginCreate].");
             var configurationType = createMethod.GetParameters().First().ParameterType;
             var parametersValue = GetParameterValues(configurationString, configurationType);
             var newObject = createMethod?.Invoke(null, new object[] { parametersValue });

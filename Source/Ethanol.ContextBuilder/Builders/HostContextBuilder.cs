@@ -149,10 +149,10 @@ namespace Ethanol.ContextBuilder.Builders
                 AverageConnectionTime = TimeSpan.FromMilliseconds(x.Average(t=> t.UpFlow.TimeDuration.TotalMilliseconds)),
                 MinConnectionTime = TimeSpan.FromMilliseconds(x.Min(t => t.UpFlow.TimeDuration.TotalMilliseconds)),
                 MaxConnectionTime = TimeSpan.FromMilliseconds(x.Max(t => t.UpFlow.TimeDuration.TotalMilliseconds)),
-                SendPackets = x.Sum(p => p.UpFlow.PacketDeltaCount),
-                SendBytes = x.Sum(p => p.UpFlow.OctetDeltaCount),
-                RecvPackets = x.Sum(p => p.DownFlow.PacketDeltaCount),
-                RecvBytes = x.Sum(p => p.DownFlow.OctetDeltaCount)
+                SendPackets = x.Sum(p => p.UpFlow.RecvPackets),
+                SendBytes = x.Sum(p => p.UpFlow.RecvOctets),
+                RecvPackets = x.Sum(p => p.DownFlow.RecvPackets),
+                RecvBytes = x.Sum(p => p.DownFlow.RecvOctets)
             };
         }
     }

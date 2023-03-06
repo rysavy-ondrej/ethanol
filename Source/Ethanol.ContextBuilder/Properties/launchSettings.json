@@ -4,10 +4,26 @@
       "commandName": "Project",
       "commandLineArgs": "List-Modules"
     },
-    "Build-IpHostContext(CSV+Postgres)": {
+    "flowexp->json": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -c config.yaml -w YamlWriter:{file=iphost-csv.contex.yaml}",
-      "workingDirectory": "..\\..\\TestData\\"
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowexp.short.json} -c config.yaml -w JsonWriter:{file=contex.flowexp.short.json}",
+      "workingDirectory": "..\\..\\TestData\\basic"
+    },
+    "flowexp->yaml": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowexp.short.json} -c config.yaml -w YamlWriter:{file=context.flowexp.short.yaml}",
+      "workingDirectory": "..\\..\\TestData\\basic",
+      "remoteDebugEnabled": true
+    },
+    "nfdump->yaml": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w YamlWriter:{file=context.nfdump.short.yaml}",
+      "workingDirectory": "..\\..\\TestData\\basic"
+    },
+    "nfdump->json": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w JsonWriter:{file=context.nfdump.short.json}",
+      "workingDirectory": "..\\..\\TestData\\basic"
     }
   }
 }

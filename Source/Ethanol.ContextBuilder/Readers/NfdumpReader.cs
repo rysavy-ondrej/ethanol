@@ -1,47 +1,79 @@
 ﻿using CsvHelper;
+using Ethanol.ContextBuilder.Cleaners;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
+using System;
 using System.Globalization;
 using System.IO;
+using System.Reactive.Subjects;
 using System.Threading;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Readers
 {
     /// <summary>
-    /// Reads export from flowmonexp5 in JSON format. This format is specific by 
-    /// representing each flow as an individual JSON object. It is not NDJSON nor 
-    /// properly formatted array of JSON objects.
+    /// Reads export from nfdump tool, which is CSV with a large number of columns, from which only 
+    /// their subset is relevant to the reader.
     /// </summary>
     [Plugin(PluginType.Reader, "NfdumpCsv", "Reads CSV file produced by nfdump.")]
-    class NfdumpReader : FlowReader<IpFlow>
+    class NfdumpReaderPlugin : IFlowReader<IpFlow>
     {
+        readonly Subject<IpFlow> _subject = new Subject<IpFlow>();
+        private readonly NfdumpReader _dumpReader;
+        private readonly FlowPairing _cleaner;
+
+        public PipelineNodeType NodeType => PipelineNodeType.Producer;
+
+        public NfdumpReaderPlugin(TextReader reader)
+        {
+            _dumpReader = new NfdumpReader(reader);
+            _cleaner = new FlowPairing(TimeSpan.FromMinutes(3));
+
+            _dumpReader.Subscribe(_cleaner);
+            _cleaner.Subscribe(_subject);
+        }
+
         public class Configuration
         {
             [YamlMember(Alias = "file", Description = "The file name with JSON data to read.")]
             public string FileName { get; set; }
         }
 
-        private readonly CsvReader _csvReader;
+
 
         /// <summary>
         /// Creates a new reader for the given arguments.
         /// </summary>
         /// <param name="arguments">Collection of arguments used to create a reader.</param>
-        /// <returns>A new <see cref="FlowmonJsonReader"/> object.</returns>
+        /// <returns>A new <see cref="FlowexpJsonReader"/> object.</returns>
         [PluginCreate]
-        public static NfdumpReader Create(Configuration configuration)
+        public static NfdumpReaderPlugin Create(Configuration configuration)
         {
             var reader = configuration.FileName != null ? File.OpenText(configuration.FileName) : System.Console.In;
-            return new NfdumpReader(reader);
+            return new NfdumpReaderPlugin(reader);
         }
 
-        /// <summary>
-        /// Initializes the reader with underlying <see cref="StreamReader"/>.
-        /// </summary>
-        /// <param name="reader">The text reader device (input file or standard input).</param>
-        public NfdumpReader(TextReader reader)
+        public IDisposable Subscribe(IObserver<IpFlow> observer)
+        {
+            return _subject.Subscribe(observer); 
+        }
+
+        public Task StartReading()
+        {
+            return _dumpReader.StartReading();
+        }
+    }
+    class NfdumpReader : FlowReader<IpFlow>
+    {
+            private readonly CsvReader _csvReader;
+
+            /// <summary>
+            /// Initializes the reader with underlying <see cref="StreamReader"/>.
+            /// </summary>
+            /// <param name="reader">The text reader device (input file or standard input).</param>
+    public NfdumpReader(TextReader reader)
         {
             _csvReader = new CsvReader(reader, CultureInfo.InvariantCulture);
 
@@ -59,7 +91,7 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 var record = _csvReader.GetRecord<NfdumpEntry>();
                 if (record == null) return false;
-                ipfixRecord = record.ConvertToFlow();
+                ipfixRecord = record.ToFlow();
                 return true;
             }
             return false;

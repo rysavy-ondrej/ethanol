@@ -1,0 +1,108 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"csharp","aliases":[]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"sql","languageName":"SQL","aliases":[]}]}}
+
+#!csharp
+
+   public enum DnsOpCode
+    {
+        Query = 0,
+        IQuery = 1,
+        Status = 2,
+        Notify = 4,
+        Update = 5
+    };
+        public enum DnsQueryResponseFlag
+    {
+        Query = 0,
+        Response = 1
+    };
+    public enum DnsResponseCode
+    {
+        // No error condition
+        NoError = 0,
+
+        // Format error - The name server was unable to interpret the query
+        FormErr = 1,
+
+        // Server failure - The name server was unable to process the query due to a problem on the server's side
+        ServFail = 2,
+
+        // Non-existent domain - The domain name in the query does not exist
+        NXDomain = 3,
+
+        // Not implemented - The server does not support the requested query type
+        NotImp = 4,
+
+        // Query refused - The server refused to process the query for some reason
+        Refused = 5,
+
+        // Name exists when it should not - The domain name in the query is too long
+        YXDomain = 6,
+
+        // Resource record set exists when it should not - The resource record set in the query is too long
+        YXRRSet = 7,
+
+        // Resource record set that should exist does not - The resource record set in the query does not exist
+        NXRRSet = 8,
+
+        // Server not authoritative for zone or domain - The server is not authoritative for the domain in the query
+        NotAuth = 9,
+
+        // Name not contained in zone - The name is not contained within the zone specified in the query
+        NotZone = 10,
+
+        // Bad OPT version - The version of the DNS protocol used by the server is not supported by the client
+        BadVers = 16
+    }
+    DnsOpCode GetOpcode(long flags)
+    {
+        ushort opcode = (ushort)((flags >> 11) & 0x0F);
+        return (DnsOpCode)opcode;
+    }
+    DnsQueryResponseFlag GetQueryOrresponse(long flags)
+    {
+        bool qrBit = ((flags >> 15) & 0x01) == 1;
+        return qrBit ? DnsQueryResponseFlag.Response : DnsQueryResponseFlag.Query;
+    }
+    DnsResponseCode GetRcode(long flags)
+    {
+        ushort rcode = (ushort)(flags & 0x0F);
+        return (DnsResponseCode)rcode;
+    }
+        
+
+#!csharp
+
+GetOpcode(256).Display();
+GetQueryOrresponse(256).Display();
+GetRcode(256).Display();
+GetOpcode(33152).Display();
+GetQueryOrresponse(33152).Display();
+GetRcode(33152).Display();
+
+#!csharp
+
+        record IpFlow(int x);
+        record TlsFlow(int x, int t) : IpFlow(x);
+        record DnsFlow(int x, int d) : IpFlow(x);
+        record HttpFlow(int x, int h) : IpFlow(x);
+
+
+        
+        private string PairFlows(IpFlow reqFlow, IpFlow resFlow)
+        {
+            return ((reqFlow, resFlow)) switch
+            {
+                (TlsFlow q, TlsFlow r) => "tls+tls",
+                (HttpFlow q, HttpFlow r) => "http+htpp",
+                (DnsFlow q, DnsFlow r) => "dns+dns",
+                (IpFlow q, IpFlow r) => "ip+ip",
+                _ => null
+            };
+        }
+
+        PairFlows(new IpFlow(1), new IpFlow(1)).Display();
+         PairFlows(new TlsFlow(1,2), new TlsFlow(1,2)).Display();
+         PairFlows(new TlsFlow(1,2), new IpFlow(1)).Display();
+         PairFlows(new TlsFlow(1,2), new DnsFlow(1,3)).Display();

@@ -7,7 +7,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// Represets a base class for all writers. A writer outputs 
     /// context-based data in the specifc output format. 
     /// </summary>
-    public abstract class ContextWriter<TRecord> : IObserver<TRecord>
+    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource;
@@ -42,6 +42,8 @@ namespace Ethanol.ContextBuilder.Writers
         /// The task signalizes completion of the writing operation.
         /// </summary>
         public Task Completed => _taskCompletionSource.Task;
+
+        public PipelineNodeType NodeType => PipelineNodeType.Sink;
 
         /// <summary>
         /// Override in the subclass to perform open operation on the underlying device.

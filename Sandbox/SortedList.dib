@@ -1,0 +1,17 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","C#"]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"javascript","aliases":["js"],"languageName":"JavaScript"},{"name":"webview","aliases":[]}]}}
+
+#!csharp
+
+using System.Collections.Generic;
+var sl = new SortedList<DateTime, List<string>>();
+
+
+void AddItem(DateTime dt, string item)
+{
+    s1.TryeGet
+}
+
+sl.Add(new DateTime(100000), "ahoj");
+sl.Add(new DateTime(100000), "cus");

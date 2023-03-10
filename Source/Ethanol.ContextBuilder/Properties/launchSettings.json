@@ -24,6 +24,11 @@
       "commandName": "Project",
       "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w JsonWriter:{file=context.nfdump.short.json}",
       "workingDirectory": "..\\..\\TestData\\basic"
+    },
+    "webuser": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}",
+      "workingDirectory": "E:\\Ethanol\\webuser"
     }
   }
 }

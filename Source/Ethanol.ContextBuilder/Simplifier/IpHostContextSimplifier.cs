@@ -50,7 +50,7 @@ namespace Ethanol.ContextBuilder.Simplifier
             }
             string ResolveProcessName(FlowKey flowKey)
             {
-                return resolvedDictionary.TryGetValue($"{flowKey.DestinationAddress}:{flowKey.DestinationPort}", out var processName) ? processName: null;
+                return flowTagDictionary.TryGetValue($"{flowKey.DestinationAddress}:{flowKey.DestinationPort}", out var flowTag) ? flowTag.ProcessName : null;
             }
 
             var osInfo = value.Payload.HostTags.Where(x => x.Name == "os_by_tcpip").FirstOrDefault()?.Value;

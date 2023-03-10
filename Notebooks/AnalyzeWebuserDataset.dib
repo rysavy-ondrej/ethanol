@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","languageName":"C#","aliases":["c#","C#"]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"javascript","aliases":["js"],"languageName":"JavaScript"},{"name":"webview","aliases":[]}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":[]},{"name":"sql","languageName":"SQL","aliases":[]},{"name":"vscode","languageName":null,"aliases":["frontend"]}]}}
 
 #!csharp
 
@@ -71,22 +71,28 @@ See the tutorial on how to load and inspect data: https://rubikscode.net/2021/09
 
 #!csharp
 
-var srcFiles = new [] { "webuser.ctx.json" };
-int CollectJa3Bags(string[] items)
+var items = File.ReadAllLines(@$"e:\Ethanol\webuser\webuser.ctx.json");
+// get context only for the selected host:
+var host = items
+     .Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions))
+     .Where(x=>x.Payload.HostAddress.ToString()=="192.168.111.19");
+
+var tls = host.SelectMany(x=>x.Payload.Secured);
+
+// print raw data...
+foreach(var ctx in host)
 {
-     var host = items.Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions))
-          .Where(x=>x.Payload.HostAddress.ToString()=="192.168.111.19")
-          .First().Payload;
-     var secured = host.Secured.Where(f=>!String.IsNullOrWhiteSpace(f.JA3Fingerprint))
-          .GroupBy(f=>f.JA3Fingerprint)
+     // in the context we analyze secured flows only:
+     var prc = ctx.Payload.Secured
+          .GroupBy(f=>f.ApplicationProcessName)
           .ToList();
-     secured.Display();
-     return secured.Count();
+
+     foreach (var p in prc)
+     {
+          p.Key.Display();
+          p.Display();
+     }
 }
-srcFiles.Select(file => {
-     var items = File.ReadAllLines(@$"e:\Ethanol\webuser\\{file}");
-     return CollectJa3Bags(items);
-}).ToList();
 
 #!markdown
 
@@ -100,3 +106,14 @@ ELABORATION:
 Visually, it is very easy to distinguihes as the Tor flows are quite uniform. Only SNI is present nor other names, ports are {443, 9001, 5353}, there is not DNS translation leading to IP address of the Tor node.
 
 No other group of flows has the same characteristic.
+
+#!csharp
+
+// analyze TSL data only:
+var ja3groups = tls.GroupBy(t=>t.JA3Fingerprint ?? "JA3.None");
+
+foreach(var g in ja3groups)
+{
+    g.Key.Display();
+    g.GroupBy(t=>t.ApplicationProcessName).Select(g=> new {Process = g.Key, Flows = g.ToArray()} ).Display();
+}

@@ -172,6 +172,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
 
             internal static ushort[] ToUShortArray(string hexString)
             {
+                if (hexString == null) return null;
                 ushort[] ushortArray = new ushort[hexString.Length / 4];
 
                 for (int i = 0; i < hexString.Length; i += 4)

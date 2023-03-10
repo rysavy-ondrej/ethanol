@@ -24,7 +24,8 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         public IEnumerable<FlowTag> Get(string host, DateTime start, DateTime end)
         {
-            return _queryable.Where(x => x.LocalAddress.ToString() == host && x.StartTime <= start && x.EndTime >= end);
+            var result = _queryable.Where(x => x.LocalAddress.ToString() == host && start <= x.EndTime && end >= x.StartTime).ToList();
+            return result;
         }
 
         public Task<IEnumerable<FlowTag>> GetAsync(string host, DateTime start, DateTime end)

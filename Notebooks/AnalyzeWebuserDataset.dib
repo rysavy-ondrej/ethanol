@@ -1,6 +1,6 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":[]},{"name":"sql","languageName":"SQL","aliases":[]},{"name":"vscode","languageName":null,"aliases":["frontend"]}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":["c#","C#"],"languageName":"C#"},{"name":"sql","languageName":"SQL","aliases":[]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"mermaid","languageName":"Mermaid","aliases":[]}]}}
 
 #!csharp
 
@@ -95,21 +95,6 @@ var host = items
 
 var tls = host.SelectMany(x=>x.Payload.Secured);
 
-// print raw data...
-foreach(var ctx in host)
-{
-     // in the context we analyze secured flows only:
-     var prc = ctx.Payload.Secured
-          .GroupBy(f=>f.ApplicationProcessName)
-          .ToList();
-
-     foreach (var p in prc)
-     {
-          p.Key.Display();
-          p.Display();
-     }
-}
-
 #!markdown
 
 ## Detect Tor group of flows
@@ -125,17 +110,6 @@ No other group of flows has the same characteristic.
 
 #!csharp
 
-// analyze TSL data only:
-var ja3groups = tls.GroupBy(t=>t.JA3Fingerprint ?? "JA3.None");
-
-foreach(var g in ja3groups)
-{
-    g.Key.Display();
-    g.GroupBy(t=>t.ApplicationProcessName).Select(g=> new {Process = g.Key, Flows = g.ToArray()} ).Display();
-}
-
-#!csharp
-
 var tlsbrief = tls.Select(t=> new {App = t.ApplicationProcessName, Jas3 = t.JA3Fingerprint, Host = t.RemoteHostName, Sni = t.ServerNameIndication, Subject =t.SubjectName}).ToList();
 tlsbrief.WriteToCsv("app_named.csv");
 
@@ -144,5 +118,16 @@ tlsbrief.Where(x=>x.Sni?.Contains("tiktok")??false).WriteToCsv("tiktok.csv");
 tlsbrief.Where(x=>x.Sni?.Contains("insta")??false).WriteToCsv("instagram.csv");
 
 tlsbrief.Where(x=>x.App == "chrome").WriteToCsv("chrome.csv");
+
+tlsbrief.Where(x=>x.App == "msedge").WriteToCsv("msedge.csv");
+
+tlsbrief.Where(x=>x.App == "firefox").WriteToCsv("firefox.csv");
+
+tlsbrief.Where(x=>x.App == "tor").WriteToCsv("tor.csv");
+
+tlsbrief.Where(x=>x.App == "Spotify").WriteToCsv("spotify.csv");
+
+
+tlsbrief.Where(x=>x.App == "Zoom").WriteToCsv("zoom.csv");
 
 // Can we link different JA3 groups by host/sni ??

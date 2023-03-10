@@ -10,30 +10,49 @@ using System.Reactive.Subjects;
 
 namespace Ethanol.ContextBuilder.Simplifier
 {
-
+    /// <summary>
+    /// Transforms a rich IP host context into a simplified IP host context.
+    /// </summary>
     public class IpHostContextSimplifier : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpSimpleHostContext>>, IPipelineNode
     {
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<ObservableEvent<IpSimpleHostContext>> _subject;
 
+        /// <summary>
+        /// Gets the type of pipeline node represented by this instance, which is always Transformer.
+        /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
+        /// <summary>
+        /// Creates a new instance of the IpHostContextSimplifier class.
+        /// </summary>
         public IpHostContextSimplifier()
         {
             _subject = new Subject<ObservableEvent<IpSimpleHostContext>>();
         }
 
+        /// <summary>
+        /// Notifies the observer that the provider has finished sending push-based notifications.
+        /// </summary>
         public void OnCompleted()
         {
             _subject.OnCompleted();
         }
 
+        /// <summary>
+        /// Notifies the observer that the provider has experienced an error condition.
+        /// </summary>
+        /// <param name="error">The exception that describes the error condition.</param>
         public void OnError(Exception error)
         {
             _subject.OnError(error);
         }
 
+        /// <summary>
+        /// Performs transformation on the new input in the form of an observable event containing a rich IP host context.
+        /// </summary>
+        /// <param name="value">The input observable event containing a rich IP host context.</param>
         public void OnNext(ObservableEvent<IpRichHostContext> value)
         {
             var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
@@ -43,7 +62,6 @@ namespace Ethanol.ContextBuilder.Simplifier
             var resolvedDictionary = GetDomainDictionary(domains);
 
             var flowTagDictionary = GetFlowTagDictionary(value.Payload.FlowTags); 
-
 
             string ResolveDomain(IPAddress x)
             {
@@ -93,10 +111,18 @@ namespace Ethanol.ContextBuilder.Simplifier
             return dicitonary;
         }
 
+        /// <summary>
+        /// Returns an enumerable collection of initiated IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
+        /// </summary>
+        /// <param name="flows">The collection of IP flows to use as a source for the initiated connections.</param>
+        /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
+        /// <returns>An enumerable collection of initiated IP connections.</returns>
         private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain)
-        { 
+        {
+            // Perform processing on the input flows
             var con =  flows.Select(f =>
                         new IpConnectionInfo(f.DestinationAddress, resolveDomain(f.DestinationAddress), f.DestinationPort, f.ApplicationTag, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+            // Return the resulting collection of initiated connections
             return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
@@ -106,6 +132,12 @@ namespace Ethanol.ContextBuilder.Simplifier
                         }
                     );
         }
+        /// <summary>
+        /// Returns an enumerable collection of accepted IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
+        /// </summary>
+        /// <param name="flows">The collection of IP flows to use as a source for the accepted connections.</param>
+        /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
+        /// <returns>An enumerable collection of accepted IP connections.</returns>
         private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain)
         {
             var con = flows.Select(f =>
@@ -120,6 +152,11 @@ namespace Ethanol.ContextBuilder.Simplifier
                     );
         }
 
+        /// <summary>
+        /// Creates a dictionary of resolved domain information, mapping each IP address to its corresponding query string.
+        /// </summary>
+        /// <param name="domains">An array of resolved domain information.</param>
+        /// <returns>A Dictionary that maps each IP address to its corresponding query string.</returns>
         private Dictionary<string, string> GetDomainDictionary(ResolvedDomainInfo[] domains)
         {
             var dict = new Dictionary<string, string>();
@@ -130,15 +167,16 @@ namespace Ethanol.ContextBuilder.Simplifier
             }
             return dict;
         }
-
+        /// <summary>
+        /// Subscribes an observer to the output observable sequence of simplified IP host contexts.
+        /// </summary>
+        /// <param name="observer">The observer to subscribe.</param>
+        /// <returns>An IDisposable object that can be used to unsubscribe the observer.</returns>
         public IDisposable Subscribe(IObserver<ObservableEvent<IpSimpleHostContext>> observer)
         {
             return _subject.Subscribe(observer);    
         }
     }
-
-
-    public record IpSimpleHostContext(IPAddress HostAddress, string OperatingSystem, IpConnectionInfo[] InitiatedConnections, IpConnectionInfo[]AcceptedConnections, ResolvedDomainInfo[] ResolvedDomains, WebRequestInfo[] WebUrls, TlsConnectionInfo[] Secured);
 
     public record IpConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Service, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
 

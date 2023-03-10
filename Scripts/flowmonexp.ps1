@@ -1,6 +1,7 @@
 # Loop through all input files
 ssh flowmon@flowmon.rysavy.fit.vutbr.cz "mkdir /home/flowmon/flowexp" > $null
-$password = Read-Host "Sudo password"
+$securePassword = Read-Host "Enter password for flowmon user" -AsSecureString
+$password = ConvertFrom-SecureString $securePassword
 foreach ($filePath in $args) {
     # Check if file exists
     if (Test-Path $filePath) {

@@ -1,0 +1,59 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":["c#","C#"],"languageName":"C#"},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":".NET","aliases":[]},{"name":"fsharp","aliases":["f#","F#"],"languageName":"F#"},{"name":"html","aliases":[],"languageName":"HTML"},{"name":"javascript","aliases":["js"],"languageName":"JavaScript"},{"name":"kql","aliases":[],"languageName":"KQL"},{"name":"mermaid","aliases":[],"languageName":"Mermaid"},{"name":"pwsh","aliases":["powershell"],"languageName":"PowerShell"},{"name":"sql","aliases":[],"languageName":"SQL"},{"name":"value","aliases":[]},{"name":"webview","aliases":[]}]}}
+
+#!markdown
+
+# Plotly.NET
+
+## Plotly in F#
+
+#!csharp
+
+#r "nuget: Plotly.NET"
+open Plotly.NET
+[ (1, 5); (2, 10) ]
+|> Chart.Point
+|> Chart.withTraceInfo (Name = "Hello from F#")
+|> Chart.withYAxisStyle (TitleText = "xAxis [flows]")
+|> Chart.withXAxisStyle (TitleText = "yAxis [seconds]")
+
+#!markdown
+
+## Plotly in C#
+
+#!csharp
+
+#r "nuget: Plotly.NET"
+#r "nuget: Plotly.NET.Interactive"
+using System;
+using Plotly.NET;
+using Plotly.NET.LayoutObjects;
+
+double[] x = new double[] { 1, 2 };
+double[] y = new double[] { 5, 10 };
+
+LinearAxis xAxis = new LinearAxis();
+xAxis.SetValue("title", "xAxis");
+xAxis.SetValue("showgrid", false);
+xAxis.SetValue("showline", true);
+
+LinearAxis yAxis = new LinearAxis();
+yAxis.SetValue("title", "yAxis");
+yAxis.SetValue("showgrid", false);
+yAxis.SetValue("showline", true);
+
+Layout layout = new Layout();
+layout.SetValue("xaxis", xAxis);
+layout.SetValue("yaxis", yAxis);
+layout.SetValue("showlegend", true);
+
+Trace trace = new Trace("scatter");
+trace.SetValue("x", x);
+trace.SetValue("y", y);
+trace.SetValue("mode", "markers");
+trace.SetValue("name", "Hello from C#");
+
+GenericChart
+    .ofTraceObject(true, trace)
+    .WithLayout(layout)

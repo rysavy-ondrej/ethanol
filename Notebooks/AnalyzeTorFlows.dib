@@ -1,0 +1,103 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":[]}]}}
+
+#!csharp
+
+#r "nuget: Microsoft.ML"
+#r "nuget: Microsoft.Data.Analysis"
+#r "nuget: Microsoft.DotNet.Interactive.ExtensionLab,*-*"
+
+#r "nuget: Plotly.NET"
+#r "nuget: Plotly.NET.Interactive"
+
+using Microsoft.Data.Analysis;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+
+using Plotly.NET;
+using Plotly.NET.Interactive;
+
+using System;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Linq;
+
+#!csharp
+
+using System.Net;
+
+public record ObservableEvent<TPayload>(DateTime StartTime,DateTime EndTime,TPayload Payload);
+
+public record IpSimpleHostContext(IPAddress HostAddress, string OperatingSystem, IpConnectionInfo[] InitiatedConnections, IpConnectionInfo[]AcceptedConnections, ResolvedDomainInfo[] ResolvedDomains, WebRequestInfo[] WebUrls, TlsConnectionInfo[] Secured);
+
+public record IpConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Service, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
+
+public record WebRequestInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Method, string Url);
+
+public enum DnsResponseCode { NoError = 0, FormErr = 1, ServFail = 2, NXDomain = 3, NotImp = 4, Refused = 5, YXDomain = 6, YXRRSet = 7,
+        NXRRSet = 8, NotAuth = 9, NotZone = 10, BadVers = 16 }
+
+public record ResolvedDomainInfo(IPAddress DnsServer, string QueryString, string ResponseData, DnsResponseCode ResponseCode);
+
+public record TlsConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProtocol, string ServerNameIndication, string JA3Fingerprint, string IssuerName, string SubjectName, string OrganisationName);
+
+public class IPAddressConverter : System.Text.Json.Serialization.JsonConverter<IPAddress>
+{
+        public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+                string ipAddressString = reader.GetString();
+                return IPAddress.Parse(ipAddressString);
+        }
+
+        public override void Write(Utf8JsonWriter writer, IPAddress value, JsonSerializerOptions options)
+        {
+                writer.WriteStringValue(value.ToString());
+        }
+}
+
+var jsonOptions = new JsonSerializerOptions();
+jsonOptions.Converters.Add(new IPAddressConverter());
+
+#!markdown
+
+# Load source data
+
+The JSON files stored in ..\TestData\tor-context are the source datasets in this analysis. Each file contains lines of JSON objects. 
+
+
+See the tutorial on how to load and inspect data: https://rubikscode.net/2021/09/27/net-interactive-jupyter-notebooks/
+
+#!csharp
+
+var srcFiles = new [] { "browsing_00001_20230209095009.ctx.json","browsing_00002_20230209095510.ctx.json","browsing_00003_20230209100010.ctx.json","browsing_00004_20230209100510.ctx.json","browsing_00005_20230209101010.ctx.json","browsing_00006_20230209101510.ctx.json","browsing_00007_20230209102011.ctx.json","browsing_00008_20230209102511.ctx.json","browsing_00009_20230209103011.ctx.json","browsing_00010_20230209103511.ctx.json" };
+
+int CollectJa3Bags(string[] items)
+{
+     var host = items.Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions))
+          .Where(x=>x.Payload.HostAddress.ToString()=="192.168.111.17")
+          .First().Payload;
+     var secured = host.Secured.Where(f=>!String.IsNullOrWhiteSpace(f.JA3Fingerprint))
+          .GroupBy(f=>f.JA3Fingerprint)
+          .ToList();
+     secured.Display();
+     return secured.Count();
+}
+srcFiles.Select(file => {
+     var items = File.ReadAllLines(@$"..\TestData\tor-context\{file}");
+     return CollectJa3Bags(items);
+}).ToList();
+
+#!markdown
+
+## Detect Tor group of flows
+
+GOAL: Be able to classify the entire bag-of-ja3-flows as Tor/Non-Tor connections.
+
+QUESTION: What methods to use for this?
+
+ELABORATION:
+Visually, it is very easy to distinguihes as the Tor flows are quite uniform. Only SNI is present nor other names, ports are {443, 9001, 5353}, there is not DNS translation leading to IP address of the Tor node.
+
+No other group of flows has the same characteristic.

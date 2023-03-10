@@ -33,7 +33,7 @@ namespace Ethanol.ContextBuilder
         public static EthanolPipeline CreateIpHostContextBuilderPipeline(this ContextBuilderCatalog catalog, PipelineConfiguration configuration, IFlowReader<IpFlow> reader, ContextWriter<object> writer, Action<int> onInputConsumed, Action<int> onOuputProduced)
         {
             var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
-            var enricher = new IpHostContextEnricher(PostgresHostTagProvider.Create(configuration.EnricherConfiguration.Connection.ToPostgresConnectionString(), configuration.EnricherConfiguration.TableName), null);
+            var enricher = new IpHostContextEnricher(configuration.HostTagEnricherConfiguration.GetHostTagProvider(), configuration.FlowTagEnricherConfiguration.GetFlowTagProvider());
             var simplifier = new IpHostContextSimplifier();
 
             reader.Do(x => onInputConsumed(1))

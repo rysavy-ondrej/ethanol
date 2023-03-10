@@ -1,16 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Xml;
-using Npgsql;
-using CsvHelper;
-using Elastic.Clients.Elasticsearch;
-using Microsoft.Extensions.Hosting;
+﻿using Npgsql;
 using System;
-using System.Threading.Tasks;
-using System.Reflection.PortableExecutable;
+using System.Collections.Generic;
 using System.Globalization;
-using System.Collections;
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -91,7 +83,8 @@ namespace Ethanol.ContextBuilder.Enrichers
             var rowList = new List<HostTag>();
             while (await reader.ReadAsync())
             {
-                var row = new HostTag(reader["KeyValue"] as string,
+                var row = new HostTag(start, end,
+                                      reader["KeyValue"] as string,
                                       reader["Source"] as string,
                                       reader["Reliability"] as double? ?? 1.0,
                                       reader["Data"] as string);
@@ -110,7 +103,8 @@ namespace Ethanol.ContextBuilder.Enrichers
             var rowList = new List<HostTag>();
             while (reader.Read())
             {
-                var row = new HostTag(reader["KeyValue"] as string,
+                var row = new HostTag(start, end, 
+                                      reader["KeyValue"] as string,
                                       reader["Source"] as string,
                                       reader["Reliability"] as double? ?? 1.0,
                                       reader["Data"] as string);

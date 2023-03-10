@@ -1,0 +1,104 @@
+{
+  "flows": 
+[
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 51443,
+    "RemoteAddress": "147.229.12.14",
+    "RemotePort": 445,
+    "ProcessName": "System"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 60195,
+    "RemoteAddress": "52.166.127.37",
+    "RemotePort": 9354,
+    "ProcessName": "ServiceHub.SettingsHost"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 61346,
+    "RemoteAddress": "20.189.173.6",
+    "RemotePort": 443,
+    "ProcessName": "PerfWatson2"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 62920,
+    "RemoteAddress": "140.82.121.6",
+    "RemotePort": 443,
+    "ProcessName": "GitHubDesktop"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 64631,
+    "RemoteAddress": "20.90.153.243",
+    "RemotePort": 443,
+    "ProcessName": "svchost"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 62576,
+    "RemoteAddress": "140.82.112.26",
+    "RemotePort": 443,
+    "ProcessName": "msedge"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 3389,
+    "RemoteAddress": "192.168.8.3",
+    "RemotePort": 55749,
+    "ProcessName": "svchost"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 62922,
+    "RemoteAddress": "13.107.6.158",
+    "RemotePort": 443,
+    "ProcessName": "SearchApp"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 62926,
+    "RemoteAddress": "152.199.19.161",
+    "RemotePort": 443,
+    "ProcessName": "ServiceHub.IdentityHost"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 61063,
+    "RemoteAddress": "142.251.36.138",
+    "RemotePort": 443,
+    "ProcessName": "GoogleDriveFS"
+  },
+  {
+    "StartTime": "2023-03-10T09:19:38",
+    "EndTime": "2023-03-10T09:20:19",
+    "LocalAddress": "192.168.111.32",
+    "LocalPort": 62930,
+    "RemoteAddress": "65.9.94.129",
+    "RemotePort": 443,
+    "ProcessName": "msedge"
+  }
+]
+}

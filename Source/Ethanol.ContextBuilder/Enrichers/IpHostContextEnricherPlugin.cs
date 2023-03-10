@@ -3,7 +3,9 @@ using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
+using System.Globalization;
 using YamlDotNet.Serialization;
+using static Ethanol.ContextBuilder.Enrichers.IpHostContextEnricherPlugin.JsonConfiguration;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -26,29 +28,45 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         public Type TargetType => typeof(ObservableEvent<IpRichHostContext>);
 
-        public class Configuration
+        public class DataSourceEnricherConfiguration
         {
-            [YamlMember(Alias = "source", Description = "The data source (postgres).")]
-            public string DataSource { get; set; } = String.Empty;
-            [YamlMember(Alias = "connection", Description = "The connection string for connecting to the data source.")]
-            public DatabaseConnection Connection { get; set; } = DatabaseConnection.Empty;
-            [YamlMember(Alias = "tableName", Description = "The name of the table in the database to get the host tags from.")]
-            public string TableName { get; set; } = String.Empty;
+            [YamlMember(Alias = "postgres", Description = "The Postres data source configuration.")]
+            public PostgresCofiguration Postgres { get; set; }
+
+            [YamlMember(Alias = "jsonfile", Description = "The JSON file data source configuration.")]
+            public JsonConfiguration Json { get; set; }
         }
-        public record DatabaseConnection
+
+        public record JsonConfiguration
+        {
+            [YamlMember(Alias = "filename", Description = "The name of the source JSON file.")]
+            public string Filename { get; set; }
+
+            [YamlMember(Alias = "collection", Description = "The name of the collection to read from the JSON file.")]
+            public string Collection { get; set; }
+        }
+
+        public record PostgresCofiguration
         {
             [YamlMember(Alias = "server", Description = "The server ip address.")]
             public string Server { get; set; }
+            
             [YamlMember(Alias = "port", Description = "The port on which the server listen.")]
             public int Port { get; set; }
+            
             [YamlMember(Alias = "database", Description = "The database to open on the server.")]
             public string Database { get; set; }
+            
             [YamlMember(Alias = "user", Description = "The user name used for login.")]
             public string User { get; set; }
+            
             [YamlMember(Alias = "password", Description = "The password used for login.")]
             public string Password { get; set; }
 
-            public DatabaseConnection(string server, int port, string database, string user, string password)
+            [YamlMember(Alias = "tableName", Description = "The name of the table in the database to get the data from.")]
+            public string TableName { get; set; } = String.Empty;
+
+            public PostgresCofiguration(string server, int port, string database, string user, string password)
             {
                 Server = server;
                 Port = port;
@@ -57,11 +75,11 @@ namespace Ethanol.ContextBuilder.Enrichers
                 Password = password;
             }
 
-            public DatabaseConnection()
+            public PostgresCofiguration()
             {
             }
 
-            public static DatabaseConnection Empty => new DatabaseConnection(String.Empty, 0, String.Empty, String.Empty, String.Empty);
+            public static PostgresCofiguration Empty => new PostgresCofiguration(String.Empty, 0, String.Empty, String.Empty, String.Empty);
 
             /// <summary>
             /// Gets the connection informaiton as a Postres connection string, e.g.:
@@ -75,19 +93,13 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
         [PluginCreate]
-        internal static IObservableTransformer Create(Configuration configuration)
+        internal static IObservableTransformer Create(DataSourceEnricherConfiguration hostTagConfiguraiton, DataSourceEnricherConfiguration flowTagConfiguraiton)
         {
-            if (configuration.DataSource == null) throw new ArgumentNullException($"{nameof(configuration.DataSource)} cannot be null!");
-            // depending on the provided configuration we need to instantiate the enricher:
-            switch (configuration.DataSource.ToLowerInvariant())
-            {
-                case "postgres":
-                    var postgres = PostgresHostTagProvider.Create(configuration.Connection.ToPostgresConnectionString(), configuration.TableName);
-                    var enricher = new IpHostContextEnricher(postgres, null);
-                    return new IpHostContextEnricherPlugin(enricher);
-                default:
-                    throw new NotImplementedException($"Data source '{configuration.DataSource}' is not supported (yet).");
-            }
+            IHostDataProvider<HostTag> hostTags = hostTagConfiguraiton.GetHostTagProvider();
+            IHostDataProvider<FlowTag> flowTags = flowTagConfiguraiton.GetFlowTagProvider();
+          
+            var enricher = new IpHostContextEnricher(hostTags, flowTags);
+            return new IpHostContextEnricherPlugin(enricher);
         }
 
         public void OnCompleted()

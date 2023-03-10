@@ -135,13 +135,21 @@ namespace Ethanol.ContextBuilder
 
     public record PipelineConfiguration
     {
-        static YamlDotNet.Serialization.Deserializer deserializer = new YamlDotNet.Serialization.Deserializer();
+        static Deserializer deserializer = new YamlDotNet.Serialization.Deserializer();
         [YamlMember(Alias = "window-size", Description = "The time interval of the analysis window.")]
         public TimeSpan WindowSize { get; set; }
+        
+        
         [YamlMember(Alias = "window-hop", Description = "The hop interval of the window. ")]
         public TimeSpan WindowHop { get; set; }
-        [YamlMember(Alias = "enricher", Description = "The enricher configuration.")]
-        public IpHostContextEnricherPlugin.Configuration EnricherConfiguration { get; set; }
+
+
+        [YamlMember(Alias = "host-tag-enricher", Description = "The enricher configuration.")]
+        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration HostTagEnricherConfiguration { get; set; }
+
+
+        [YamlMember(Alias = "flow-tag-enricher", Description = "The enricher configuration.")]
+        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration FlowTagEnricherConfiguration { get; set; }
 
         public static PipelineConfiguration LoadFrom(string text)
         {

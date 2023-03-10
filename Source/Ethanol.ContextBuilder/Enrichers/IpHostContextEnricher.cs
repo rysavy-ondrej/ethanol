@@ -5,6 +5,7 @@ using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using System;
 using System.Linq;
+using System.Net;
 using System.Reactive.Subjects;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -15,19 +16,19 @@ namespace Ethanol.ContextBuilder.Enrichers
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpRichHostContext>>, IPipelineNode
     { 
         private readonly Subject<ObservableEvent<IpRichHostContext>> _subject;
-        private readonly IHostDataProvider<HostTag> _environmentQuerable;
-        private readonly IHostDataProvider<HostTag> _stateQueryable;
+        private readonly IHostDataProvider<HostTag> _hostTagQueryable;
+        private readonly IHostDataProvider<FlowTag> _flowTagQueryable;
 
         /// <summary>
-        /// Creates an instance of the context enricher where the additional data sources are <paramref name="environmentQuerable"/> and <paramref name="stateQueryable"/>.
+        /// Creates an instance of the context enricher where the additional data sources are <paramref name="hostTagQueryable"/> and <paramref name="flowTagQueryable"/>.
         /// </summary>
-        /// <param name="environmentQuerable">The queryable for the enviroment.</param>
-        /// <param name="stateQueryable">The queryable for the state.</param>
-        public IpHostContextEnricher(IHostDataProvider<HostTag> environmentQuerable, IHostDataProvider<HostTag> stateQueryable)
+        /// <param name="hostTagQueryable">The queryable for the enviroment.</param>
+        /// <param name="flowTagQueryable">The queryable for the state.</param>
+        public IpHostContextEnricher(IHostDataProvider<HostTag> hostTagQueryable, IHostDataProvider<FlowTag> flowTagQueryable)
         {
             _subject = new Subject<ObservableEvent<IpRichHostContext>>();
-            _environmentQuerable = environmentQuerable;
-            _stateQueryable = stateQueryable;
+            _hostTagQueryable = hostTagQueryable;
+            _flowTagQueryable = flowTagQueryable;
         }
 
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
@@ -49,14 +50,14 @@ namespace Ethanol.ContextBuilder.Enrichers
             var start = value.StartTime;
             var end = value.EndTime;
 
-            // get environment tags:
-            var envTags = _environmentQuerable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>();
-            // get tags from the state:
-            var stateTags = _stateQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>();
-            // combine the tags in a single array:
-            var tagArray = envTags.Concat(stateTags).ToArray();
+            var envTags = (_hostTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>()).ToArray();
+            
+            
+            var flowTags = (_flowTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<FlowTag>()).ToArray();
+            // update tag information in flows:
 
-            _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext(value.Payload.HostAddress, value.Payload.Flows, tagArray), value.StartTime, value.EndTime));
+            
+            _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext(value.Payload.HostAddress, value.Payload.Flows, envTags, flowTags), value.StartTime, value.EndTime));
         }
         /// <inheritdoc/>
         public IDisposable Subscribe(IObserver<ObservableEvent<IpRichHostContext>> observer)

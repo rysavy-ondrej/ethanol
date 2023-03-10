@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
 
+
 namespace Ethanol.ContextBuilder.Simplifier
 {
 
@@ -41,7 +42,7 @@ namespace Ethanol.ContextBuilder.Simplifier
             
             var resolvedDictionary = GetDomainDictionary(domains);
 
-            var flowTagDictionary = value.Payload.FlowTags.ToDictionary(x => $"{x.LocalAddress}:{x.LocalPort}-{x.RemoteAddress}:{x.RemotePort}");
+            var flowTagDictionary = GetFlowTagDictionary(value.Payload.FlowTags); 
 
 
             string ResolveDomain(IPAddress x)
@@ -70,6 +71,26 @@ namespace Ethanol.ContextBuilder.Simplifier
             var simpleContext = new IpSimpleHostContext(value.Payload.HostAddress, osInfo, initiatedConnections, acceptedConnections, domains, webUrls, secured);
             
             _subject.OnNext(new ObservableEvent<IpSimpleHostContext>(simpleContext, value.StartTime, value.EndTime));
+        }
+
+        /// <summary>
+        /// Returns a dictionary that maps each unique combination of LocalAddress, LocalPort, RemoteAddress, and RemotePort to its corresponding FlowTag object.
+        /// <para/>
+        /// The method iterates over each FlowTag in the input array and generates a key by concatenating the LocalAddress, LocalPort, RemoteAddress, and RemotePort fields.
+        /// The key is then used to add the FlowTag object to a dictionary.If a key already exists in the dictionary, the corresponding FlowTag object is overwritten.
+        /// </summary>
+        /// <param name="flowTags">An array of FlowTag objects.</param>
+        /// <returns>A Dictionary  that maps each unique combination of LocalAddress, LocalPort, RemoteAddress, and RemotePort to its corresponding FlowTag object.</returns>
+        private Dictionary<string,FlowTag> GetFlowTagDictionary(FlowTag[] flowTags)
+        {
+            var dicitonary = new Dictionary<string, FlowTag>(); 
+
+            foreach (var flowTag in flowTags)
+            {
+                var key = $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}";
+                dicitonary[key] = flowTag;
+            }
+            return dicitonary;
         }
 
         private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain)

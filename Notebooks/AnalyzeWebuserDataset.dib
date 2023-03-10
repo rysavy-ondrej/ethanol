@@ -87,7 +87,7 @@ See the tutorial on how to load and inspect data: https://rubikscode.net/2021/09
 
 #!csharp
 
-var items = File.ReadAllLines(@$"e:\Ethanol\webuser\webuser.ctx.json");
+var items = File.ReadAllLines(@$"e:\Ethanol\webuser2\webuser.ctx.json");
 // get context only for the selected host:
 var host = items
      .Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions))
@@ -140,5 +140,9 @@ var tlsbrief = tls.Select(t=> new {App = t.ApplicationProcessName, Jas3 = t.JA3F
 tlsbrief.WriteToCsv("app_named.csv");
 
 tlsbrief.Where(x=>x.Sni?.Contains("tiktok")??false).WriteToCsv("tiktok.csv");
+
+tlsbrief.Where(x=>x.Sni?.Contains("insta")??false).WriteToCsv("instagram.csv");
+
+tlsbrief.Where(x=>x.App == "chrome").WriteToCsv("chrome.csv");
 
 // Can we link different JA3 groups by host/sni ??

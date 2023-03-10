@@ -11,6 +11,8 @@
 #r "nuget: Plotly.NET"
 #r "nuget: Plotly.NET.Interactive"
 
+#r "nuget: CsvHelper"
+
 using Microsoft.Data.Analysis;
 using Microsoft.ML;
 using Microsoft.ML.Data;
@@ -18,11 +20,25 @@ using Microsoft.ML.Data;
 using Plotly.NET;
 using Plotly.NET.Interactive;
 
+using CsvHelper;
+
 using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Linq;
+
+#!csharp
+
+using System.Globalization;
+static void WriteToCsv<T>(this IEnumerable<T> records, string filename)
+{
+    using (var writer = new StreamWriter(filename)) {
+        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+            csv.WriteRecords(records);
+        }
+    }
+}
 
 #!csharp
 
@@ -117,3 +133,12 @@ foreach(var g in ja3groups)
     g.Key.Display();
     g.GroupBy(t=>t.ApplicationProcessName).Select(g=> new {Process = g.Key, Flows = g.ToArray()} ).Display();
 }
+
+#!csharp
+
+var tlsbrief = tls.Select(t=> new {App = t.ApplicationProcessName, Jas3 = t.JA3Fingerprint, Host = t.RemoteHostName, Sni = t.ServerNameIndication, Subject =t.SubjectName}).ToList();
+tlsbrief.WriteToCsv("app_named.csv");
+
+tlsbrief.Where(x=>x.Sni?.Contains("tiktok")??false).WriteToCsv("tiktok.csv");
+
+// Can we link different JA3 groups by host/sni ??

@@ -41,7 +41,7 @@ namespace Ethanol.ContextBuilder.Simplifier
             
             var resolvedDictionary = GetDomainDictionary(domains);
 
-            var flowTagDictionary = value.Payload.FlowTags.ToDictionary(x => $"{x.RemoteAddress}:{x.RemotePort}");
+            var flowTagDictionary = value.Payload.FlowTags.ToDictionary(x => $"{x.LocalAddress}:{x.LocalPort}-{x.RemoteAddress}:{x.RemotePort}");
 
 
             string ResolveDomain(IPAddress x)
@@ -50,7 +50,7 @@ namespace Ethanol.ContextBuilder.Simplifier
             }
             string ResolveProcessName(FlowKey flowKey)
             {
-                return flowTagDictionary.TryGetValue($"{flowKey.DestinationAddress}:{flowKey.DestinationPort}", out var flowTag) ? flowTag.ProcessName : null;
+                return flowTagDictionary.TryGetValue($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", out var flowTag) ? flowTag.ProcessName : null;
             }
 
             var osInfo = value.Payload.HostTags.Where(x => x.Name == "os_by_tcpip").FirstOrDefault()?.Value;

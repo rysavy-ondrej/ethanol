@@ -13,7 +13,11 @@ The duration of the data capture in minutes. Default value is 5 minutes.
 The format of the ouput. Possible values are json, ndjson, csv.
 .EXAMPLE
 .\Capture-TcpConnections.ps1 -OutPath C:\Reports -ProbeInterval 00:00:10 -Duration 00:30:00 -OutFormat ndjson
+
 Captures information on created TCP connections and exports the data to a CSV file every 10 seconds for 30 minutes, saving the file to the C:\Reports folder.
+
+    Author: Ondrej Rysavy
+    Date: 2023-03-19
 #>
 
 param (
@@ -43,16 +47,18 @@ while($true)
     # Collect the connection data for the specified duration
     for ($i = 0; $i -lt $iterations; $i++) {
         $connections = Get-NetTCPConnection -State Established | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,@{n='ProcessName';e={Get-Process -Id $_.OwningProcess | Select-Object -ExpandProperty ProcessName}}
-        
+        $currenttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
         foreach ($connection in $connections) {
-            if ($connection.RemoteAddress -ne '127.0.0.1')
+            $connectionKey = "$($connection.LocalAddress)_$($connection.LocalPort)_$($connection.RemoteAddress)_$($connection.RemotePort)"
+            if (($connection.RemoteAddress -ne '127.0.0.1') -and (-not $connectionData.ContainsKey($connectionKey)))
             {
-                $connectionData[$connection.RemoteAddress + ":" + $connection.RemotePort] = @{
+                $connectionData[$connectionKey] = @{
                     'LocalAddress' = $connection.LocalAddress
                     'LocalPort' = $connection.LocalPort
                     'RemoteAddress' = $connection.RemoteAddress
                     'RemotePort' = $connection.RemotePort
                     'ProcessName' = $connection.ProcessName
+                    'FirstSeen' = $currenttime
                 }
             }
         }
@@ -66,17 +72,17 @@ while($true)
 
     if ($OutFormat -eq "json")
     {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Json 
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Json 
         $outfilename = $OutPath + "\tcpcapd.$filetime.json"  
     }
     if ($OutFormat -eq "ndjson")
     {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ForEach-Object { $_ | ConvertTo-Json -Depth 1 -Compress }
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ForEach-Object { $_ | ConvertTo-Json -Depth 1 -Compress }
         $outfilename = $OutPath + "\tcpcapd.$filetime.ndjson"  
     }
 
     if ($OutFormat -eq "csv") {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Csv -NoTypeInformation 
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Csv -NoTypeInformation 
         $outfilename = $OutPath + "\tcpcapd.$filetime.csv"   
 
     }

@@ -1,0 +1,36 @@
+body {
+     background-color: #fff;
+     color: #2c2c2c;
+     font-family: Roboto;
+     font-size: 18px;
+     font-weight: 400;
+     line-height: 1.7em;
+     max-width: 750px;
+    }  
+h1 {
+     font-size: 38px;
+     font-weight: 800;
+    }    
+h2 {
+     font-size: 34px;
+     font-weight: 700;
+    }
+h3 {
+     font-size: 24px;
+     font-weight: 700;
+    }
+a {
+     border-bottom: 2px solid #bf0d0b;
+     color: #bf0d0b;
+     font-weight: 700;
+    }
+a:hover {
+     color: #fff;
+     background: #bf0d0b;
+    }    
+strong {
+     font-weight: bold;
+    }
+pre {
+        font-family: 'Roboto Mono Light';    
+    }

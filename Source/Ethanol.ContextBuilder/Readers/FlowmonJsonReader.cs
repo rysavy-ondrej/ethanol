@@ -56,24 +56,25 @@ namespace Ethanol.ContextBuilder.Readers
 
 
         /// <summary>
-        /// Reads input record from Flowmon's specific JSON.
+        /// Reads input record from Flowmon's specific JSON or NDJSON.
         /// </summary>
-        private string ReadJsonRecord(TextReader inputStream)
+        private string ReadJsonString(TextReader inputStream)
         {
             var buffer = new StringBuilder();
             while (true)
             {
                 var line = inputStream.ReadLine();
-                buffer.AppendLine(line);
-                if (line == null)
-                {
-                    break;
-                }
 
-                if (line.Trim() == "}")
-                {
-                    break;
-                }
+                // End of file?
+                if (line == null) break;
+
+                buffer.AppendLine(line);
+
+                // Do we have NDJSON?
+                if (line.StartsWith("{") && line.EndsWith("}")) break;
+
+                // end of multiline JSON object?
+                if (line.Trim() == "}") break;
             }
             var record = buffer.ToString().Trim();
             if (string.IsNullOrWhiteSpace(record))
@@ -96,7 +97,7 @@ namespace Ethanol.ContextBuilder.Readers
         protected override bool TryGetNextRecord(CancellationToken ct, out IpFlow ipFlow)
         {
             ipFlow = null;
-            var line = ReadJsonRecord(_reader);
+            var line = ReadJsonString(_reader);
             if (line == null) return false;
             if (TryDeserialize(line, out var _currentEntry))
             {
@@ -119,9 +120,15 @@ namespace Ethanol.ContextBuilder.Readers
             }
             catch (Exception e)
             {
+                Console.Error.WriteLine($"Cannot deserialize entry: {e.Message}");
                 entry = default;
                 return false;
             }
+        }
+
+        public override string ToString()
+        {
+            return $"{nameof(FlowexpJsonReader)}(Reader={_reader})"; 
         }
     }
 }

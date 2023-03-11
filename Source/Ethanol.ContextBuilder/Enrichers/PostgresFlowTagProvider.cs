@@ -14,7 +14,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <remarks>
     /// It is expected that the table has the following structure:
     /// <code>
-    /// CREATE TABLE SomeTableName (
+    /// CREATE TABLE flowtags (
     ///   LocalAddress VARCHAR(32),
     ///   LocalPort INTEGER,
     ///   RemoteAddress VARCHAR(32),

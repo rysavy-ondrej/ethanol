@@ -29,6 +29,11 @@
       "commandName": "Project",
       "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}",
       "workingDirectory": "E:\\Ethanol\\webuser2"
+    },
+    "fluent": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flow.ndjson} -c config.yaml -w JsonWriter:{file=context.ndjson}",
+      "workingDirectory": "..\\..\\TestData\\fluent"
     }
   }
 }

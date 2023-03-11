@@ -65,6 +65,11 @@ namespace Ethanol.ContextBuilder.Writers
         {
             _writer.WriteLine(JsonSerializer.Serialize(value, _jsonOptions));
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(JsonDataWriter)} (Writer={_writer})";
+        }
     }
     public class IPAddressConverter : JsonConverter<IPAddress>
     {

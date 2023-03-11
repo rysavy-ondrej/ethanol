@@ -77,7 +77,7 @@ namespace Ethanol.ContextBuilder
                 while (!ct.IsCancellationRequested)
                 {
                     Console.Error.WriteLine($"[{sw.Elapsed}] in={inputCount}, out={outputCount}             \r");
-                    await Task.Delay(1000);
+                    await Task.Delay(10000);
                 }
             }
 

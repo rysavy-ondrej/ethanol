@@ -2,27 +2,38 @@
 .SYNOPSIS
 Captures information on created TCP connections.
 .DESCRIPTION
-This script captures information on created TCP connections at a specified interval and duration and exports the data to a CSV file.
+This script captures information on created TCP connections at a specified interval and duration and exports the data to a JSON/CSV file.
 .PARAMETER OutPath
-The folder path where the CSV file will be saved.
+The folder path where the output file will be saved.
+.PARAMETER SendTo
+The connection string to be used for sending data to the TCP server.
 .PARAMETER ProbeInterval
 The interval in seconds between each data capture. Default value is 5 seconds.
 .PARAMETER Duration
 The duration of the data capture in minutes. Default value is 5 minutes.
 .PARAMETER OutFormat
 The format of the ouput. Possible values are json, ndjson, csv.
+
 .EXAMPLE
 .\Capture-TcpConnections.ps1 -OutPath C:\Reports -ProbeInterval 00:00:10 -Duration 00:30:00 -OutFormat ndjson
 
-Captures information on created TCP connections and exports the data to a CSV file every 10 seconds for 30 minutes, saving the file to the C:\Reports folder.
+Captures information on created TCP connections and exports the data to a NDJSON file every 10 seconds for 30 minutes, saving the file to the C:\Reports folder.
+
+.EXAMPLE
+.\Capture-TcpConnections.ps1 -SendTo 192.168.111.21:5701 -ProbeInterval 00:00:10 -Duration 00:30:00 -OutFormat ndjson
+
+Captures information on created TCP connections and exports the data in NJSON format to a TCP server running at 192.168.111.21:5701 every 30 minutes.
 
     Author: Ondrej Rysavy
     Date: 2023-03-19
 #>
 
 param (
-    [Parameter(Mandatory=$true, HelpMessage="Enter the folder path where the CSV file will be saved. If stdout is used it will be outputed to the standard output instead.")]
+    [Parameter(Mandatory=$false, HelpMessage="The folder path where the JSON/CSV file will be saved.")]
     [string]$OutPath,
+    
+    [Parameter(Mandatory=$false, HelpMessage="Specifies host name or address and port for TCP connection that will be used to send the data to.")]
+    [string]$SendTo,
 
     [Parameter(Mandatory=$false, HelpMessage="Enter the interval in seconds between each data capture. Default value is 5 seconds.")]
     [timespan]$ProbeInterval = (New-TimeSpan -Seconds 5),
@@ -39,7 +50,7 @@ param (
 $iterations = ($Duration.TotalSeconds / $ProbeInterval.TotalSeconds)
 while($true)
 {
-    $starttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
+    #$starttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
     $filetime = Get-Date -Format 'yyyyMMddHHmmss'
     # Initialize an empty array to store the connection information
     $connectionData = @{}
@@ -73,28 +84,42 @@ while($true)
     if ($OutFormat -eq "json")
     {
         $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Json 
-        $outfilename = $OutPath + "\tcpcapd.$filetime.json"  
+        $outfilename = "tcpcapd.$filetime.json"  
     }
     if ($OutFormat -eq "ndjson")
     {
         $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ForEach-Object { $_ | ConvertTo-Json -Depth 1 -Compress }
-        $outfilename = $OutPath + "\tcpcapd.$filetime.ndjson"  
+        $outfilename = "tcpcapd.$filetime.ndjson"  
     }
 
     if ($OutFormat -eq "csv") {
         $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Csv -NoTypeInformation 
-        $outfilename = $OutPath + "\tcpcapd.$filetime.csv"   
+        $outfilename = "tcpcapd.$filetime.csv"   
 
     }
 
-    if ($OutPath -eq "stdout")
+    <# SEND OUTPUT... #>
+    if ($null -ne $SendTo)
     {
-        $outputData | Write-Output
+        $srv, $port = $SendTo.Split(":")          
+        $data = [string]$outputData
+        Write-Progress -Activity "Processing data" -Status "Exporting flows to TCP server=$srv $port."
+        $client = New-Object System.Net.Sockets.TcpClient($srv, $port)
+        $stream = $client.GetStream()
+        $data = [System.Text.Encoding]::ASCII.GetBytes($data)
+        $stream.Write($data, 0, $data.Length)
+        $client.Close()
+    } 
+    elseif($null -ne $OutPath)
+    { <# send object to the stdout...#>
+        $filepath = Join-Path $OutPath $outfilename
+        Write-Progress -Activity "Processing data" -Status "Exporting flows to $filepath."
+        $outputData | Out-File -FilePath $filepath  
     }
-    else {
-        $outputData | Out-File -FilePath $outfilename      
+    else <# send object to the stdout...#> 
+    {
+        $outputData | Write-Output    
     }
-    Write-Progress -Activity "Processing data" -Status "Exporting flows to $outfilename."
 }
 
 

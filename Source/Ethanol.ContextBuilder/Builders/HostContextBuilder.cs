@@ -21,6 +21,7 @@ namespace Ethanol.ContextBuilder.Builders
     [Plugin(PluginType.Builder, "HostContext", "Builds the context for IP hosts identified in the source IPFIX stream.")]
     public class HostContextBuilder : ContextBuilder<IpFlow, KeyValuePair<IPAddress, NetworkActivity>, ContextObject<IPAddress, HostContext>>
     {
+        static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public class Configuration
         {
             [YamlMember(Alias = "window", Description = "The time span of window.")]
@@ -82,7 +83,7 @@ namespace Ethanol.ContextBuilder.Builders
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e);
+                logger.Error(e);
                 throw;
             }
         }
@@ -118,7 +119,7 @@ namespace Ethanol.ContextBuilder.Builders
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e);
+                logger.Error(e);
                 throw;
             }
         }

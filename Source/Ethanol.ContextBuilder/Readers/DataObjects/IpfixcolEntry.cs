@@ -13,6 +13,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
     /// </summary>
     public class IpfixcolEntry
     {
+        static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public static bool TryDeserialize(string input, out IpfixcolEntry entry)
         {
             try
@@ -20,8 +21,9 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);
                 return true;
             }
-            catch (Exception)
+            catch (Exception exception)
             {
+                logger.Warn($"Cannot deserialize entry: {exception.Message}");
                 entry = default;
                 return false;
             }

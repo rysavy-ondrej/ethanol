@@ -3,6 +3,7 @@ using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.Streaming;
 using Microsoft.StreamProcessing;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace Ethanol.ContextBuilder.Builders
     [Plugin(PluginType.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
     public class FlowContextBuilder : ContextBuilder<IpFlow, KeyValuePair<FlowKey, TlsContext>, FlowWithContext>
     {
-
+        NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         public FlowContextBuilder(TimeSpan windowSize, TimeSpan windowHop) : base(new IpfixObservableStream(windowSize, windowHop))
         {
         }
@@ -121,10 +122,11 @@ namespace Ethanol.ContextBuilder.Builders
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e);
+                logger.Error(e);
                 throw;
             }
         }
+       
 
         private static TlsContext AggregateContext(
             TlsFlowRecord[] arg1,

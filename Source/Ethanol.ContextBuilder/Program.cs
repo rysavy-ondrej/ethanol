@@ -3,6 +3,10 @@ using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
+using NLog;
+using NLog.Targets;
+using NLog.Config;
+using NLog.Layouts;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,12 +29,42 @@ namespace Ethanol.ContextBuilder
         {
             try
             {
+                AddLogging();
                 ConsoleApp.Run<ProgramCommands>(args);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(ex.Message);
+                var logger = NLog.LogManager.GetCurrentClassLogger();
+                logger.Fatal(ex, $"ERROR:{ex.Message}");
             }           
+        }
+
+        static void AddLogging()
+        {
+            var config = new LoggingConfiguration();
+
+            // CONSOLE LOGGING:
+            var consoleTarget = new ColoredConsoleTarget("console")
+            {
+                UseDefaultRowHighlightingRules = true,
+                
+                Layout = "${longdate}|${level}|${message}"
+            };
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);
+
+
+            var fileTarget = new FileTarget("file")
+            {
+                FileName = "Ethanol.ContextBuilder.log"
+            };
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, fileTarget);
+
+
+            NLog.LogManager.Configuration = config;
+
+
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+            logger.Info("Logging has been setup.");
         }
     }
 
@@ -61,44 +95,41 @@ namespace Ethanol.ContextBuilder
         )
         {
             var environment = new EthanolEnvironment();
-            var sw = new Stopwatch();
-            sw.Start();
-
             var readerRecipe = PluginCreateRecipe.Parse(inputReader) ?? throw new CommandLineArgumentException(nameof(inputReader), "Invalid recipe specified.");
             var writerRecipe = PluginCreateRecipe.Parse(outputWriter) ?? throw new CommandLineArgumentException(nameof(outputWriter), "Invalid recipe specified.");
             var configuration = PipelineConfiguration.LoadFrom(System.IO.File.ReadAllText(configurationFile)) ?? throw new CommandLineArgumentException(nameof(configurationFile), "Could not load the configuration.");
 
-            Console.Error.WriteLine($"[{sw.Elapsed}] Initializing modules:");
-
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+            logger.Info("Initializing processing modules:");
             int inputCount = 0;
             int outputCount = 0;
             async Task MyTimer(CancellationToken ct)
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    Console.Error.WriteLine($"[{sw.Elapsed}] in={inputCount}, out={outputCount}             \r");
+                    logger.Info($"Status: consumed flows={inputCount}, produced contexts={outputCount}.");
                     await Task.Delay(10000);
                 }
             }
 
             var reader = ReaderFactory.Instance.CreatePluginObject(readerRecipe.Name, readerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Reader {readerRecipe.Name} not found!");
-            Console.Error.WriteLine($"                   Reader: {reader}");
+            logger.Info($"Created reader: {reader}, {readerRecipe}.");
             var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
-            Console.Error.WriteLine($"                   Writer: {writer}");
+            logger.Info($"Created writer: {writer}, {writerRecipe}.");
 
-            Console.Error.WriteLine($"[{sw.Elapsed}] Setting up the pipeline...");
+            logger.Info($"Setting up the processing pipeline.");
 
             var pipeline = environment.ContextBuilder.CreateIpHostContextBuilderPipeline(configuration, reader, writer, (x) => inputCount+=x, (x) => outputCount+=x);
 
-            Console.Error.WriteLine($"[{sw.Elapsed}] Pipeline is ready, processing input flows...");
+            logger.Info($"Pipeline is ready, start processing input flows.");
 
             var cts = new CancellationTokenSource();
             var t = MyTimer(cts.Token);
 
             await Task.WhenAll(reader.StartReading(), writer.Completed).ContinueWith(t => cts.Cancel());
 
-            Console.Error.WriteLine($"[{sw.Elapsed}] Finished!");
-            Console.Error.WriteLine($"Processed {inputCount} input flows and wrote {outputCount} context objects.");
+            logger.Info($"Processing of input stream completed.");
+            logger.Info($"Processed {inputCount} input flows and wrote {outputCount} context objects.");
 
         }
 

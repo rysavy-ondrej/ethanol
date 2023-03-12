@@ -1,5 +1,18 @@
 window-size: 00:05:00
 window-hop: 00:05:00
 host-tag-enricher:
+    postgres:
+        server: 192.168.111.21
+        port: 5432
+        database: ethanol
+        user: ethanol
+        password: ethanol-password
+        tableName: smartads
 flow-tag-enricher:
-
+    postgres:
+        server: 192.168.111.21
+        port: 5432
+        database: ethanol
+        user: ethanol
+        password: ethanol-password
+        tableName: flowtags

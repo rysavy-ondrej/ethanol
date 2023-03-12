@@ -1,10 +1,8 @@
-﻿using Elastic.Clients.Elasticsearch;
-using Npgsql;
+﻿using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -26,6 +24,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// </remarks>
     public class PostgresFlowTagProvider : IHostDataProvider<FlowTag>
     {
+        static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly NpgsqlConnection _connection;
         private readonly string _tableName;
 
@@ -38,23 +37,27 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns></returns>
         public static PostgresFlowTagProvider Create(string connectionString, string tableName)
         {
-            var connection = new NpgsqlConnection(connectionString);
-            connection.Open();
-            if (connection.State != System.Data.ConnectionState.Open) throw new InvalidOperationException("Cannot open connection to the database.");
-
-            // Test that required database and table exists...
             try
             {
+                var connection = new NpgsqlConnection(connectionString);
+                connection.Open();
+                if (connection.State != System.Data.ConnectionState.Open)
+                {
+                    throw new InvalidOperationException($"Cannot open connection to the database: connectionString={connectionString}.");
+                }
+
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                Console.WriteLine($"Postgres connected '{connectionString}', available rows {rowCount}.");
+                logger.Info($"Postgres connected '{connectionString}', available rows {rowCount}.");
+
+                return new PostgresFlowTagProvider(connection, tableName);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException($"Cannot create postgres tag provider:{ex.Message}");
-            }
-            return new PostgresFlowTagProvider(connection, tableName);
+                logger.Error(ex, $"Cannot create {nameof(PostgresFlowTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
+                return null;
+            }            
         }
 
         /// <summary>

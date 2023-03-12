@@ -21,6 +21,7 @@ namespace Ethanol.ContextBuilder.Readers
     [Plugin(PluginType.Reader, "FlowmonJson", "Reads JSON file with IPFIX data produced by flowmonexp5 tool.")]
     class FlowexpJsonReader : FlowReader<IpFlow>
     {
+        static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly TextReader _reader;
         private readonly JsonSerializerOptions _serializerOptions;
 
@@ -120,7 +121,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Cannot deserialize entry: {e.Message}");
+                logger.Warn($"Cannot deserialize entry: {e.Message}");
                 entry = default;
                 return false;
             }

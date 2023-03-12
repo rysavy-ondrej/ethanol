@@ -4,6 +4,15 @@ This host consumes monitoring data and performs the processing.
 
 It runs Fluent-Bit for consuming source data and ProstreSQL for storing tags.
 
+
+```bash
+/opt/fluent-bit/bin/fluent-bit -c fluent-bit.conf | ~/Application/Ethanol/
+
+```
+
+
+
+
 ## Fluent-Bit
 
 To read source data, the Fluent-Bit is used. The installation is by follow the instructions:
@@ -116,6 +125,29 @@ Then it is possible to open `psql` and create support for ingesting data from Fl
 psql -U ethanol -d ethanol
 ```
 
+### Enable Network Access
+1 Open the PostgreSQL configuration file `postgresql.conf`. By default, it is located in the data directory of the PostgreSQL installation. To find the location of the postgresql.conf file, you can run the following SQL command in a PostgreSQL session:
+
+```sql
+SHOW config_file;
+```
+
+2. Locate the listen_addresses parameter in the configuration file. By default, it is commented out. Uncomment the line and set the value to * to allow incoming connections from any IP address.
+
+```txt
+listen_addresses
+```
+
+3. Save and close the configuration file.
+
+4. Open the PostgreSQL `pg_hba.conf` file, which is also located in the data directory.
+
+5. Add a new line to the file to allow incoming connections from the network segment. The line should specify the IP address range that is allowed to connect, the authentication method, and the database that the connection can access.
+
+```txt
+host    all  all   192.168.111.0/24   md5
+```
+
 ### Creating Tables for FlowTags
 
 Two table are required: One for raw data ingested by Fluent-Bit and the target table
@@ -185,9 +217,7 @@ The trigger calls the transform_and_insert() function to process the data before
 
 Finally, it returns a NULL value, indicating that the trigger has completed its task and that the no data will be insterted in _flowtags table.
 
-
 ### Creating Tables for Host Tags
-
 
 ```sql
 CREATE TABLE smartads (

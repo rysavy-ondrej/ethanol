@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 namespace Ethanol.ContextBuilder.Enrichers
 {
     /// <summary>
-    /// Represents an environment data stored in Postgre SQL database.
+    /// Represents a FLowTag data source stored in PostgreSQL database.
     /// </summary>
     /// <remarks>
     /// It is expected that the table has the following structure:
@@ -49,7 +50,9 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                logger.Info($"Postgres connected '{connectionString}', available rows {rowCount}.");
+                logger.Info($"Postgres connected '{connectionString}', available {rowCount} records.");
+
+                
 
                 return new PostgresFlowTagProvider(connection, tableName);
             }
@@ -72,84 +75,111 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
 
         /// <summary>
-        /// Gets records for the given key only valid within the specified interval.
+        /// Retrieves a collection of FlowTag objects from the database for the specified host and time range.
         /// </summary>
-        /// <param name="host">The host key of the records.</param>
-        /// <param name="start">The start time of the interval.</param>
-        /// <param name="end">The end time of the interval.</param>
-        /// <returns>An enumerable collection of records.</returns>
+        /// <param name="host">The host name for which to retrieve the tags.</param>
+        /// <param name="start">The start time of the time range.</param>
+        /// <param name="end">The end time of the time range.</param>
+        /// <returns>An IEnumerable of FlowTag objects representing the tags associated with the specified host and time range.</returns>
         public async Task<IEnumerable<FlowTag>> GetAsync(string host, DateTime start, DateTime end)
         {
-            var cmd = _connection.CreateCommand();
-            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
-            var reader = await cmd.ExecuteReaderAsync();
-            var rowList = new List<FlowTag>();
-            while (await reader.ReadAsync())
+            try
             {
-                var row = new FlowTag(start, end,
-                                      reader["LocalAddress"] as string,
-                                      reader["LocalPort"] as ushort? ?? 0,
-                                      reader["RemoteAddress"] as string,
-                                      reader["RemotePort"] as ushort? ?? 0,
-                                      reader["ProcessName"] as string
-                                      );
-                rowList.Add(row);
+                var cmd = _connection.CreateCommand();
+                // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+                cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
+                var reader = await cmd.ExecuteReaderAsync();
+                var rowList = new List<FlowTag>();
+                while (await reader.ReadAsync())
+                {
+                    var row = new FlowTag(start, end,
+                                          reader["LocalAddress"] as string,
+                                          reader["LocalPort"] as ushort? ?? 0,
+                                          reader["RemoteAddress"] as string,
+                                          reader["RemotePort"] as ushort? ?? 0,
+                                          reader["ProcessName"] as string
+                                          );
+                    rowList.Add(row);
+                }
+                return rowList;
             }
-            return rowList;
+            catch (Exception e)
+            {
+                logger.Error(e);
+                return Array.Empty<FlowTag>();
+            }
         }
+        /// <summary>
+        /// Retrieves a collection of FlowTag objects from the database for the specified host and time range.
+        /// </summary>
+        /// <param name="host">The host name for which to retrieve the tags.</param>
+        /// <param name="start">The start time of the time range.</param>
+        /// <param name="end">The end time of the time range.</param>
+        /// <returns>An IEnumerable of FlowTag objects representing the tags associated with the specified host and time range.</returns>
         public IEnumerable<FlowTag> Get(string host, DateTime start, DateTime end)
         {
-            var startString = start.ToString("o", CultureInfo.InvariantCulture);
-            var endString = end.ToString("o", CultureInfo.InvariantCulture);
-            var cmd = _connection.CreateCommand();
-            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{startString},{endString})'";
-            var reader = cmd.ExecuteReader();
-            var rowList = new List<FlowTag>();
-            while (reader.Read())
+            try
             {
-                var row = new FlowTag(start, end,
-                                      reader["LocalAddress"] as string,
-                                      reader["LocalPort"] as ushort? ?? 0,
-                                      reader["RemoteAddress"] as string,
-                                      reader["RemotePort"] as ushort? ?? 0,
-                                      reader["ProcessName"] as string
-                                      );
-                rowList.Add(row);
+                var startString = start.ToString("o", CultureInfo.InvariantCulture);
+                var endString = end.ToString("o", CultureInfo.InvariantCulture);
+                var cmd = _connection.CreateCommand();
+                // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+                cmd.CommandText = $"SELECT * FROM {_tableName} WHERE LocalAddress ='{host}' AND Validity @> '[{startString},{endString})'";
+                var reader = cmd.ExecuteReader();
+                var rowList = new List<FlowTag>();
+                while (reader.Read())
+                {
+                    var row = new FlowTag(start, end,
+                                          reader["LocalAddress"] as string,
+                                          reader["LocalPort"] as ushort? ?? 0,
+                                          reader["RemoteAddress"] as string,
+                                          reader["RemotePort"] as ushort? ?? 0,
+                                          reader["ProcessName"] as string
+                                          );
+                    rowList.Add(row);
+                }
+                reader.Close();
+                return rowList;
             }
-            reader.Close();
-            return rowList;
+            catch(Exception e)
+            {
+                logger.Error(e);
+                return Array.Empty<FlowTag>();
+            }
         }
 
         /// <summary>
-        /// Creates a new table for storing <see cref="FlowTag"/> records in the database.
+        /// Creates a new table for storing <see cref="FlowTag"/> records in the database if it does not alrady exist.
         /// </summary>
         /// <param name="tableName">The name of the table to create.</param>
-        /// <returns>True if the table was created.</returns>
-        public bool CreateTable(string tableName)
+        /// <returns>True if the table exsists or was created.</returns>
+        public static bool CreateTableIfNotExists(NpgsqlConnection connection, string tableName)
         {
-            string sqlCreateTable = @$"
-            CREATE TABLE {tableName}(
-                StartTime TIMESTAMP NOT NULL,
-                EndTime TIMESTAMP NOT NULL,
-                LocalAddress VARCHAR(32) NOT NULL,
-                LocalPort SMALLINT NOT NULL,
-                RemoteAddress VARCHAR(32) NOT NULL,
-                RemotePort SMALLINT NOT NULL,
-                ProcessName VARCHAR(128) NOT NULL
-                Validity TSRANGE
-            );";
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = sqlCreateTable;
-            return cmd.ExecuteNonQuery() > 0;
-        }
+            var testCmd = connection.CreateCommand();
+            testCmd.CommandText = $@"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = '{tableName}');";
+            var exists = (bool)testCmd.ExecuteScalar();
 
-        public bool TableExists(string tableName)
-        {
-            var cmd = _connection.CreateCommand();
-            cmd.CommandText = $@"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = '{tableName}');";
-            return (bool)cmd.ExecuteScalar();
+            if (!exists)
+            {
+                string sqlCreateTable = @$"
+                CREATE TABLE {tableName}(
+                    StartTime TIMESTAMP NOT NULL,
+                    EndTime TIMESTAMP NOT NULL,
+                    LocalAddress VARCHAR(32) NOT NULL,
+                    LocalPort SMALLINT NOT NULL,
+                    RemoteAddress VARCHAR(32) NOT NULL,
+                    RemotePort SMALLINT NOT NULL,
+                    ProcessName VARCHAR(128) NOT NULL
+                    Validity TSRANGE
+                );";
+                var createCmd = connection.CreateCommand();
+                createCmd.CommandText = sqlCreateTable;
+                return createCmd.ExecuteNonQuery() > 0;
+            }
+            else
+            {
+                return true;
+            }
         }
     }
 }

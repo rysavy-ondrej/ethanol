@@ -1,5 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Microsoft.StreamProcessing;
 using System;

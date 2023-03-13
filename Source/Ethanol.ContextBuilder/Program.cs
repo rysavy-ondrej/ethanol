@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using YamlDotNet.Serialization;
+using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder
 {
@@ -55,9 +55,9 @@ namespace Ethanol.ContextBuilder
 
             var fileTarget = new FileTarget("file")
             {
-                FileName = "Ethanol.ContextBuilder.log"
+                FileName = "Ethanol.ContextBuilder.trace"
             };
-            config.AddRule(LogLevel.Debug, LogLevel.Fatal, fileTarget);
+            config.AddRule(LogLevel.Trace, LogLevel.Fatal, fileTarget);
 
 
             NLog.LogManager.Configuration = config;
@@ -97,7 +97,7 @@ namespace Ethanol.ContextBuilder
             var environment = new EthanolEnvironment();
             var readerRecipe = PluginCreateRecipe.Parse(inputReader) ?? throw new CommandLineArgumentException(nameof(inputReader), "Invalid recipe specified.");
             var writerRecipe = PluginCreateRecipe.Parse(outputWriter) ?? throw new CommandLineArgumentException(nameof(outputWriter), "Invalid recipe specified.");
-            var configuration = PipelineConfiguration.LoadFrom(System.IO.File.ReadAllText(configurationFile)) ?? throw new CommandLineArgumentException(nameof(configurationFile), "Could not load the configuration.");
+            var configuration = PipelineConfigurationSerializer.LoadFromFile(configurationFile) ?? throw new CommandLineArgumentException(nameof(configurationFile), "Could not load the configuration.");
 
             var logger = NLog.LogManager.GetCurrentClassLogger();
             logger.Info("Initializing processing modules:");
@@ -161,31 +161,6 @@ namespace Ethanol.ContextBuilder
             {
                 Console.WriteLine($"  {obj.Name}    {obj.Description}");
             }
-        }
-    }
-
-    public record PipelineConfiguration
-    {
-        static Deserializer deserializer = new YamlDotNet.Serialization.Deserializer();
-        [YamlMember(Alias = "window-size", Description = "The time interval of the analysis window.")]
-        public TimeSpan WindowSize { get; set; }
-        
-        
-        [YamlMember(Alias = "window-hop", Description = "The hop interval of the window. ")]
-        public TimeSpan WindowHop { get; set; }
-
-
-        [YamlMember(Alias = "host-tag-enricher", Description = "The enricher configuration.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration HostTagEnricherConfiguration { get; set; }
-
-
-        [YamlMember(Alias = "flow-tag-enricher", Description = "The enricher configuration.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration FlowTagEnricherConfiguration { get; set; }
-
-        public static PipelineConfiguration LoadFrom(string text)
-        {
-            var config = deserializer.Deserialize<PipelineConfiguration>(text);
-            return config;
         }
     }
 }

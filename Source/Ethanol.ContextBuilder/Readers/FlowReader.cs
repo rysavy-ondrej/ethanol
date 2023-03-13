@@ -2,6 +2,7 @@
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder.Readers
 {

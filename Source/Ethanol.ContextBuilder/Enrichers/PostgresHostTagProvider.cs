@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -83,21 +84,19 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             try
             {
-                var cmd = _connection.CreateCommand();
-            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity && '[{start},{end})'";
-            var reader = await cmd.ExecuteReaderAsync();
-            var rowList = new List<HostTag>();
-            while (await reader.ReadAsync())
-            {
-                var row = new HostTag(start, end,
-                                      reader["KeyValue"] as string,
-                                      reader["Source"] as string,
-                                      reader["Reliability"] as double? ?? 1.0,
-                                      reader["Data"] as string);
-                rowList.Add(row);
-            }
-            return rowList;
+                NpgsqlCommand cmd = PrepareCommand(host, start, end);
+                var reader = await cmd.ExecuteReaderAsync();
+                var rowList = new List<HostTag>();
+                while (await reader.ReadAsync())
+                {
+                    var row = new HostTag(start, end,
+                                          reader["KeyValue"] as string,
+                                          reader["Source"] as string,
+                                          reader["Reliability"] as double? ?? 1.0,
+                                          reader["Data"] as string);
+                    rowList.Add(row);
+                }
+                return rowList;
             }
             catch (Exception e)
             {
@@ -116,20 +115,12 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             try
             {
-                var startString = start.ToString("o", CultureInfo.InvariantCulture);
-                var endString = end.ToString("o", CultureInfo.InvariantCulture);
-                var cmd = _connection.CreateCommand();
-                // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-                cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity && '[{startString},{endString})'";
+                NpgsqlCommand cmd = PrepareCommand(host, start, end);
                 var reader = cmd.ExecuteReader();
                 var rowList = new List<HostTag>();
                 while (reader.Read())
                 {
-                    var row = new HostTag(start, end,
-                                          reader["KeyValue"] as string,
-                                          reader["Source"] as string,
-                                          reader["Reliability"] as double? ?? 1.0,
-                                          reader["Data"] as string);
+                    HostTag row = ReadHostTag(start, end, reader);
                     rowList.Add(row);
                 }
                 reader.Close();
@@ -141,6 +132,26 @@ namespace Ethanol.ContextBuilder.Enrichers
                 return Array.Empty<HostTag>();
             }
         }
+
+        private static HostTag ReadHostTag(DateTime start, DateTime end, NpgsqlDataReader reader)
+        {
+            return new HostTag(start, end,
+                                  reader["KeyValue"] as string,
+                                  reader["Source"] as string,
+                                  TryConvert.ToFloat(reader["Reliability"], out var reliability) ? reliability : 1.0,
+                                  reader["Data"] as string);
+        }
+
+        private NpgsqlCommand PrepareCommand(string host, DateTime start, DateTime end)
+        {
+            var startString = start.ToString("o", CultureInfo.InvariantCulture);
+            var endString = end.ToString("o", CultureInfo.InvariantCulture);
+            var cmd = _connection.CreateCommand();
+            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity && '[{startString},{endString})'";
+            return cmd;
+        }
+
         /// <summary>
         /// Creates a new table for storing <see cref="FlowTag"/> records in the database if it does not alrady exist.
         /// </summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder.Writers
 {

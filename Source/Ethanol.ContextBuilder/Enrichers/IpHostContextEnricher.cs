@@ -1,11 +1,9 @@
-﻿using Elastic.Clients.Elasticsearch.Fluent;
-using Elastic.Clients.Elasticsearch.IndexManagement;
-using Ethanol.ContextBuilder.Builders;
+﻿using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Linq;
-using System.Net;
 using System.Reactive.Subjects;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -50,12 +48,11 @@ namespace Ethanol.ContextBuilder.Enrichers
             var start = value.StartTime;
             var end = value.EndTime;
 
+            // collects tags related to the host...
             var envTags = (_hostTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>()).ToArray();
-            
-            
+                        
+            // collects tags related to host's flows...
             var flowTags = (_flowTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<FlowTag>()).ToArray();
-            // update tag information in flows:
-
             
             _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext(value.Payload.HostAddress, value.Payload.Flows, envTags, flowTags), value.StartTime, value.EndTime));
         }

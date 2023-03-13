@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,16 +1,10 @@
 ﻿using AutoMapper;
-using Elastic.Clients.Elasticsearch;
-using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Readers.DataObjects;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Cleaners
 {

@@ -16,7 +16,8 @@ Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required.
 
 ## Documentation
 
-TBD
+The documentation is available for [Context Builder 1.0.](Docs/ContextBuilder/Readme.md)
+
 
 ## Acknowledgments
 

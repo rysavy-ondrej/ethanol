@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using Ethanol.ContextBuilder.Cleaners;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Readers.DataObjects;
 using System;

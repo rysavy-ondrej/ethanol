@@ -48,16 +48,25 @@ param (
 
 
 $iterations = ($Duration.TotalSeconds / $ProbeInterval.TotalSeconds)
+Write-Progress -Activity "Initializing" -Status "Getting system information." 
+
+
+
+# code to execute
+
 while($true)
 {
+    Write-Progress -Activity "Collecting" -Status "Reading tcp connection info." 
     $starttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
     $filetime = Get-Date -Format 'yyyyMMddHHmmss'
     # Initialize an empty array to store the connection information
     $connectionData = @{}
-
+    
     # Collect the connection data for the specified duration
     for ($i = 0; $i -lt $iterations; $i++) {
+        $loopStartTime = Get-Date
         $connections = Get-NetTCPConnection -State Established | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,@{n='ProcessName';e={Get-Process -Id $_.OwningProcess | Select-Object -ExpandProperty ProcessName}}
+        $flowdelta = $connections.Count
         foreach ($connection in $connections) {
             $connectionKey = "$($connection.LocalAddress)_$($connection.LocalPort)_$($connection.RemoteAddress)_$($connection.RemotePort)"
             if (($connection.RemoteAddress -ne '127.0.0.1') -and (-not $connectionData.ContainsKey($connectionKey)))
@@ -71,11 +80,13 @@ while($true)
                 }
             }
         }
-        Start-Sleep -Seconds $ProbeInterval.TotalSeconds
+        
         $flowCount = $connectionData.Count
-        $pctComplete = $i * 100 / $iterations
-        Write-Progress -Activity "Processing data" -Status "Flow count=$flowCount" -PercentComplete $pctComplete 
-
+        $pctComplete = ($i+1) * 100 / $iterations
+        $loopEndTime = Get-Date
+        $waitSeconds = $ProbeInterval.TotalSeconds - ($loopEndTime - $loopStartTime).TotalSeconds
+        Write-Progress -Activity "Collecting" -Status "Tcp connections: recorded flows=$flowCount, active flows=$flowdelta. Next reading in $waitSeconds seconds." -PercentComplete $pctComplete 
+        Start-Sleep -Seconds $waitSeconds
     }
     $endtime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
 
@@ -99,19 +110,25 @@ while($true)
     <# SEND OUTPUT... #>
     if ($null -ne $SendTo)
     {
-        $srv, $port = $SendTo.Split(":")          
-        $data = [string]$outputData
-        Write-Progress -Activity "Processing data" -Status "Exporting flows to TCP server=$srv $port."
-        $client = New-Object System.Net.Sockets.TcpClient($srv, $port)
-        $stream = $client.GetStream()
-        $data = [System.Text.Encoding]::ASCII.GetBytes($data)
-        $stream.Write($data, 0, $data.Length)
-        $client.Close()
+        try {
+            $srv, $port = $SendTo.Split(":")          
+            $data = [string]$outputData
+            Write-Progress -Activity "Exporting" -Status "Exporting flows to TCP server=$srv $port."
+            $client = New-Object System.Net.Sockets.TcpClient($srv, $port)
+            $stream = $client.GetStream()
+            $data = [System.Text.Encoding]::ASCII.GetBytes($data)
+            $stream.Write($data, 0, $data.Length)
+            $client.Close()           
+        }
+        catch {
+            Write-Error "Error during data export: $($_.Exception.Message)"
+        }
+
     } 
     elseif($null -ne $OutPath)
     { <# send object to the stdout...#>
         $filepath = Join-Path $OutPath $outfilename
-        Write-Progress -Activity "Processing data" -Status "Exporting flows to $filepath."
+        Write-Progress -Activity "Exporting" -Status "Exporting flows to $filepath."
         $outputData | Out-File -FilePath $filepath  
     }
     else <# send object to the stdout...#> 

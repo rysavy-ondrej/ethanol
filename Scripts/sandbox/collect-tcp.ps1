@@ -50,7 +50,7 @@ param (
 $iterations = ($Duration.TotalSeconds / $ProbeInterval.TotalSeconds)
 while($true)
 {
-    #$starttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
+    $starttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
     $filetime = Get-Date -Format 'yyyyMMddHHmmss'
     # Initialize an empty array to store the connection information
     $connectionData = @{}
@@ -58,7 +58,6 @@ while($true)
     # Collect the connection data for the specified duration
     for ($i = 0; $i -lt $iterations; $i++) {
         $connections = Get-NetTCPConnection -State Established | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,@{n='ProcessName';e={Get-Process -Id $_.OwningProcess | Select-Object -ExpandProperty ProcessName}}
-        $currenttime = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
         foreach ($connection in $connections) {
             $connectionKey = "$($connection.LocalAddress)_$($connection.LocalPort)_$($connection.RemoteAddress)_$($connection.RemotePort)"
             if (($connection.RemoteAddress -ne '127.0.0.1') -and (-not $connectionData.ContainsKey($connectionKey)))
@@ -69,7 +68,6 @@ while($true)
                     'RemoteAddress' = $connection.RemoteAddress
                     'RemotePort' = $connection.RemotePort
                     'ProcessName' = $connection.ProcessName
-                    'FirstSeen' = $currenttime
                 }
             }
         }
@@ -83,17 +81,17 @@ while($true)
 
     if ($OutFormat -eq "json")
     {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Json 
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Json 
         $outfilename = "tcpcapd.$filetime.json"  
     }
     if ($OutFormat -eq "ndjson")
     {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ForEach-Object { $_ | ConvertTo-Json -Depth 1 -Compress }
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ForEach-Object { $_ | ConvertTo-Json -Depth 1 -Compress }
         $outfilename = "tcpcapd.$filetime.ndjson"  
     }
 
     if ($OutFormat -eq "csv") {
-        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$_.Value.FirstSeen}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Csv -NoTypeInformation 
+        $outputData = $connectionData.GetEnumerator() | Select-Object @{n='StartTime';e={$starttime}},@{n='EndTime';e={$endtime}},@{n='LocalAddress';e={$_.Value.LocalAddress}},@{n='LocalPort';e={$_.Value.LocalPort}},@{n='RemoteAddress';e={$_.Value.RemoteAddress}},@{n='RemotePort';e={$_.Value.RemotePort}},@{n='ProcessName';e={$_.Value.ProcessName}} | ConvertTo-Csv -NoTypeInformation 
         $outfilename = "tcpcapd.$filetime.csv"   
 
     }

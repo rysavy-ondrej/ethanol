@@ -39,15 +39,24 @@
     None.
 
 .NOTES
+    This script assumes that Microsof Edge, Google Chrome and Mozilla Firefox are installed in their default locations:
+    'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    'C:\Program Files\Mozilla Firefox\firefox.exe' 
+    'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+
+    The tor browser should be installed in:
+    'C:\Program Files\Tor Browser\Browser'. As it uses firefox browser, it is required that 
+    'firefox.exe' is renamed to 'torfox.exe'.
+
     Author: Ondrej Rysavy
     Date: 2023-03-19
 #>
 param (
     [Parameter(Mandatory=$true, HelpMessage="Name of file with URL list. Each URL is on a separate line.")]
     [string]$UrlFile = "top-1m.txt",
-    [Parameter(Mandatory=$true, HelpMessage="Minimum wait time between actions.")]
+    [Parameter(Mandatory=$false, HelpMessage="Minimum wait time between actions.")]
     [int]$MinWait = 3,
-    [Parameter(Mandatory=$true, HelpMessage="Maximum wait time between actions.")]
+    [Parameter(Mandatory=$false, HelpMessage="Maximum wait time between actions.")]
     [int]$MaxWait = 10
  )   
 
@@ -55,8 +64,40 @@ $websites = Get-Content -Path $UrlFile -TotalCount 1000
 $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 $firefox = 'C:\Program Files\Mozilla Firefox\firefox.exe' 
 $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
-$browsers = @($chrome,$firefox,$edge)
-$execs=@('chrome', 'firefox','msedge')
+$tor = 'C:\Program Files\Tor Browser\Browser\torfox.exe' 
+
+$browsers = @()
+$execs=@()
+
+
+if (Test-Path $chrome) {
+    Write-Information "Chrome found at $chrome."
+    $browsers+=$chrome
+    $execs+='chrome'
+} else {
+    Write-Warning "Chrome not found at $chrome."
+}
+if (Test-Path $firefox) {
+    Write-Information "Firefox found at $firefox."
+    $browsers+=$firefox
+    $execs+='firefox'
+} else {
+    Write-Warning "Firefox not found at $firefox."
+}
+if (Test-Path $edge) {
+    Write-Information "Edge found at $edge."
+    $browsers+=$edge
+    $execs+='msedge'
+} else {
+    Write-Warning "Edge not found at $edge."
+}
+if (Test-Path $tor) {
+    Write-Information "Tor found at $tor."
+    $browsers+=$tor
+    $execs+='torfox'
+} else {
+    Write-Warning "Tor not found at $tor."
+}
 
 while($true)
 {

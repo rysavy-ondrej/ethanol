@@ -85,7 +85,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
                 var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{start},{end})'";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity && '[{start},{end})'";
             var reader = await cmd.ExecuteReaderAsync();
             var rowList = new List<HostTag>();
             while (await reader.ReadAsync())
@@ -120,7 +120,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var endString = end.ToString("o", CultureInfo.InvariantCulture);
                 var cmd = _connection.CreateCommand();
                 // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-                cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity @> '[{startString},{endString})'";
+                cmd.CommandText = $"SELECT * FROM {_tableName} WHERE KeyValue ='{host}' AND Validity && '[{startString},{endString})'";
                 var reader = cmd.ExecuteReader();
                 var rowList = new List<HostTag>();
                 while (reader.Read())

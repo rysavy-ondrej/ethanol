@@ -28,3 +28,16 @@ To copy files to a Windows server using PowerShell, you can use the Copy-Item cm
 ```pwsh
 Copy-Item -Path "C:\local\file.txt" -Destination "\\server\share\file.txt" -Credential (Get-Credential)
 ```
+
+
+## Running the Infrastructure
+
+Execute the following commands on the respective hosts:
+
+```bash
+flowmon$ sudo flowmonexp5 probe-ethanol.json | while(true); do nc --send-only FLOW-SONAR-IP 5170; done
+```
+
+```bash
+flowsonar$ /opt/fluent-bit/bin/fluent-bit -c ~/Applications/Fluent-Bit/etc/fluent-bit-input.conf | ~/Applications/Ethanol/bin/Ethanol.ContextBuilder Build-Context -r FlowmonJson -c ~/Applications/Ethanol/etc/context-builder.conf -w JsonWriter | /opt/fluent-bit/bin/fluent-bit -c ~/Applications/Fluent-Bit/etc/fluent-bit-output.conf
+```

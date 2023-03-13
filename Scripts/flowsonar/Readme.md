@@ -198,7 +198,7 @@ BEGIN
     end_time := NEW.data->>'EndTime';
     time_range := tsrange(start_time, end_time, '[)');
     local_port := CAST(NEW.data->>'LocalPort'  AS INTEGER);
-    remote_port := CAST(NEW.data->>'LocalPort'  AS INTEGER);
+    remote_port := CAST(NEW.data->>'RemotePort'  AS INTEGER);
     INSERT INTO flowtags (LocalAddress, LocalPort, RemoteAddress, RemotePort, ProcessName,Validity)
     VALUES (NEW.data->>'LocalAddress', local_port, NEW.data->>'RemoteAddress', remote_port, NEW.data->>'ProcessName', time_range);
     RETURN NULL;

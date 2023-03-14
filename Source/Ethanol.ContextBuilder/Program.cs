@@ -1,18 +1,16 @@
 ﻿using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using NLog;
-using NLog.Targets;
 using NLog.Config;
-using NLog.Layouts;
+using NLog.Targets;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder
 {
@@ -47,7 +45,9 @@ namespace Ethanol.ContextBuilder
             var consoleTarget = new ColoredConsoleTarget("console")
             {
                 UseDefaultRowHighlightingRules = true,
-                
+                DetectConsoleAvailable = true,
+                DetectOutputRedirected= true,
+                StdErr= true,
                 Layout = "${longdate}|${level}|${message}"
             };
             config.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);

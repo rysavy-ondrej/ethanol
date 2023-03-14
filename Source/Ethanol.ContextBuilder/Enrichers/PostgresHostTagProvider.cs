@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                logger.Info($"Postgres connected '{connectionString}', available {rowCount} records.");
+                logger.Info($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
 
                 return new PostgresHostTagProvider(connection, tableName);
             }

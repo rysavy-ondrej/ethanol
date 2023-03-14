@@ -57,20 +57,20 @@ namespace Ethanol.ContextBuilder.Simplifier
         public void OnNext(ObservableEvent<IpRichHostContext> value)
         {
             var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
-                .Select(x=>new ResolvedDomainInfo(x.SourceAddress, x.QuestionName, x.ResponseData, x.ResponseCode))
+                .Select(x=>new ResolvedDomainInfo(x.DestinationAddress, x.QuestionName, x.ResponseData, x.ResponseCode))
                 .ToArray();
-            
-            var resolvedDictionary = GetDomainDictionary(domains);
 
-            var flowTagDictionary = GetFlowTagDictionary(value.Payload.FlowTags); 
+            var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
+
+            var ftagResolver = new Resolver<string, FlowTag>(value.Payload.FlowTags, flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
             string ResolveDomain(IPAddress x)
             {
-                return resolvedDictionary.TryGetValue(x.ToString(), out var name) ? name : null;
+                return domainResolver.Resolve(x.ToString(), x => x.QueryString);
             }
             string ResolveProcessName(FlowKey flowKey)
             {
-                return flowTagDictionary.TryGetValue($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", out var flowTag) ? flowTag.ProcessName : null;
+                return ftagResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
             }
 
             var osInfo = value.Payload.HostTags.Where(x => x.Name == "os_by_tcpip").FirstOrDefault()?.Value;
@@ -91,27 +91,7 @@ namespace Ethanol.ContextBuilder.Simplifier
             
             _subject.OnNext(new ObservableEvent<IpSimpleHostContext>(simpleContext, value.StartTime, value.EndTime));
         }
-
-        /// <summary>
-        /// Returns a dictionary that maps each unique combination of LocalAddress, LocalPort, RemoteAddress, and RemotePort to its corresponding FlowTag object.
-        /// <para/>
-        /// The method iterates over each FlowTag in the input array and generates a key by concatenating the LocalAddress, LocalPort, RemoteAddress, and RemotePort fields.
-        /// The key is then used to add the FlowTag object to a dictionary.If a key already exists in the dictionary, the corresponding FlowTag object is overwritten.
-        /// </summary>
-        /// <param name="flowTags">An array of FlowTag objects.</param>
-        /// <returns>A Dictionary  that maps each unique combination of LocalAddress, LocalPort, RemoteAddress, and RemotePort to its corresponding FlowTag object.</returns>
-        private Dictionary<string,FlowTag> GetFlowTagDictionary(FlowTag[] flowTags)
-        {
-            var dicitonary = new Dictionary<string, FlowTag>(); 
-
-            foreach (var flowTag in flowTags)
-            {
-                var key = $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}";
-                dicitonary[key] = flowTag;
-            }
-            return dicitonary;
-        }
-
+ 
         /// <summary>
         /// Returns an enumerable collection of initiated IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
         /// </summary>
@@ -154,21 +134,6 @@ namespace Ethanol.ContextBuilder.Simplifier
         }
 
         /// <summary>
-        /// Creates a dictionary of resolved domain information, mapping each IP address to its corresponding query string.
-        /// </summary>
-        /// <param name="domains">An array of resolved domain information.</param>
-        /// <returns>A Dictionary that maps each IP address to its corresponding query string.</returns>
-        private Dictionary<string, string> GetDomainDictionary(ResolvedDomainInfo[] domains)
-        {
-            var dict = new Dictionary<string, string>();
-            foreach(var d in domains)
-            {
-                var ip = d.ResponseData?.ToString() ?? String.Empty;
-                dict[ip] = d.QueryString;
-            }
-            return dict;
-        }
-        /// <summary>
         /// Subscribes an observer to the output observable sequence of simplified IP host contexts.
         /// </summary>
         /// <param name="observer">The observer to subscribe.</param>
@@ -176,6 +141,48 @@ namespace Ethanol.ContextBuilder.Simplifier
         public IDisposable Subscribe(IObserver<ObservableEvent<IpSimpleHostContext>> observer)
         {
             return _subject.Subscribe(observer);    
+        }
+
+        /// <summary>
+        /// Provides a simple way to resolve a value by its key from a dictionary-like collection of values.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key used to index the values.</typeparam>
+        /// <typeparam name="TValue">The type of the values to be stored and indexed.</typeparam>
+        class Resolver<TKey, TValue>
+        {
+            Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Resolver{TKey, TValue}"/> class with the specified collection of values and key selector function.
+            /// </summary>
+            /// <param name="values">An enumerable collection of <typeparamref name="TValue"/> objects to store in the resolver.</param>
+            /// <param name="getKey">A function that takes a <typeparamref name="TValue"/> object and returns its corresponding key of type <typeparamref name="TKey"/>.</param>
+            public Resolver(IEnumerable<TValue> values, Func<TValue, TKey> getKey)
+            {
+                foreach (var value in values)
+                {
+                    _dictionary[getKey(value)] = value;
+                }
+            }
+            /// <summary>
+            /// Resolves a value of type <typeparamref name="TValue"/> by the specified key.
+            /// </summary>
+            /// <param name="key">The key of type <typeparamref name="TKey"/> used to resolve the value.</param>
+            /// <returns>The value of type <typeparamref name="TValue"/> that corresponds to the specified key, or the default value of <typeparamref name="TValue"/> if the key is not found.</returns>
+            public TValue Resolve(TKey key)
+            {
+                return _dictionary.TryGetValue(key, out var value) ? value : default;
+            }
+            /// <summary>
+            /// Resolves a value of type <typeparamref name="TResult"/> by the specified key, using the specified selector function to transform the resolved value.
+            /// </summary>
+            /// <typeparam name="TResult">The type of the result to be returned.</typeparam>
+            /// <param name="key">The key of type <typeparamref name="TKey"/> used to resolve the value.</param>
+            /// <param name="select">A <see cref="Func{T, TResult}"/> that transforms the resolved value of type <typeparamref name="TValue"/> into a result of type <typeparamref name="TResult"/>.</param>
+            /// <returns>The transformed value of type <typeparamref name="TResult"/> that corresponds to the specified key, or the default value of <typeparamref name="TResult"/> if the key is not found.</returns>
+            public TResult Resolve<TResult>(TKey key, Func<TValue, TResult> select)
+            {
+                return _dictionary.TryGetValue(key, out var value) ? select(value) : default;
+            }
         }
     }
   }

@@ -5,7 +5,7 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
     /// <summary>
     /// The type of plugin object.
     /// </summary>
-    public enum PluginType { Reader, Writer, Builder, Enricher }
+    public enum PluginCategory { Reader, Writer, Builder, Enricher }
 
     /// <summary>
     /// A class attribute providing meta infomrmation on the plugin implementation.
@@ -13,9 +13,9 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class PluginAttribute : Attribute
     {
-        public PluginAttribute(PluginType pluginType, string Name, string Description, string DocUrl = null)
+        public PluginAttribute(PluginCategory pluginType, string Name, string Description, string DocUrl = null)
         {
-            PluginType = pluginType;
+            this.Category = pluginType;
             this.Name = Name;
             this.Description = Description;
             this.DocUrl = DocUrl;
@@ -24,7 +24,7 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
         /// <summary>
         /// Plugin type.
         /// </summary>
-        public PluginType PluginType { get; }
+        public PluginCategory Category { get; }
         /// <summary>
         /// Plugin name. The name is used for searching among the avilable plugins.
         /// </summary>

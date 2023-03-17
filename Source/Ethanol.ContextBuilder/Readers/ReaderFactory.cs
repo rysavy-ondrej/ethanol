@@ -13,7 +13,7 @@ namespace Ethanol.ContextBuilder.Readers
     {
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            return plugin.Plugin.PluginType == PluginType.Reader;
+            return plugin.Plugin.Category == PluginCategory.Reader;
         }
         /// <summary>
         /// Gets the singleton of the factory.

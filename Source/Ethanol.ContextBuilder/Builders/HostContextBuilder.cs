@@ -18,7 +18,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <summary>
     /// Builds the context for Ip hosts identified in the source IPFIX stream.
     /// </summary>
-    [Plugin(PluginType.Builder, "HostContext", "Builds the context for IP hosts identified in the source IPFIX stream.")]
+    [Plugin(PluginCategory.Builder, "HostContext", "Builds the context for IP hosts identified in the source IPFIX stream.")]
     public class HostContextBuilder : ContextBuilder<IpFlow, KeyValuePair<IPAddress, NetworkActivity>, ContextObject<IPAddress, HostContext>>
     {
         static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();

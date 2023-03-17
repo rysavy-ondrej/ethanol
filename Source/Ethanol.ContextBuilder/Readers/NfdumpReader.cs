@@ -18,7 +18,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// Reads export from nfdump tool, which is CSV with a large number of columns, from which only 
     /// their subset is relevant to the reader.
     /// </summary>
-    [Plugin(PluginType.Reader, "NfdumpCsv", "Reads CSV file produced by nfdump.")]
+    [Plugin(PluginCategory.Reader, "NfdumpCsv", "Reads CSV file produced by nfdump.")]
     class NfdumpReaderPlugin : IFlowReader<IpFlow>
     {
         readonly Subject<IpFlow> _subject = new Subject<IpFlow>();

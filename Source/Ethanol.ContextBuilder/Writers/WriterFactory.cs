@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Writers
     {
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            return plugin.Plugin.PluginType == PluginType.Writer;
+            return plugin.Plugin.Category == PluginCategory.Writer;
         }
         /// <summary>
         /// Gets the singleton of the factory.

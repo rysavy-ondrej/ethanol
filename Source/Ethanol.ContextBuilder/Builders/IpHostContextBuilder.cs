@@ -43,7 +43,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <para/>
     /// This implementation directly use Observable contrary to <see cref="HostContextBuilder"/> which is based on Streamable.
     /// </summary>
-    [Plugin(PluginType.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
+    [Plugin(PluginCategory.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
     public class IpHostContextBuilder : IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>>, IPipelineNode
     {
         public TimeSpan WindowSize { get; }

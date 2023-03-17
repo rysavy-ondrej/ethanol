@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <inheritdoc/>>
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            return plugin.Plugin.PluginType == PluginType.Enricher;
+            return plugin.Plugin.Category == PluginCategory.Enricher;
         }
 
         /// <summary>

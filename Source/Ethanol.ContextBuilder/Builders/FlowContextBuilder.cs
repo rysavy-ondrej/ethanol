@@ -29,7 +29,7 @@ namespace Ethanol.ContextBuilder.Builders
     /// <summary>
     /// Implements TLS flow context builder.
     /// </summary>
-    [Plugin(PluginType.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
+    [Plugin(PluginCategory.Builder, "FlowContext", "Builds the context for TLS flows in the source IPFIX stream.")]
     public class FlowContextBuilder : ContextBuilder<IpFlow, KeyValuePair<FlowKey, TlsContext>, FlowWithContext>
     {
         NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();

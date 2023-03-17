@@ -73,7 +73,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <inheritdoc/>>
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {
-            return plugin.Plugin.PluginType == PluginType.Builder;
+            return plugin.Plugin.Category == PluginCategory.Builder;
         }
 
         /// <summary>

@@ -1,0 +1,145 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+
+/// <summary>
+/// The tcp output writer allows to send records to a remote TCP server.
+/// <para/> 
+/// It implements a reconnect function.
+/// </summary>
+class TcpOutputWriter
+{
+    IPEndPoint _endpoint;
+    TcpClient _client;
+    StreamWriter _writer;
+
+    TimeSpan _reconnectTime;
+    int _reconnectAttempts;
+    
+    public TcpOutputWriter(IPEndPoint endpoint)
+    {
+        _endpoint = endpoint;
+        _reconnectTime = TimeSpan.FromSeconds(3);
+        _reconnectAttempts = 3;
+    }
+
+    public void Write(object value)
+    {
+        var stringValue = JsonSerializer.Serialize(value);
+        lock(this)
+        {
+            if (TryWriteInternal(stringValue) == false)
+            {
+                throw new IOException("Cannot write object.");
+            }
+        }
+    }
+    public bool TryWrite(object value)
+    {
+        var stringValue = JsonSerializer.Serialize(value);
+        lock(this)
+        {
+            return TryWriteInternal(stringValue);
+        }
+    }
+
+
+    bool TryWriteInternal(string line)
+    {
+        var attempts = _reconnectAttempts;
+        while(!TryConnectInternal() && attempts-- > 0)
+        {
+            Thread.Sleep(_reconnectTime);
+            Console.Error.WriteLine($"Reconnect attempt: {_reconnectAttempts - attempts} of {_reconnectAttempts}.");
+        }
+        if (IsConnected) 
+        {
+            try
+            {
+                _writer.WriteLine(line);
+                _writer.Flush();
+                Console.Error.WriteLine($"Sent: {line}");
+                return true;
+            }
+            catch(SocketException e)
+            {
+                Console.Error.WriteLine($"Error: Cannot sent {line}: {e.Message}, cleaning current connection.");
+                CloseConnectionInternal();
+                return false;
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine($"Error: Cannot sent {line}: connection cannot be established.");  
+            return false; 
+        }
+    }
+    bool IsConnected => _client?.Connected ?? false;
+
+    void CloseConnectionInternal()
+    {
+            _writer?.Close();
+            _writer = null;
+            _client?.Close();
+            _client = null;
+    }
+
+    private bool TryConnectInternal()
+    {
+        if (IsConnected) 
+        {
+            return true; 
+        }
+        else
+        {      
+            Console.Error.WriteLine("Try to connect to the remote host {_endpoint}.");
+            CloseConnectionInternal(); 
+            try
+            {                
+                _client = new TcpClient();
+                _client.Connect(_endpoint);
+                _writer = new StreamWriter(_client.GetStream());
+                Console.Error.WriteLine($"Connect: Connected to remote TCP server: {_endpoint}.");
+                return true;
+            }
+            catch(SocketException e)
+            {
+                Console.Error.WriteLine($"Error: Cannot connect to {_endpoint}: {e.Message}.");
+                CloseConnectionInternal();
+                return false;
+            }     
+        }   
+    }
+    public void Close()
+    {
+        lock(this)
+        {
+            CloseConnectionInternal();
+        }
+    }
+}
+
+#!csharp
+
+record DataRecord(int Id, string Key, string Value);
+var writer = new TcpWriter(IPEndPoint.Parse("127.0.0.1:1234"));
+
+for(int i=0;i<30;i++)
+{
+    var rec = new DataRecord(i, "key", i.ToString());
+    Console.WriteLine($"Try write: {rec}.");
+    writer.Write(rec);
+    Thread.Sleep(4000);
+}
+writer.Close();

@@ -12,7 +12,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <summary>
     /// Enrich the computed context with additional known information.
     /// </summary>
-    [Plugin(PluginType.Enricher, "IpHostContextEnricher", "Enriches the context for IP hosts from the provided data.")]
+    [Plugin(PluginCategory.Enricher, "IpHostContextEnricher", "Enriches the context for IP hosts from the provided data.")]
     public class IpHostContextEnricherPlugin : IObservableTransformer
     {
         private IpHostContextEnricher _enricher;

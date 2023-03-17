@@ -8,7 +8,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// <summary>
     /// This object can write the data in the YAML format. 
     /// </summary>
-    [Plugin(PluginType.Writer, "YamlWriter", "Writes YAML formatted file for computed context.")]
+    [Plugin(PluginCategory.Writer, "YamlWriter", "Writes YAML formatted file for computed context.")]
     public class YamlDataWriter : ContextWriter<object>
     {
         private readonly TextWriter _writer;

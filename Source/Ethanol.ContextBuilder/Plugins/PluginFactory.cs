@@ -14,6 +14,7 @@ namespace Ethanol.ContextBuilder.Plugins
     /// <typeparam name="TDestination">The object type of plugins to be created by the target factory.</typeparam>
     public abstract class PluginFactory<TDestination>
     {
+        static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly IDeserializer _configurationDeserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
         Dictionary<string, (Type Type, PluginAttribute Plugin)> __factoryPlugins;
 
@@ -92,11 +93,11 @@ namespace Ethanol.ContextBuilder.Plugins
         /// </summary>
         /// <param name="pluginType">The type of plugins.</param>
         /// <returns>A dictionary of plugins of the given type.</returns>
-        protected Dictionary<string, (Type Type, PluginAttribute Plugin)> GetPluginsOfType(PluginType pluginType)
+        protected Dictionary<string, (Type Type, PluginAttribute Plugin)> GetPluginsOfType(PluginCategory pluginType)
         {
             return new Dictionary<string, (Type Type, PluginAttribute Plugin)>(
                 Plugins.Value
-                    .Where(p => p.Plugin.PluginType == pluginType)
+                    .Where(p => p.Plugin.Category == pluginType)
                     .Select(x => new KeyValuePair<string, (Type Type, PluginAttribute Plugin)>(x.Plugin.Name, x)));
         }
 
@@ -111,8 +112,13 @@ namespace Ethanol.ContextBuilder.Plugins
         /// <returns>A list of plugins and their types.</returns>
         static List<(Type Type, PluginAttribute Plugin)> CollectAvailablePLugins()
         {
-            var plugins = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes().Select(t => (Type: t, Plugin: t.GetCustomAttribute<PluginAttribute>())).Where(t => t.Plugin != null));
-            return plugins.ToList();
+            var plugins = AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes().Select(t => (Type: t, Plugin: t.GetCustomAttribute<PluginAttribute>(false))).Where(t => t.Plugin != null)).ToList(); ;
+            /*
+            foreach (var p in plugins)
+            {
+                __logger.Debug($"Available plugin: name={p.Plugin.Name}, category={p.Plugin.Category}, class={p.Type}.");
+            }*/
+            return plugins;
         }
 
         /// <summary>

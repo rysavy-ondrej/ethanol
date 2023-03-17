@@ -3,7 +3,7 @@ using Ethanol.ContextBuilder.Plugins.Attributes;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    [Plugin(PluginType.Enricher, "VoidContextEnricher", "Does not enrich the context. Used to fill the space in the processing pipeline.")]
+    [Plugin(PluginCategory.Enricher, "VoidContextEnricher", "Does not enrich the context. Used to fill the space in the processing pipeline.")]
     public class VoidContextEnricher : IdentityTransformer<object>
     {
         public class Configuration

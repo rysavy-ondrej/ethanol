@@ -16,18 +16,18 @@ WORKDIR /app
 
 
 # Copy the source code and build the application
-COPY . ./
+COPY ./Source/ ./
 
-RUN dotnet restore
+RUN dotnet restore Ethanol.ContextBuilder/
 
-RUN dotnet publish -c Release -o out -r linux-x64 --self-contained true /p:PublishTrimmed=true
+RUN dotnet publish -c Release -o bin -r linux-x64 --self-contained true /p:PublishTrimmed=true Ethanol.ContextBuilder/
 
 # Build the runtime image
 FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 
 # Set the working directory to /app and copy the published output
 WORKDIR /app
-COPY --from=build /app/out ./
+COPY --from=build /app/bin ./
 
 # Set the entry point for the container
 ENTRYPOINT ["dotnet","./Ethanol.ContextBuilder.dll"] 

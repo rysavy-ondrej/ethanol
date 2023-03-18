@@ -4,6 +4,10 @@
 # To build the image:
 #   $ docker build -t ethanol .
 #
+#   ..or directly from GitHub:
+#
+#   $ docker build -t ehtanol https://github.com/rysavy-ondrej/ethanol
+#
 # To run the application:
 #   $ docker run -p 6363:6363 ethanol  "Build-Context", "-r", "FlowmonJson:{tcp=127.0.0.1:6363}", "-c", "config.yaml", "-w", "JsonWriter:{tcp=192.168.1.21:8888}"]
 #

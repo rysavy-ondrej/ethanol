@@ -7,6 +7,11 @@ using System.Text.Json;
 using System.Threading;
 using NLog;
 using YamlDotNet.Serialization;
+using Ethanol.ContextBuilder.Context;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
+using System.Collections.Generic;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -103,15 +108,25 @@ namespace Ethanol.ContextBuilder.Writers
             IPEndPoint _endpoint;
             TcpClient _client;
             StreamWriter _writer;
+            Task _writerTask;
 
+            private BlockingCollection<string> _queue;
             TimeSpan _reconnectTime;
             int _reconnectAttempts;
 
-            public TcpWriter(IPEndPoint endpoint)
+
+
+            /// <summary>
+            /// Initializes a new instance of the TcpWriter class with the specified endpoint and optional capacity.
+            /// </summary>
+            /// <param name="endpoint">The IPEndPoint object representing the remote endpoint to which the TCP connection will be established.</param>
+            /// <param name="capacity">An optional parameter specifying the maximum capacity of the underlying BlockingCollection. The default value is 1024.</param>
+            public TcpWriter(IPEndPoint endpoint, int capacity = 1024)
             {
                 _endpoint = endpoint;
                 _reconnectTime = TimeSpan.FromSeconds(3);
                 _reconnectAttempts = 3;
+                _queue = new BlockingCollection<string>(capacity);
             }
 
             /// <summary>
@@ -122,16 +137,10 @@ namespace Ethanol.ContextBuilder.Writers
             protected override void Write(object value)
             {
                 var stringValue = JsonSerializer.Serialize(value, _jsonOptions);
-                lock (this)
-                {
-                    if (TryWriteInternal(stringValue) == false)
-                    {
-                        __logger.Error($"Cannot write object.");
-                    }
-                }
+                _queue.Add(stringValue);
             }
 
-            bool TryWriteInternal(string line)
+            bool TryWriteInternal(IEnumerable<string> lines)
             {
                 var attempts = _reconnectAttempts;
                 while (!TryConnectInternal() && attempts-- > 0)
@@ -143,9 +152,12 @@ namespace Ethanol.ContextBuilder.Writers
                 {
                     try
                     {
-                        _writer.WriteLine(line);
-                        _writer.Flush();
-                        __logger.Trace($"Sent: {line.Substring(0, 50)}...");
+                        foreach (var line in lines)
+                        {
+                            _writer.WriteLine(line);
+                            _writer.Flush();
+                            __logger.Trace($"Sent: {line.Substring(0, 50)}...");
+                        }
                         return true;
                     }
                     catch (SocketException e)
@@ -199,11 +211,34 @@ namespace Ethanol.ContextBuilder.Writers
                 }
             }
 
+            // TODO:
+            // how to take as many items as possible and try to write them in a block:
+            // 
+            void WriterTask()
+            {
+                while (!_queue.IsCompleted)
+                {
+                    var itemsToSend = new List<string>();
+                    var value = _queue.Take();
+                    itemsToSend.Add(value);
+                    while (_queue.TryTake(out value)) itemsToSend.Add(value);
+
+                    lock (this)
+                    {
+                        if (TryWriteInternal(itemsToSend) == false)
+                        {
+                            __logger.Error($"Cannot write objects.");
+                        }
+                    }
+                }
+            }
+
+
             protected override void Open()
             {
-                lock (this)
+                if (_writerTask != null)
                 {
-                    TryConnectInternal();
+                    _writerTask = Task.Factory.StartNew(WriterTask);
                 }
             }
             /// <summary>
@@ -211,6 +246,10 @@ namespace Ethanol.ContextBuilder.Writers
             /// </summary>
             protected override void Close()
             {
+                __logger.Trace("Close called.");
+                _queue.CompleteAdding();
+                __logger.Trace("Queue closed, waiting for writer task to finish.");
+                Task.WaitAny(_writerTask);
                 lock (this)
                 {
                     CloseConnectionInternal();

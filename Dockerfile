@@ -11,7 +11,7 @@
 #
 # To run the application, replace TARGET-HOST with valid Tcp server connection string, e.g., 192.168.1.21:6364, and execute:
 #
-#   $ docker run -p 6363:6363 ethanol Build-Context -r FlowmonJson:{tcp=127.0.0.1:6363} -c default-config.yaml -w JsonWriter:{tcp=TARGET-HOST}
+#   $ docker run -p 6363:6363 ethanol Build-Context -r FlowmonJson:{tcp=0.0.0.0:6363} -c default-config.yaml -w JsonWriter:{tcp=TARGET-HOST}
 #
 #-------------------------------------------------------------------------------
 

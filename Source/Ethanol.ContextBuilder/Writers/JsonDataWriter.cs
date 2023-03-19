@@ -233,12 +233,16 @@ namespace Ethanol.ContextBuilder.Writers
                 }
             }
 
-
             protected override void Open()
             {
-                if (_writerTask != null)
+                if (_writerTask == null)
                 {
+                    __logger.Warn("Exexuting writer task.");
                     _writerTask = Task.Factory.StartNew(WriterTask);
+                }
+                else
+                {
+                    __logger.Warn("Writer task is already running.");
                 }
             }
             /// <summary>

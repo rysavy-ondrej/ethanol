@@ -32,10 +32,14 @@ namespace Ethanol.ContextBuilder.Writers
         }
 
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Handles the receipt of a new value from the observed sequence by ensuring the writer is open, and then writing the value to it.
+        /// This method is part of the IObserver interface implementation.
+        /// </summary>
+        /// <param name="value">The TRecord object representing the next value in the observed sequence.</param>
         public void OnNext(TRecord value)
         {
-            if (!_isopen) { Open(); _isopen = false; }
+            if (!_isopen) { Open(); _isopen = true; }
             Write(value);
         }
 

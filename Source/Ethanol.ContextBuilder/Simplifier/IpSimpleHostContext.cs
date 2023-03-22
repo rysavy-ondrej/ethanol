@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Simplifier
     /// <param name="IssuerName">The name of the certificate issuer.</param>
     /// <param name="SubjectName">The name of the certificate subject.</param>
     /// <param name="OrganisationName">The name of the certificate organisation.</param>
-    public record TlsHandshakeInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, string ApplicationProtocol, string ServerNameIndication, string JA3Fingerprint, string IssuerName, string SubjectName, string OrganisationName);
+    public record TlsHandshakeInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, string ApplicationProtocol, string ServerNameIndication, string JA3Fingerprint, string IssuerName, string SubjectName, string OrganisationName, string CipherSuites, string EllipticCurves);
 
     /// <summary>
     /// Represents a simplified IP host context.

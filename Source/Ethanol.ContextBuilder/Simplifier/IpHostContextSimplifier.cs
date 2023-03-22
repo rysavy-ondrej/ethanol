@@ -85,7 +85,7 @@ namespace Ethanol.ContextBuilder.Simplifier
 
             var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress, ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.Method, x.Hostname + x.Url)).ToArray();
             
-            var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !String.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress, ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName)).ToArray();
+            var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !String.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress, ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
             
             var simpleContext = new IpSimpleHostContext(value.Payload.HostAddress, osInfo, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
             

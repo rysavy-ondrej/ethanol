@@ -1,0 +1,6 @@
+window-size: 00:05:00
+window-hop: 00:05:00
+flow-tag-enricher:
+    jsonfile:
+        filename: webuser.tcp.json
+        collection: flows

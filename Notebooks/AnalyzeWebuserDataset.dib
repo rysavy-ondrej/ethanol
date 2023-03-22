@@ -1,6 +1,27 @@
 #!meta
 
-{"kernelInfo":{"defaultKernelName":"csharp","items":[{"name":"csharp","aliases":["c#","C#"],"languageName":"C#"},{"name":"sql","languageName":"SQL","aliases":[]},{"name":"vscode","aliases":["frontend"],"languageName":null},{"name":"mermaid","languageName":"Mermaid","aliases":[]}]}}
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":["C#","c#"],"languageName":"C#","name":"csharp"},{"aliases":[],"languageName":"Mermaid","name":"mermaid"},{"aliases":[],"languageName":"SQL","name":"sql"},{"aliases":["frontend"],"name":"vscode"}]}}
+
+#!markdown
+
+# Phase 1: Web browser detection
+
+In this phase we aim at detection of web browsers and a few selected applications. A monitored machine was prepared with the installations of the following applications:
+
+* Microsoft Edge
+* Google Chrome
+* Firefox
+* Tor Browser
+* WhatsApp Desktop
+* Zoom running a conference
+* Spotify -- both web player and application
+
+User activity was simulated by opening web browsers for random URLs from a list of most popular web pages (https://tranco-list.eu/list/GZ87K/1000000).
+
+Two context files was precomputed with annotated application processes:
+
+* [webuser1.ctx.json](Data\webuser1.ctx.json)
+* [webuser2.ctx.json](Data\webuser2.ctx.json)
 
 #!csharp
 
@@ -28,21 +49,16 @@ using System.Text;
 using System.Text.Json;
 using System.Linq;
 
-#!csharp
+#!markdown
 
-using System.Globalization;
-static void WriteToCsv<T>(this IEnumerable<T> records, string filename)
-{
-    using (var writer = new StreamWriter(filename)) {
-        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
-            csv.WriteRecords(records);
-        }
-    }
-}
+## Prepare
+
+Prepare the code for analysis and loading host-based context data. Data are loaded from ndjson files and we need a minimal definition to deserialize these files:
 
 #!csharp
 
 using System.Net;
+using System.Globalization;
 
 public record ObservableEvent<TPayload>(DateTime StartTime,DateTime EndTime,TPayload Payload);
 
@@ -76,58 +92,273 @@ public class IPAddressConverter : System.Text.Json.Serialization.JsonConverter<I
 var jsonOptions = new JsonSerializerOptions();
 jsonOptions.Converters.Add(new IPAddressConverter());
 
+
+static void WriteToCsv<T>(this IEnumerable<T> records, string filename)
+{
+    using (var writer = new StreamWriter(filename)) {
+        using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+            csv.WriteRecords(records);
+        }
+    }
+}
+
 #!markdown
 
-# Load source data
+# Load nad prepare source data
 
-The JSON files stored in ..\TestData\tor-context are the source datasets in this analysis. Each file contains lines of JSON objects. 
-
-
-See the tutorial on how to load and inspect data: https://rubikscode.net/2021/09/27/net-interactive-jupyter-notebooks/
+We aim to analyze encrypted communication in the dataset. The following code reads all lines from the 'webuser1.ctx.json' file located in the 'Data' folder, and deserializes each line into an 'ObservableEvent<IpSimpleHostContext>' object using JsonSerializer. It then groups these objects by their 'HostAddress' property to create a list of unique hosts. Finally, the total count of hosts is displayed, and the top 10 hosts are displayed in descending order based on the number of events associated with each host.
 
 #!csharp
 
-var items = File.ReadAllLines(@$"e:\Ethanol\webuser2\webuser.ctx.json");
+var items = File.ReadAllLines(@"Data\webuser2.ctx.json");
 // get context only for the selected host:
-var host = items
-     .Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions))
-     .Where(x=>x.Payload.HostAddress.ToString()=="192.168.111.19");
+var events = items.Select(x => JsonSerializer.Deserialize<ObservableEvent<IpSimpleHostContext>>(x, jsonOptions));
+var hosts = events.GroupBy(x=>x.Payload.HostAddress).ToList();
 
-var tls = host.SelectMany(x=>x.Payload.Secured);
+$"Host count: {hosts.Count()}".Display();
+$"Top (10) hosts:".Display();
+hosts.Select(x=>(x.Key, x.Count())).OrderByDescending(x=>x.Item2).Take(10).Display();
+
+var tls = hosts.Where(x=>x.Key.ToString() == "192.168.111.19").SelectMany(x=>x.SelectMany(y=>y.Payload.Secured)).ToList();
+
+$"Monitored host 192.168.111.19, has {tls.Count} tls connection handshakes.".Display();
 
 #!markdown
 
-## Detect Tor group of flows
+## Statistics of TLS connections
 
-GOAL: Be able to classify the entire bag-of-ja3-flows as Tor/Non-Tor connections.
+The `tls` variable is a list of TLC connection handshakes initiated by the monitored host (192.168.111.19). 
 
-QUESTION: What methods to use for this?
-
-ELABORATION:
-Visually, it is very easy to distinguihes as the Tor flows are quite uniform. Only SNI is present nor other names, ports are {443, 9001, 5353}, there is not DNS translation leading to IP address of the Tor node.
-
-No other group of flows has the same characteristic.
+The overall statistics of application proceses and used JA3 hashes is computed.
 
 #!csharp
 
-var tlsbrief = tls.Select(t=> new {App = t.ApplicationProcessName, Jas3 = t.JA3Fingerprint, Host = t.RemoteHostName, Sni = t.ServerNameIndication, Subject =t.SubjectName}).ToList();
-tlsbrief.WriteToCsv("app_named.csv");
+record TlsRow(string App, string JA3, string Host, string Sni, string Subject);
 
-tlsbrief.Where(x=>x.Sni?.Contains("tiktok")??false).WriteToCsv("tiktok.csv");
+var tlsnames = tls.Select(t=> new TlsRow(t.ApplicationProcessName, t.JA3Fingerprint, t.RemoteHostName, t.ServerNameIndication,t.SubjectName)).ToList();
+tlsnames.WriteToCsv("app-named.csv");
 
-tlsbrief.Where(x=>x.Sni?.Contains("insta")??false).WriteToCsv("instagram.csv");
+tlsnames.Where(x=>x.App == "chrome").WriteToCsv("app-chrome.csv");
+tlsnames.Where(x=>x.App == "msedge").WriteToCsv("app-msedge.csv");
+tlsnames.Where(x=>x.App == "firefox").WriteToCsv("app-firefox.csv");
+tlsnames.Where(x=>x.App == "tor").WriteToCsv("app-tor.csv");
+tlsnames.Where(x=>x.App == "Spotify").WriteToCsv("app-spotify.csv");
+tlsnames.Where(x=>x.App == "Zoom").WriteToCsv("app-zoom.csv");
+tlsnames.Where(x=>x.App == "pwsh").WriteToCsv("app-pwsh.csv");
+tlsnames.Where(x=>x.App == "WhatsApp").WriteToCsv("app-whatsapp.csv");
+tlsnames.Where(x=>x.Sni?.Contains("tiktok")??false).WriteToCsv("tiktok.csv");
+tlsnames.Where(x=>x.Sni?.Contains("insta")??false).WriteToCsv("instagram.csv");
 
-tlsbrief.Where(x=>x.App == "chrome").WriteToCsv("chrome.csv");
+var tlsHandshakes = tlsnames.Where(x=>!String.IsNullOrWhiteSpace(x.JA3)).ToList(); 
+var tlsByApp = tlsHandshakes.Where(x=>!String.IsNullOrWhiteSpace(x.App)).GroupBy(x=>x.App).ToList();
 
-tlsbrief.Where(x=>x.App == "msedge").WriteToCsv("msedge.csv");
+$"TLS connections with hash: {tlsHandshakes.Count}".Display();
+$"Unique JA3 hashes: {tlsnames.GroupBy(x=>x.JA3).Count()}".Display();
+$"Unique hashes by applications:".Display();
+foreach(var app in tlsByApp)
+{
+    var appja3 = app.GroupBy(x=>x.JA3).ToList();
+    $"  {app.Key} : {appja3.Count()}".Display();
+    foreach(var ja3 in appja3.OrderByDescending(x=>x.Count()).Take(10))
+    {
+        $"    {ja3.Key}: {ja3.Count()}".Display();
+    }
+}
 
-tlsbrief.Where(x=>x.App == "firefox").WriteToCsv("firefox.csv");
+#!markdown
 
-tlsbrief.Where(x=>x.App == "tor").WriteToCsv("tor.csv");
+Applications tend to use a few specific JA3, except:
 
-tlsbrief.Where(x=>x.App == "Spotify").WriteToCsv("spotify.csv");
+* Google Chrome that generates for each connection new JA3 string.
+* WhatsApp that shares JA3 with system strings, in particular, svchost and lsass (Local Security Authority Subsystem Service process in Windows is responsible for several security-related functions).
 
 
-tlsbrief.Where(x=>x.App == "Zoom").WriteToCsv("zoom.csv");
+### Google Chrome's JA3
 
-// Can we link different JA3 groups by host/sni ??
+JA3 value is computed from:
+* TLS version
+* Supported cipher suites
+* Supported elliptic curves
+* Supported elliptic curve point formats
+* Supported TLS extensions
+
+As observed Chrome, uses different prefix for cipher suites, various elliptic curves, and extensions.
+However, in the analyzed samples, the cipher suites have variable two byte prefix followed always by 0113021303132BC02FC02CC030C0.
+
+```
+"TLS_ALPN":"http/1.1",
+"TLS_CIPHER_SUITE":49200,
+"TLS_CIPHER_SUITES":"3A3A0113021303132BC02FC02CC030C0",
+"TLS_CLIENT_KEY_LENGTH":784,
+"TLS_CLIENT_RANDOM":"62446EB0478F991CE997ABA2EA2A02C09BF5F6182D021C1CA488F38D978BA8E4",
+"TLS_CLIENT_SESSION_ID":"7C573C60E06A60F3357A9168C30E19D3DD3F7700909D949356A3AF463CC20521",
+"TLS_CLIENT_VERSION":64250,
+"TLS_CONTENT_TYPE":4,
+"TLS_EC_POINT_FORMATS":"00FFFFFF",
+"TLS_ELLIPTIC_CURVES":"AAAA1D0017001800",
+"TLS_EXTENSION_LENGTHS":"00000000030000002B00050005000100020002001E0000000A000B00120007000100C100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_EXTENSION_TYPES":"5A5A23001B00120033006944050001FF0B002D00000017000A0010000D002B009A9A1500FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_HANDSHAKE_TYPE":68356,
+"TLS_ISSUER_CN":"Microsoft Azure TLS Issuing CA 02",
+"TLS_JA3_FINGERPRINT":"D3CBB10286923223C215F0403D6DD0B0",
+"TLS_PUBLIC_KEY_ALG":6,
+"TLS_PUBLIC_KEY_LENGTH":2048,
+"TLS_SERVER_RANDOM":"640B48DAB42659C9921E3D8851C468300C5B7ED0095F66CBC923C8FD5179BB6D",
+"TLS_SERVER_SESSION_ID":"401700003E3D3D53641032276969F1875C5D3E04A8B92554109CBB640065526B",
+"TLS_SERVER_VERSION":771,
+"TLS_SIGNATURE_ALG":669,
+"TLS_SNI":"eur.loki.delve.office.com",
+"TLS_SNI_LENGTH":25,
+"TLS_SUBJECT_CN":"loki.delve.office.com",
+"TLS_SUBJECT_ON":"Microsoft Corporation",
+"TLS_VALIDITY_NOT_AFTER":1693070225,
+"TLS_VALIDITY_NOT_BEFORE":1661966225
+```
+
+```
+"TLS_ALPN":"http/1.1",
+"TLS_CIPHER_SUITE":49200,
+"TLS_CIPHER_SUITES":"3A3A0113021303132BC02FC02CC030C0",
+"TLS_CLIENT_KEY_LENGTH":784,
+"TLS_CLIENT_RANDOM":"692F3806B48E15EB23DB38B263F429A88B497C8FFE8FA45FC5E60C9B6BBB6093",
+"TLS_CLIENT_SESSION_ID":"401700003E3D3D53641032276969F1875C5D3E04A8B92554109CBB640065526B",
+"TLS_CLIENT_VERSION":23130,
+"TLS_CONTENT_TYPE":4,
+"TLS_EC_POINT_FORMATS":"00FFFFFF",
+"TLS_ELLIPTIC_CURVES":"2A2A1D0017001800",
+"TLS_EXTENSION_LENGTHS":"00000000030012000A00000000000100050005002B000B000200070002001E000100C100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_EXTENSION_TYPES":"4A4A23001B000D000A001200170001FF69440500330010002D002B000B0000000A0A1500FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_HANDSHAKE_TYPE":68356,
+"TLS_ISSUER_CN":"Microsoft Azure TLS Issuing CA 02",
+"TLS_JA3_FINGERPRINT":"84A6C945F8E558603411E67BB7C99395",
+"TLS_PUBLIC_KEY_ALG":6,
+"TLS_PUBLIC_KEY_LENGTH":2048,
+"TLS_SERVER_RANDOM":"640B48FDDB42CB1EA4AFFF2FE939BB3A1A31599BA0ED6B6A92D35396A671D15C",
+"TLS_SERVER_SESSION_ID":"32250000D374E39030CB969EE70C4824E24A88FD802D09ACA6763C49A27AA043",
+"TLS_SERVER_VERSION":771,
+"TLS_SIGNATURE_ALG":669,
+"TLS_SNI":"eur.loki.delve.office.com",
+"TLS_SNI_LENGTH":25,
+"TLS_SUBJECT_CN":"loki.delve.office.com",
+"TLS_SUBJECT_ON":"Microsoft Corporation",
+"TLS_VALIDITY_NOT_AFTER":1693070225,
+"TLS_VALIDITY_NOT_BEFORE":1661966225
+```
+```
+"TLS_CIPHER_SUITE":4865,
+"TLS_CIPHER_SUITES":"CACA0113021303132BC02FC02CC030C0",
+"TLS_CLIENT_KEY_LENGTH":256,
+"TLS_CLIENT_RANDOM":"5A7BB216D0830FB971461F5ECF9B7EB05DB84B271EEA718BDE6ACA60029E4EED",
+"TLS_CLIENT_SESSION_ID":"D4B799281B1A6E077B4FA6E62E87BD30890652E2334E879A0DBAD0AC8379439F",
+"TLS_CLIENT_VERSION":6682,
+"TLS_CONTENT_TYPE":13,
+"TLS_EC_POINT_FORMATS":"00FFFFFF",
+"TLS_ELLIPTIC_CURVES":"BABA1D0017001800",
+"TLS_EXTENSION_LENGTHS":"0000070005000A000200000002002B000000120014000300000001000E0005000100C800FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_EXTENSION_TYPES":"BABA2B0069440A002D0012000B00330017000D0000001B00230001FF100005007A7A1500FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+"TLS_HANDSHAKE_TYPE":6,
+"TLS_JA3_FINGERPRINT":"E48110B7B4EE94398D52D1AB89636EFD",
+"TLS_SERVER_RANDOM":"20060C5A414A8D92BD713E1D72C6C31527ABBD2A7D5686F2D56DAB2D00B98E1C",
+"TLS_SERVER_SESSION_ID":"D4B799281B1A6E077B4FA6E62E87BD30890652E2334E879A0DBAD0AC8379439F",
+"TLS_SERVER_VERSION":772,
+"TLS_SETUP_TIME":160880,
+"TLS_SNI":"us02web.zoom.us",
+"TLS_SNI_LENGTH":15
+```
+
+#!markdown
+
+## Simple application detection
+
+Based on the observations, each process creates a specific connection. It is possible to find the pattern in one of the domain names that identifies this connection. To test this assumption we use a collection of keywords and test the mapping these keywords for individual processes. 
+
+#!csharp
+
+var keywords = new [] { 
+    ("graph.microsoft","msedge"), ("edge.microsoft","msedge"),                               
+    ("clients2.google.com","chrome"), ("safebrowsing.googleapis.com","chrome"),               // chrome 
+    ("firefox.settings","firefox"), ("telemetry.mozilla","firefox"),("service.mozzila","firefox"), // firefox
+    ("services.visualstudio.com","pwsh"),                                                     // pwsh (vs code?)
+    ("dealer.spotify","Spotify"),                                                             // spotify
+    ("whatsapp.net","WhatsApp"),                                                              // whatsapp
+    ("zoom.us","Zoom")                                                                        // zoom                    
+};
+
+#!csharp
+
+record TlsRowHits(TlsRow Tls, string[] Matches, string [] Apps);
+// compute dictionary for JA3 -> ApplicationTag
+var ja3MapsToApp = new Dictionary<string, string[]>();
+void AddToJa3MapsToApp(string ja3, string[] apps)
+{
+    if (ja3MapsToApp.TryGetValue(ja3, out var appsCur))
+    {
+        ja3MapsToApp[ja3] = appsCur.Concat(apps).Distinct().ToArray();
+    }   
+    else
+    {
+        ja3MapsToApp[ja3] = apps;
+    } 
+}
+
+
+IEnumerable<TlsRowHits> Hits(IEnumerable<TlsRow> rows)
+{
+    foreach (var row in rows)
+    {
+        var kmatch = new List<(string,string)>();
+        foreach(var k in keywords)
+        {
+            if ((row.Sni?.ToLowerInvariant().Contains(k.Item1) ?? false)  
+            ||  (row.Host?.ToLowerInvariant().Contains(k.Item1) ?? false)
+            ||  (row.Subject?.ToLowerInvariant().Contains(k.Item1) ?? false))
+            {
+                kmatch.Add(k);
+            }
+        }
+        if (kmatch.Count>0)
+        {
+            var apps = kmatch.Select(x=>x.Item2).Distinct().ToArray();
+            AddToJa3MapsToApp(row.JA3, apps);
+            yield return new TlsRowHits(row, kmatch.Select(x=>x.Item1).ToArray(), apps);
+        }
+    }
+}
+
+
+
+// first demonstrate how it works form known flows:
+foreach(var app in tlsByApp)
+{
+    $"Application {app.Key} hits:".Display();
+    var keywordHits = Hits(app).ToList();
+    foreach(var h in keywordHits)
+    {
+        var apx = h.Apps.FirstOrDefault();
+        var ks = String.Join(',', h.Matches);
+        $" {apx}[{ks}]: {h.Tls}".Display();
+    }
+}
+
+ja3MapsToApp.Display();
+
+#!markdown
+
+## Flow application labeling 
+
+Based on the identifies flows, we can propagate the information to other flows using JA3 relations.
+
+#!csharp
+
+record TlsTagRow(string AppsTag, string App, string JA3, string Host, string Sni, string Subject);
+
+TlsTagRow TryTagWithApplication(TlsRow row)
+{
+    var appstag = ja3MapsToApp.TryGetValue(row.JA3, out var apps) ? apps : Array.Empty<string>();
+    var appsTagString = String.Join(':', appstag);
+    return new TlsTagRow(appsTagString, row.App, row.JA3, row.Host, row.Sni, row.Subject);
+}
+var tlsTagged = tlsHandshakes.Select(TryTagWithApplication).ToList();
+
+
+tlsTagged.WriteToCsv("app-tagged.csv");

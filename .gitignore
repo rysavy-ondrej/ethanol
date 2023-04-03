@@ -351,3 +351,4 @@ MigrationBackup/
 TestData/Ethanol.Console.SocketRecord.dump
 TestData/output.yaml
 TestData/iphost-csv.contex.yaml
+.DS_Store

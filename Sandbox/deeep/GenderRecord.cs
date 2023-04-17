@@ -12,38 +12,29 @@
     public int Income { get; set; }
     public string FavoriteColor { get; set; }
 
-    public static IEnumerable<GenderRecord> Load(string path)
+    public static IEnumerable<GenderRecord> LoadCsv(string filePath)
     {
-        using (var reader = new StreamReader(path))
+        using (var reader = new StreamReader(filePath))
         using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
         {
-            var records = csv.GetRecords<GenderRecord>().ToList();
+            var records = csv.GetRecords<GenderRecord>();
             foreach (var record in records)
             {
                 yield return record;
             }
         }
     }
-    public (float[],float[]) AsFloatArray()
+    public DataPoint AsFloatArray()
     {
-        return (
-            new float[] { 
-                this.Gender.Trim() == "female" ? 1f : 0f, 
-                this.Gender.Trim() == "male" ? 1f : 0f }, 
+        return new DataPoint(
             new float[] {   
                 (float)this.Age / 100,
                 (float)this.Height / 250,
                 (float)this.Weight / 200,
                 (float)this.Income / 500000
-            });
-    }
- }
- public static class EnumerableExtensions
- {
-    public static (IEnumerable<T1>, IEnumerable<T2>) Unzip<T1, T2>(this IEnumerable<(T1, T2)> source)
-    {
-        var firsts = source.Select(x => x.Item1);
-        var seconds = source.Select(x => x.Item2);
-        return (firsts, seconds);
+            },
+            new float[] { 
+                this.Gender.Trim() == "female" ? 1f : 0f, 
+                this.Gender.Trim() == "male" ? 1f : 0f });
     }
  }

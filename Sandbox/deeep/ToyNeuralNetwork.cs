@@ -1,6 +1,10 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+
+
+public record DataPoint(float[] Input, float[] Output);
+
 public class ToyNeuralNetwork : ICloneable
 {
     private static Random _random = Random.Shared;

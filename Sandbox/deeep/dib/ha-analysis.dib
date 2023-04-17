@@ -1,0 +1,93 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+#r "nuget:MKL.NET.osx-x64"
+#r "nuget:Microsoft.ML"
+#r "nuget:Microsoft.ML.TimeSeries"
+using System.Text.Json;
+using System.IO;
+using Microsoft.ML;
+
+var mlContext = new MLContext();
+public record HaDataPoint
+{
+    public string name { get; set; }
+    public string message { get; set; }
+    public DateTime when { get; set; }
+    public string domain { get; set; }
+    public string state { get; set; }
+    public string entity_id { get; set; }
+}
+
+#!csharp
+
+var jsonStream  = new FileStream("../data/ha_data.json", FileMode.Open);
+var records = JsonSerializer.Deserialize<List<HaDataPoint>>(jsonStream);
+Console.WriteLine($"Total records = {records.Count}");
+
+#!markdown
+
+# ARIMA
+This example demonostrates the Single-Step AutoRegressive Integrated Moving Average (ARIMA) method for forecasting, which is based on the Singular Spectrum Analysis (SSA) algorithm. The output of the forecasting pipeline is a new column in the IDataView object with the specified output column name ("ForecastedValue" in this case), containing the predicted future values.
+
+#!markdown
+
+STEP 1: Prepare time-series data into a IDataView object.
+
+#!csharp
+
+var entities = records.GroupBy(x=>x.entity_id, (k,v)=> new { Entity = k, Events = v.ToList() }).ToList();
+
+public record InputPoint
+{
+    public string SensorName { get; set; }
+    public DateTime Date { get; set; }
+    public float Value { get; set; }
+}
+
+public class OutputPoint
+{
+    public DateTime Date { get; set; }
+    public float ForecastedValue { get; set; }
+}
+
+var sensor = entities.Where(x=>x.Entity == "binary_sensor.hall_motion_1").First().Events; 
+// need to transform from entities to input points.
+var data = mlContext.Data.LoadFromEnumerable(sensor.Select(y=> new InputPoint { SensorName = y.entity_id, Date = y.when, Value = y.state == "on" ? 1 : 0 }));
+
+sensor.Display();
+
+#!markdown
+
+STEP 2: Create a new instance of the SingleStepForecastingEstimator class and specify the input and output columns of your data, as well as the forecasting horizon (number of future values to predict).
+
+#!csharp
+
+var forecastingPipeline = mlContext.Forecasting.ForecastBySsa(
+    outputColumnName: "ForecastedValue",
+    inputColumnName: "Value",
+    windowSize: 6,
+    seriesLength: 24,
+    trainSize: 24,
+    horizon: 6);
+
+#!markdown
+
+STEP 3: Fit the forecasting pipeline to your data using the Fit method.
+
+#!csharp
+
+var forecaster = forecastingPipeline.Fit(data);
+
+#!markdown
+
+STEP 4: Use the forecaster to predict future values by creating a new IDataView object with the future dates you want to predict.
+
+#!csharp
+
+var forecastEngine = forecaster.CreateTimeSeriesEngine<MyData, MyForecast>(mlContext);
+var futureData = new MyData { Date = new DateTime(2023, 5, 1) };
+var forecast = forecastEngine.Predict(futureData);

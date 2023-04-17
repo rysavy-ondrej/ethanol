@@ -256,14 +256,14 @@ namespace Ethanol.ContextBuilder.Readers
                 try
                 {
                     // Parse the connection string into an IPEndPoint object
-                    var endpoint = IPEndPoint.Parse(connectionString);
+                    var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
 
                     // Create the writer
                     return new TcpReader(endpoint);
                 }
                 catch (Exception ex)
                 {
-                    __logger.Error($"Error creating TcpOutputWriter from '{connectionString}' string: {ex.Message}");
+                    __logger.Error($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
                     return null;
                 }
             }

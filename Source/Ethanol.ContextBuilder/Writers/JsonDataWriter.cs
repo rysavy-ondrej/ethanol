@@ -264,9 +264,10 @@ namespace Ethanol.ContextBuilder.Writers
             {
                 try
                 {
+                    __logger.Info($"TcpWriter Connection string = {connectionString}");
                     // Parse the connection string into an IPEndPoint object
-                    var endpoint = IPEndPoint.Parse(connectionString);
-
+                    var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
+                    __logger.Info($"TcpWriter Endpoint = {endpoint}");
                     // Create the writer
                     return new TcpWriter(endpoint);
                 }

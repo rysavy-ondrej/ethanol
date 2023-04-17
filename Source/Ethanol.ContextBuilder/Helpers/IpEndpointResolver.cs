@@ -3,8 +3,10 @@ using System.Net;
 
 public static class IPEndPointResolver
 {
+    static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
     public static IPEndPoint GetIPEndPoint(string input, int defaultPort = 0)
     {
+        
         string[] parts = input.Split(':');
         if (parts.Length > 2)
         {
@@ -17,9 +19,9 @@ public static class IPEndPointResolver
             IPHostEntry hostEntry = Dns.GetHostEntry(parts[0]);
             address = hostEntry.AddressList[0];
         }
-
+ 
         int resolvedPort = (parts.Length == 2 ? int.Parse(parts[1]) : defaultPort);
-
+       
         return new IPEndPoint(address, resolvedPort);
     }
 }

@@ -1,0 +1,10 @@
+window-size: 00:01:00
+window-hop: 00:01:00
+host-tag-enricher:
+    postgres:
+        server: ${POSTGRES_IP}
+        port: ${POSTGRES_PORT}
+        database: ethanol
+        user: postgres
+        password: ethanol-password
+        tableName: smartads

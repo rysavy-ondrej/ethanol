@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Pipeline
@@ -34,8 +35,9 @@ namespace Ethanol.ContextBuilder.Pipeline
     /// </summary>
     public static class PipelineConfigurationSerializer
     {
-        static YamlDotNet.Serialization.Deserializer deserializer = new YamlDotNet.Serialization.Deserializer();
-        static YamlDotNet.Serialization.Serializer serializer = new YamlDotNet.Serialization.Serializer();
+        static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
+        static YamlDotNet.Serialization.IDeserializer deserializer = new YamlDotNet.Serialization.Deserializer();
+        static YamlDotNet.Serialization.ISerializer serializer = new YamlDotNet.Serialization.Serializer();
 
         /// <summary>
         /// Creates a new <see cref="PipelineConfiguration"/> object from the specified YAML string.
@@ -43,7 +45,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// <param name="text">The YAML string to deserialize.</param>
         /// <returns>A new <see cref="PipelineConfiguration"/> object representing the deserialized YAML data.</returns>
         public static PipelineConfiguration CreateFrom(string text)
-        {
+        {            
             var config = deserializer.Deserialize<PipelineConfiguration>(text);
             return config;
         }
@@ -53,11 +55,32 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// </summary>
         /// <param name="path">The path to the YAML file to load.</param>
         /// <returns>A new <see cref="PipelineConfiguration"/> object representing the deserialized YAML data.</returns>
-        public static PipelineConfiguration LoadFromFile(string path)
+        public static PipelineConfiguration LoadFromFile(string path, bool resolveEnvironmentVariables = true)
         {
             var configurationString = System.IO.File.ReadAllText(path);
+            if (resolveEnvironmentVariables)
+            {
+                configurationString = ResolveEnvironmentVariables(configurationString);
+            }
+            __logger.Info($"Loading pipeline configuration: {configurationString}");
             var config = deserializer.Deserialize<PipelineConfiguration>(configurationString);
             return config;
+        }
+
+        /// <summary>
+        /// Replaces every reference to an environment variables, e.g., ${VARIABLE}, by its content or e,pty string if the variable is not set.
+        /// </summary>
+        private static string ResolveEnvironmentVariables(string input)
+        {
+            Regex regex = new Regex(@"\$\{([\w_]+)\}");
+            string output = regex.Replace(input, match =>
+            {
+                string variableName = match.Groups[1].Value;
+                string variableValue = Environment.GetEnvironmentVariable(variableName);
+                return variableValue ?? String.Empty;
+            });
+            
+            return output;
         }
 
         /// <summary>

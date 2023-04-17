@@ -7,12 +7,14 @@
 #
 # ..or directly from GitHub:
 #
-#   $ docker build -t ehtanol https://github.com/rysavy-ondrej/ethanol
+#   $ docker build -t ethanol https://github.com/rysavy-ondrej/ethanol
 #
 # To run the application, replace TARGET-HOST with valid Tcp server connection string, e.g., 192.168.1.21:6364, and execute:
 #
 #   $ docker run -p 6363:6363 ethanol Build-Context -r FlowmonJson:{tcp=0.0.0.0:6363} -c default-config.yaml -w JsonWriter:{tcp=TARGET-HOST}
 #
+# The file can be also used from docker-compose:
+# In this case the following arguments shold be specify to provide information on other service points.
 #-------------------------------------------------------------------------------
 
 # Use Microsoft's official .NET 7 SDK image as the base image
@@ -33,8 +35,11 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 # Set the working directory to /app and copy the published output
 WORKDIR /app
 COPY --from=build /bin ./
-
 COPY ./Source/Ethanol.ContextBuilder/Configurations ./
-
+COPY ./Publish/Docker/ethanol-config.yml ./
 # Set the entry point for the container
-ENTRYPOINT ["./Ethanol.ContextBuilder"]
+#ENTRYPOINT ["./Ethanol.ContextBuilder"]
+# specify the default arguments...
+#CMD [ "Build-Context", "-r", "FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}}", "-c", "ethanol-config.yml", "-w", "JsonWriter:{tcp=${FLUENTBIT_IP}:${FLUENTBIT_PORT}}" ]
+
+CMD sh -c './Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}} -c ethanol-config.yml -w JsonWriter:{tcp=${FLUENTBIT_IP}:${FLUENTBIT_PORT}}'

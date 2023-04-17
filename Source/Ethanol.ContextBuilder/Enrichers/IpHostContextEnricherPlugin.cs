@@ -4,6 +4,8 @@ using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
 using System.Globalization;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using static Ethanol.ContextBuilder.Enrichers.IpHostContextEnricherPlugin.JsonConfiguration;
 
@@ -52,7 +54,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             public string Server { get; set; }
             
             [YamlMember(Alias = "port", Description = "The port on which the server listen.")]
-            public int Port { get; set; }
+            public string Port { get; set; }
             
             [YamlMember(Alias = "database", Description = "The database to open on the server.")]
             public string Database { get; set; }
@@ -66,7 +68,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             [YamlMember(Alias = "tableName", Description = "The name of the table in the database to get the data from.")]
             public string TableName { get; set; } = String.Empty;
 
-            public PostgresCofiguration(string server, int port, string database, string user, string password)
+            public PostgresCofiguration(string server, string port, string database, string user, string password)
             {
                 Server = server;
                 Port = port;
@@ -79,7 +81,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
             }
 
-            public static PostgresCofiguration Empty => new PostgresCofiguration(String.Empty, 0, String.Empty, String.Empty, String.Empty);
+            public static PostgresCofiguration Empty => new PostgresCofiguration(String.Empty, String.Empty, String.Empty, String.Empty, String.Empty);
 
             /// <summary>
             /// Gets the connection informaiton as a Postres connection string, e.g.:

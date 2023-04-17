@@ -18,6 +18,12 @@ Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required.
 
 The documentation is available for [Context Builder 1.0.](Docs/ContextBuilder/Readme.md)
 
+## Usage
+
+The easies way is to use prepared Docker compose to setup application environment consisting of 
+Ethanol for flow processing and context building, Fluent-Bit serving as a stream data router, and PostgreSql for storeing the context and host tag data.
+
+See [instructions](Publish/Docker/Readme.md) for the step-by-step guidelines on how to use. 
 
 ## Acknowledgments
 

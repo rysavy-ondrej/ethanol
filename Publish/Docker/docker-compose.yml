@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  fluentbit-service:
+    image: fluent/fluent-bit:1.9
+    ports:
+      - 5170:5170
+    volumes:
+      - ./log:/var/log
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+    environment:
+      FLUENT_UID: 0
+      POSTGRES_IP: postgres-service
+      ETHANOL_IP: ethanol-service
+      ETHANOL_PORT: 5180
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ethanol
+    depends_on:
+      postgres-service:
+        condition: service_healthy        
+
+  postgres-service:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ethanol
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ethanol-service:
+    build: 
+      context: ../../
+    environment:
+      POSTGRES_IP: postgres-service
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ethanol
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      FLUENTBIT_IP: fluentbit-service
+      FLUENTBIT_PORT: 5175
+      ETHANOL_PORT: 5180
+    depends_on:
+      postgres-service:
+        condition: service_healthy
+      fluentbit-service:
+        condition: service_started

@@ -257,7 +257,7 @@ namespace Ethanol.ContextBuilder.Readers
                 {
                     // Parse the connection string into an IPEndPoint object
                     var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
-
+                    __logger.Info($"Listening for incoming tcp connection, endpoint={endpoint}.");
                     // Create the writer
                     return new TcpReader(endpoint);
                 }

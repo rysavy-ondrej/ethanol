@@ -4,14 +4,25 @@
 
 #!csharp
 
-#r "nuget:MKL.NET.osx-x64"
 #r "nuget:Microsoft.ML"
 #r "nuget:Microsoft.ML.TimeSeries"
 using System.Text.Json;
 using System.IO;
 using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.Transforms.TimeSeries;
+
+
+#r "nuget:ScottPlot"
+// Setup a custom formatter to display plots as images
+using Microsoft.DotNet.Interactive.Formatting;
+Formatter.Register(typeof(ScottPlot.Plot), (p, w) => 
+    w.Write(((ScottPlot.Plot)p).GetImageHTML()), HtmlFormatter.MimeType);
 
 var mlContext = new MLContext();
+
+#!csharp
+
 public record HaDataPoint
 {
     public string name { get; set; }
@@ -21,25 +32,21 @@ public record HaDataPoint
     public string state { get; set; }
     public string entity_id { get; set; }
 }
-
-#!csharp
-
 var jsonStream  = new FileStream("../data/ha_data.json", FileMode.Open);
 var records = JsonSerializer.Deserialize<List<HaDataPoint>>(jsonStream);
 Console.WriteLine($"Total records = {records.Count}");
 
 #!markdown
 
-# ARIMA
-This example demonostrates the Single-Step AutoRegressive Integrated Moving Average (ARIMA) method for forecasting, which is based on the Singular Spectrum Analysis (SSA) algorithm. The output of the forecasting pipeline is a new column in the IDataView object with the specified output column name ("ForecastedValue" in this case), containing the predicted future values.
+# Anomaly Estimator using SRCNN
+
+Create SrCnnAnomalyEstimator, which detects timeseries anomalies using SRCNN algorithm.
 
 #!markdown
 
 STEP 1: Prepare time-series data into a IDataView object.
 
 #!csharp
-
-var entities = records.GroupBy(x=>x.entity_id, (k,v)=> new { Entity = k, Events = v.ToList() }).ToList();
 
 public record InputPoint
 {
@@ -50,37 +57,69 @@ public record InputPoint
 
 public class OutputPoint
 {
+    public string SensorName { get; set; }
     public DateTime Date { get; set; }
-    public float ForecastedValue { get; set; }
+    public float Value { get; set; }
+
+    [VectorType(3)]
+    public double[] Prediction { get; set; }
 }
 
-var sensor = entities.Where(x=>x.Entity == "binary_sensor.hall_motion_1").First().Events; 
+IEnumerable<InputPoint> GetInputPointForSensor(IEnumerable<HaDataPoint> rawSensorValues, string sensorName)
+{
+    var sensorValues = rawSensorValues.Where(x=>String.Equals(x.entity_id,sensorName));
+    var inputPoints = sensorValues.Select(y=> new InputPoint { SensorName = y.entity_id, Date = y.when, Value = y.state == "on" ? 1 : 0 });
+    var dataPoints = inputPoints
+        .GroupBy(ip => new DateTime(ip.Date.Year, ip.Date.Month, ip.Date.Day, ip.Date.Hour, 0, 0))
+        .Select(g => new InputPoint
+        {
+            SensorName = g.First().SensorName,
+            Date = g.Key,
+            Value = g.Sum(ip => ip.Value)
+        }).ToList();
+    return dataPoints;
+}
+
+var hallmotion1 = GetInputPointForSensor(records,"binary_sensor.hall_motion_1");
+var hallmotion2 = GetInputPointForSensor(records,"binary_sensor.hall_motion_2");
+
 // need to transform from entities to input points.
-var data = mlContext.Data.LoadFromEnumerable(sensor.Select(y=> new InputPoint { SensorName = y.entity_id, Date = y.when, Value = y.state == "on" ? 1 : 0 }));
+var dataview1 = mlContext.Data.LoadFromEnumerable(hallmotion1);
+var dataview2 = mlContext.Data.LoadFromEnumerable(hallmotion2);
 
-sensor.Display();
+var dataX = Enumerable.Range(1, aggregatedPoints.Count).Select(x=>(double)x).ToArray();
+var dataY = aggregatedPoints.Select(x=>(double)x.Value).ToArray();
+var plt = new ScottPlot.Plot(400, 300);
+plt.AddScatter(dataX, dataY);
 
-#!markdown
-
-STEP 2: Create a new instance of the SingleStepForecastingEstimator class and specify the input and output columns of your data, as well as the forecasting horizon (number of future values to predict).
-
-#!csharp
-
-var forecastingPipeline = mlContext.Forecasting.ForecastBySsa(
-    outputColumnName: "ForecastedValue",
-    inputColumnName: "Value",
-    windowSize: 6,
-    seriesLength: 24,
-    trainSize: 24,
-    horizon: 6);
+// display the plot
+plt
 
 #!markdown
 
-STEP 3: Fit the forecasting pipeline to your data using the Fit method.
+STEP 2: Create a new instance of the detector class and specify the input and output columns of your data, as well as the paameters of the SRCNN algorithmus.
 
 #!csharp
 
-var forecaster = forecastingPipeline.Fit(data);
+ITransformer model = mlContext.Transforms.DetectAnomalyBySrCnn(
+                outputColumnName: "Prediction", 
+                inputColumnName: "Value", 
+                windowSize: 16, 
+                backAddWindowSize: 5, 
+                lookaheadWindowSize: 5, 
+                averagingWindowSize: 3, 
+                judgementWindowSize: 8, 
+                threshold: 0.35).Fit(
+                dataview);
+
+#!markdown
+
+STEP 3: Create the detection engine.
+
+#!csharp
+
+ var engine = model.CreateTimeSeriesEngine<InputPoint,
+                OutputPoint>(mlContext);
 
 #!markdown
 
@@ -88,6 +127,8 @@ STEP 4: Use the forecaster to predict future values by creating a new IDataView 
 
 #!csharp
 
-var forecastEngine = forecaster.CreateTimeSeriesEngine<MyData, MyForecast>(mlContext);
-var futureData = new MyData { Date = new DateTime(2023, 5, 1) };
-var forecast = forecastEngine.Predict(futureData);
+foreach(var input in .OrderByDescending(x=>x.Value))
+{
+    var output = engine.Predict(input);
+    output.Display();
+}

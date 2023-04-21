@@ -38,7 +38,7 @@ Console.WriteLine($"Total records = {records.Count}");
 
 #!markdown
 
-# Anomaly Estimator using SRCNN
+# Anomaly Estimator using SrCnn Algorithm
 
 Create SrCnnAnomalyEstimator, which detects timeseries anomalies using SRCNN algorithm.
 
@@ -61,6 +61,7 @@ public class OutputPoint
     public DateTime Date { get; set; }
     public float Value { get; set; }
 
+    /// Output of prediction is 3-element Double vector of (IsAnomaly, RawScore, Mag)
     [VectorType(3)]
     public double[] Prediction { get; set; }
 }
@@ -82,15 +83,24 @@ IEnumerable<InputPoint> GetInputPointForSensor(IEnumerable<HaDataPoint> rawSenso
 
 var hallmotion1 = GetInputPointForSensor(records,"binary_sensor.hall_motion_1");
 var hallmotion2 = GetInputPointForSensor(records,"binary_sensor.hall_motion_2");
+var halloccup2 = GetInputPointForSensor(records,"binary_sensor.hall_motion_2_occupancy");
+
+var dataview = mlContext.Data.LoadFromEnumerable(new InputPoint[0]);
 
 // need to transform from entities to input points.
 var dataview1 = mlContext.Data.LoadFromEnumerable(hallmotion1);
 var dataview2 = mlContext.Data.LoadFromEnumerable(hallmotion2);
+var dataview3 = mlContext.Data.LoadFromEnumerable(halloccup2);
 
-var dataX = Enumerable.Range(1, aggregatedPoints.Count).Select(x=>(double)x).ToArray();
-var dataY = aggregatedPoints.Select(x=>(double)x.Value).ToArray();
+var count = Math.Min(Math.Min(hallmotion1.Count(), hallmotion2.Count()),halloccup2.Count());
+var dataX = Enumerable.Range(1, count).Select(x=>(double)x).ToArray();
+var dataY1 = hallmotion1.Select(x=>(double)x.Value).Take(count).ToArray();
+var dataY2 = hallmotion2.Select(x=>(double)x.Value).Take(count).ToArray();
+var dataY3 = halloccup2.Select(x=>(double)x.Value).Take(count).ToArray();
 var plt = new ScottPlot.Plot(400, 300);
-plt.AddScatter(dataX, dataY);
+plt.AddScatter(dataX, dataY1);
+plt.AddScatter(dataX, dataY2);
+plt.AddScatter(dataX, dataY3);
 
 // display the plot
 plt
@@ -99,17 +109,20 @@ plt
 
 STEP 2: Create a new instance of the detector class and specify the input and output columns of your data, as well as the paameters of the SRCNN algorithmus.
 
+
+To create a model, FIt is called. But because this is unsupervised method, what is the meaning of Fit?
+
 #!csharp
 
 ITransformer model = mlContext.Transforms.DetectAnomalyBySrCnn(
                 outputColumnName: "Prediction", 
                 inputColumnName: "Value", 
-                windowSize: 16, 
+                windowSize: 8, 
                 backAddWindowSize: 5, 
-                lookaheadWindowSize: 5, 
+                lookaheadWindowSize: 4, 
                 averagingWindowSize: 3, 
                 judgementWindowSize: 8, 
-                threshold: 0.35).Fit(
+                threshold: 0.2).Fit(
                 dataview);
 
 #!markdown
@@ -118,8 +131,7 @@ STEP 3: Create the detection engine.
 
 #!csharp
 
- var engine = model.CreateTimeSeriesEngine<InputPoint,
-                OutputPoint>(mlContext);
+var engine = model.CreateTimeSeriesEngine<InputPoint, OutputPoint>(mlContext);
 
 #!markdown
 
@@ -127,8 +139,84 @@ STEP 4: Use the forecaster to predict future values by creating a new IDataView 
 
 #!csharp
 
-foreach(var input in .OrderByDescending(x=>x.Value))
+var predList1 = new List<double>();
+foreach(var input in hallmotion1)
+{
+    var newInput = new InputPoint{ SensorName = input.SensorName, Date = input.Date, Value = input.Value };
+    var output = engine.Predict(newInput);
+    predList1.Add(output.Prediction[1]);
+}
+
+var pltPred1 = new ScottPlot.Plot(400, 300);
+var pltPred1r = new ScottPlot.Plot(400, 300);
+pltPred1.AddScatter(dataX, dataY1);
+pltPred1r.AddScatterPoints(dataX, predList1.Take(dataX.Count()).ToArray());
+
+// display the plot
+pltPred1.Display();
+pltPred1r.Display();
+
+#!csharp
+
+var predList2 = new List<double>();
+foreach(var input in hallmotion2)
+{
+    var newInput = new InputPoint{ SensorName = input.SensorName, Date = input.Date, Value = input.Value };
+    var output = engine.Predict(newInput);
+    predList2.Add(output.Prediction[1]);
+}
+
+var pltPred2 = new ScottPlot.Plot(400, 300);
+var pltPred2r = new ScottPlot.Plot(400, 300);
+pltPred2.AddScatter(dataX, dataY2);
+pltPred2r.AddScatterPoints(dataX, predList2.Take(dataX.Count()).ToArray());
+
+// display the plot
+pltPred2.Display();
+pltPred2r.Display();
+
+#!csharp
+
+var predList3 = new List<double>();
+foreach(var input in halloccup2)
+{
+    var newInput = new InputPoint{ SensorName = input.SensorName, Date = input.Date, Value = input.Value };
+    var output = engine.Predict(newInput);
+    predList3.Add(output.Prediction[1]);
+}
+
+var pltPred3 = new ScottPlot.Plot(400, 300);
+var pltPred3r = new ScottPlot.Plot(400, 300);
+pltPred3.AddScatter(dataX, dataY3);
+pltPred3r.AddScatterPoints(dataX, predList3.Take(dataX.Count()).ToArray());
+
+// display the plot
+pltPred3.Display();
+pltPred3r.Display();
+
+#!markdown
+
+# Insert anomalies
+
+We insert some anomailes to the dataset to demonstrate the detection.
+
+#!csharp
+
+var predList4 = new List<double>();
+var anomalyInput = hallmotion1.Select((input,index) => new InputPoint{ SensorName = input.SensorName, Date = input.Date, Value = input.Value * ((index > 20 && index < 30) ? 10 : 1) }).ToList();
+foreach(var input in anomalyInput)
 {
     var output = engine.Predict(input);
-    output.Display();
+    predList4.Add(output.Prediction[1]);
 }
+
+var pltPred4 = new ScottPlot.Plot(400, 300);
+pltPred4.AddScatter(dataX, dataY1);
+pltPred4.AddScatter(dataX, anomalyInput.Select(x=>(double)x.Value).Take(dataX.Count()).ToArray());
+var pltPred4r = new ScottPlot.Plot(400, 300);
+pltPred4r.AddScatterPoints(dataX, predList1.Take(dataX.Count()).ToArray());
+pltPred4r.AddScatterPoints(dataX, predList4.Take(dataX.Count()).ToArray());
+
+// display the plot
+pltPred4.Display();
+pltPred4r.Display();

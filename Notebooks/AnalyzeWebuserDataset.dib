@@ -29,10 +29,8 @@ Two context files was precomputed with annotated application processes:
 #r "nuget: Microsoft.Data.Analysis"
 #r "nuget: Microsoft.DotNet.Interactive.ExtensionLab,*-*"
 
-#r "nuget: Plotly.NET"
-#r "nuget: Plotly.NET.Interactive"
-
 #r "nuget: CsvHelper"
+#r "nuget: ScottPlot"
 
 using Microsoft.Data.Analysis;
 using Microsoft.ML;
@@ -48,6 +46,12 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Linq;
+
+
+// Setup a custom formatter to display plots as images
+using Microsoft.DotNet.Interactive.Formatting;
+Formatter.Register(typeof(ScottPlot.Plot), (p, w) => 
+    w.Write(((ScottPlot.Plot)p).GetImageHTML()), HtmlFormatter.MimeType);
 
 #!markdown
 
@@ -382,9 +386,16 @@ curvesMapsToApp.Display();
 
 Based on the identifies flows, we can propagate the information to other flows using JA3 relations.
 
+* AppTag: A string that represents the tag for the application that was inferred by the methods (prediction).
+* AppName: A string that represents the name of the application as reported by the host (ground truth).
+* JA3: A string that represents the JA3 fingerprint for the TLS traffic.
+* Host: A string that represents the hostname for the TLS traffic.
+* Sni: A string that represents the Server Name Indication (SNI) for the TLS traffic.
+* Subject: A string that represents the subject name for the TLS traffic.
+
 #!csharp
 
-record TlsTagRow(string AppsTag, string App, string JA3, string Host, string Sni, string Subject);
+record TlsTagRow(string AppTag, string AppName, string JA3, string Host, string Sni, string Subject);
 
 TlsTagRow TryTagWithApplication(TlsRow row)
 {
@@ -400,3 +411,7 @@ var tlsTagged = tlsHandshakes.Select(TryTagWithApplication).ToList();
 
 
 tlsTagged.WriteToCsv("app-tagged.csv");
+
+#!markdown
+
+## Plot the results

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Ethanol.ContextBuilder.Context
 {
     public enum FlowType
     {
         RequestFlow,
-        ResponseFlow, 
+        ResponseFlow,
         BidirectionFlow,
     }
     /// <summary>
@@ -28,7 +26,7 @@ namespace Ethanol.ContextBuilder.Context
 
         public DateTime TimeStart { get; set; }
         /// <summary>
-        /// The duration of the flow..
+        /// The duration of the flow.
         /// </summary>
         public TimeSpan TimeDuration { get; set; }
 
@@ -54,7 +52,7 @@ namespace Ethanol.ContextBuilder.Context
 
     public static class IpFlowExtensions
     {
-        public static IEnumerable<R> SelectFlows<T,R>(this IEnumerable<IpFlow> flows, Func<T,R> func) where T : IpFlow
+        public static IEnumerable<R> SelectFlows<T, R>(this IEnumerable<IpFlow> flows, Func<T, R> func) where T : IpFlow
         {
             return flows.Where(x => x is T).Cast<T>().Select(func);
         }

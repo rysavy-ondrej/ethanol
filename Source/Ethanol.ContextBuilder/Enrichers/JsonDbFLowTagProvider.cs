@@ -14,10 +14,8 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         public JsonDbFlowTagProvider(string jsonFile, string collectionName)
         {
-            // Open database (create new if file doesn't exist)
             _store = new DataStore(jsonFile);
 
-            // Get employee collection
             _collection = _store.GetCollection<FlowTag>(collectionName);
             _queryable = _collection.AsQueryable();
         }

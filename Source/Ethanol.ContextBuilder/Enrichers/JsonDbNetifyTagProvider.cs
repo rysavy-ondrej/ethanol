@@ -1,6 +1,7 @@
 ﻿using JsonFlatFileDataStore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ namespace Ethanol.ContextBuilder.Enrichers
 {
     public class JsonDbNetifyTagProvider : IHostDataProvider<NetifyTag>
     {
+        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         private DataStore _store;
         private readonly IDocumentCollection<ApsRecord> _appsCollection;
         private readonly IDocumentCollection<IpsRecord> _ipsCollection;
@@ -16,6 +18,8 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         public JsonDbNetifyTagProvider(string jsonFile, string appsCollectionName, string ipsCollectionName)
         {
+            var fileInfo = new FileInfo(jsonFile);
+            _logger.Info($"Loading data store from json file: {fileInfo.FullName}, {fileInfo.Length} bytes.");
             // Open database (create new if file doesn't exist)
             _store = new DataStore(jsonFile);
 
@@ -25,6 +29,8 @@ namespace Ethanol.ContextBuilder.Enrichers
 
             _ipsCollection = _store.GetCollection<IpsRecord>(ipsCollectionName);
             _ipsQueryable = _ipsCollection.AsQueryable();
+            
+            _logger.Info($"Loaded, Apps={_appsCollection.Count} entries, Ips={_ipsCollection.Count} entries.");
         }
 
         public IEnumerable<NetifyTag> Get(string host, DateTime start, DateTime end)
@@ -50,7 +56,7 @@ namespace Ethanol.ContextBuilder.Enrichers
 
     public record ApsRecord
     {
-        public double id { get; set; }
+        public int id { get; set; }
         public string tag { get; set; }
         public string short_name { get; set; }
         public string full_name { get; set; }
@@ -60,15 +66,12 @@ namespace Ethanol.ContextBuilder.Enrichers
     }
     public record IpsRecord
     {
-        public double id { get; set; }
+        public int id { get; set; }
         public string value { get; set; }
-        public double ip_version { get; set; }
-        public double shared { get; set; }
-        public double app_id { get; set; }
-        public double platform_id { get; set; }
+        public int? shared { get; set; }
+        public int app_id { get; set; }
         public string asn_tag { get; set; }
         public string asn_label { get; set; }
         public string asn_route { get; set; }
-        public double asn_entity_id { get; set; }
     }
 }

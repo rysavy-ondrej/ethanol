@@ -17,15 +17,6 @@ CREATE TABLE netify_applications (
     category VARCHAR(50)
 );
 ```
-The `netify_applications` table includes the following columns:
-
-* id: an integer column used as the primary key for each row in the table.
-* tag: a string column with a maximum length of 50 characters, used to categorize or label the web application.
-* short_name: a string column with a maximum length of 50 characters, used to provide a short name or abbreviation for the web application.
-* full_name: a string column with a maximum length of 100 characters, used to provide the full name or title of the web application.
-* description: a text column used to provide a longer description or summary of the web application.
-* url: a string column with a maximum length of 255 characters, used to store the URL or web address for the application.
-* category: a string column with a maximum length of 50 characters, used to categorize the web application based on its purpose or function.
 
 ## Known IP addresses mapped to applications
 

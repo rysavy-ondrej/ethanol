@@ -79,9 +79,9 @@ namespace Ethanol.ContextBuilder.Simplifier
             
             var downflows = value.Payload.Flows.Where(x => x.DestinationAddress.Equals(value.Payload.HostAddress)).ToList();
 
-            var initiatedConnections = GetInitiatedConnections(upflows, ResolveDomain).ToArray();
+            var initiatedConnections = GetInitiatedConnections(upflows, ResolveDomain, ResolveProcessName).ToArray();
 
-            var acceptedConnections = GetAcceptedConnections(downflows, ResolveDomain).ToArray();
+            var acceptedConnections = GetAcceptedConnections(downflows, ResolveDomain, ResolveProcessName).ToArray();
 
             var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress, ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.Method, x.Hostname + x.Url)).ToArray();
             
@@ -98,17 +98,17 @@ namespace Ethanol.ContextBuilder.Simplifier
         /// <param name="flows">The collection of IP flows to use as a source for the initiated connections.</param>
         /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
         /// <returns>An enumerable collection of initiated IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain)
+        private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain, Func<FlowKey, string> resolveProcessName)
         {
             // Perform processing on the input flows
             var con =  flows.Select(f =>
-                        new IpConnectionInfo(f.DestinationAddress, resolveDomain(f.DestinationAddress), f.DestinationPort, f.ApplicationTag, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+                        new IpConnectionInfo(f.DestinationAddress, resolveDomain(f.DestinationAddress), f.DestinationPort, resolveProcessName(f.FlowKey), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
             // Return the resulting collection of initiated connections
             return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
                             var first = val.FirstOrDefault();
-                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.Service, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.ApplicationProcessName, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
                                 val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
                         }
                     );
@@ -119,15 +119,15 @@ namespace Ethanol.ContextBuilder.Simplifier
         /// <param name="flows">The collection of IP flows to use as a source for the accepted connections.</param>
         /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
         /// <returns>An enumerable collection of accepted IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain)
+        private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain, Func<FlowKey, string> resolveProcessName)
         {
             var con = flows.Select(f =>
-                        new IpConnectionInfo(f.SourceAddress, resolveDomain(f.SourceAddress), f.SourcePort, f.ApplicationTag, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+                        new IpConnectionInfo(f.SourceAddress, resolveDomain(f.SourceAddress), f.SourcePort, resolveProcessName(f.FlowKey), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
             return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
                             var first = val.FirstOrDefault();
-                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.Service, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.ApplicationProcessName, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
                                 val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
                         }
                     );

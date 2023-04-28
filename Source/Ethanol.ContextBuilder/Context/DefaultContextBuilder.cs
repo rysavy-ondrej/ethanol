@@ -53,7 +53,7 @@ namespace Ethanol.ContextBuilder.Context
         /// </remarks>
         /// <param name="flowStream"></param>
         /// <returns></returns>
-        public static IStreamable<Empty, KeyValuePair<FlowKey, FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> flowStream)
+        public static IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<FlowKey, FlowRelations>> BuildFlowContext(this ContextBuilderCatalog _, IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> flowStream)
         {
             var source = flowStream.Multicast(3);
 

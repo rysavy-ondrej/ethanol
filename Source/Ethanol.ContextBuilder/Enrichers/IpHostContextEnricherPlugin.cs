@@ -44,7 +44,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             [YamlMember(Alias = "filename", Description = "The name of the source JSON file.")]
             public string Filename { get; set; }
 
-            [YamlMember(Alias = "collection", Description = "The name of the collection to read from the JSON file.")]
+            [YamlMember(Alias = "collection", Description = "The name(s) of the collection(s) to read from the JSON file.")]
             public string Collection { get; set; }
         }
 
@@ -95,12 +95,13 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
         [PluginCreate]
-        internal static IObservableTransformer Create(DataSourceEnricherConfiguration hostTagConfiguraiton, DataSourceEnricherConfiguration flowTagConfiguraiton)
+        internal static IObservableTransformer Create(DataSourceEnricherConfiguration hostTagConfiguraiton, DataSourceEnricherConfiguration flowTagConfiguraiton, DataSourceEnricherConfiguration webAppsConfiguraiton)
         {
             IHostDataProvider<HostTag> hostTags = hostTagConfiguraiton.GetHostTagProvider();
             IHostDataProvider<FlowTag> flowTags = flowTagConfiguraiton.GetFlowTagProvider();
+            IHostDataProvider<NetifyTag> netifyTags = webAppsConfiguraiton.GetNetifyTagProvider();
           
-            var enricher = new IpHostContextEnricher(hostTags, flowTags);
+            var enricher = new IpHostContextEnricher(hostTags, flowTags, netifyTags);
             return new IpHostContextEnricherPlugin(enricher);
         }
 

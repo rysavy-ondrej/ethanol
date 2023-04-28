@@ -40,7 +40,7 @@ namespace Ethanol.ContextBuilder.Builders
             return new HostContextBuilder(configuration.Window, configuration.Hop);
         }
 
-        public override IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildContext(IStreamable<Empty, IpFlow> source)
+        public override IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildContext(IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> source)
         {
             return BuildHostContext(source);
         }
@@ -56,7 +56,7 @@ namespace Ethanol.ContextBuilder.Builders
             };
         }
 
-        static IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(IStreamable<Empty, IpFlow> flowStreamSource)
+        static IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> flowStreamSource)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="hostContextStream">The host context stream.</param>
         /// <param name="metadataStream">The metadata stream.</param>
         /// <returns>The stream with enriched host context.</returns>
-        static IStreamable<Empty, Tuple<string, NetworkActivity, HostTag[]>> EnrichHostContext(IStreamable<Empty, KeyValuePair<string, NetworkActivity>> hostContextStream, IStreamable<Empty, HostTag> metadataStream)
+        static IStreamable<Microsoft.StreamProcessing.Empty, Tuple<string, NetworkActivity, HostTag[]>> EnrichHostContext(IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<string, NetworkActivity>> hostContextStream, IStreamable<Microsoft.StreamProcessing.Empty, HostTag> metadataStream)
         {
             try
             {
@@ -165,7 +165,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<IPAddress, NetworkActivity>> BuildHostContext(this ContextBuilderCatalog _, IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
         {
             var builder = new HostContextBuilder(windowSize, windowHop);
             return builder.BuildContext(source);

@@ -26,7 +26,12 @@ namespace Ethanol.ContextBuilder.Builders
     public record WebReq(string hurl);
     public record TlsCon(string ver, string sni, string scn, string icn, string ja3);
     public record Netflow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
-    public record IpHostContext(IPAddress HostAddress, IpFlow[] Flows)
+    
+    
+    
+    public record IpHostContext(IPAddress HostAddress, IpFlow[] Flows) : IpHostContext<Empty>(HostAddress, Flows, Empty.Default);
+    
+    public record IpHostContext<TagType>(IPAddress HostAddress, IpFlow[] Flows, TagType Tags)
     {
         /// <summary>
         /// Gets flows of type <typeparamref name="TFlow"/> using <paramref name="select"/> function. 

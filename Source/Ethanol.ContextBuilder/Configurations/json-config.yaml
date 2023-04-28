@@ -1,0 +1,5 @@
+window-size: 00:01:00
+window-hop: 00:01:00
+netify-tag-enricher:
+  json-file:
+    filename: netify.json

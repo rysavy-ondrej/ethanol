@@ -1,9 +1,6 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Npgsql;
+﻿using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -40,7 +37,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// );
     /// </code>
     /// </remarks>
-    public class PostgresNetifyTagProvider : IHostDataProvider<NetifyApplication>
+    public class PostgresNetifyTagProvider : IHostDataProvider<NetifyTag>
     {
         static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly NpgsqlConnection _connection;
@@ -54,7 +51,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         /// <param name="connectionString"></param>
         /// <returns></returns>
-        public static PostgresNetifyTagProvider Create(string connectionString, string tableName)
+        public static PostgresNetifyTagProvider Create(string connectionString, string applicationsTableName, string addressesTableName)
         {
             try
             {
@@ -66,11 +63,14 @@ namespace Ethanol.ContextBuilder.Enrichers
                 }
 
                 var cmd = connection.CreateCommand();
-                cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
-                var rowCount = cmd.ExecuteScalar();
-                _logger.Info($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
-
-                return new PostgresNetifyTagProvider(connection, tableName);
+                cmd.CommandText = $"SELECT COUNT(*) FROM {applicationsTableName}";
+                var appsRowCount = cmd.ExecuteScalar();
+                cmd.CommandText = $"SELECT COUNT(*) FROM {addressesTableName}";
+                var ipsRowCount = cmd.ExecuteScalar();
+                _logger.Info($"Postgres connected '{connectionString}'.");
+                _logger.Info($"Available {appsRowCount} records in table '{applicationsTableName}'. ");
+                _logger.Info($"Available {ipsRowCount} records in table '{addressesTableName}'. ");
+                return new PostgresNetifyTagProvider(connection, applicationsTableName, addressesTableName);
             }
             catch (Exception ex)
             {
@@ -83,11 +83,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Creates the new object base on the provided connection string.
         /// </summary>
         /// <param name="connectionString"></param>
-        /// <param name="tableName">The name of the table to read records from.</param>
-        PostgresNetifyTagProvider(NpgsqlConnection connection, string tableName)
+        /// <param name="applicationsTableName">The name of the table to read application records from.</param>
+        /// <param name="addressesTableName">The name of the table to read address records from.</param>
+        PostgresNetifyTagProvider(NpgsqlConnection connection, string applicationsTableName, string addressesTableName)
         {
             _connection = connection;
-            _applicationsTableName = tableName;
+            _applicationsTableName = applicationsTableName;
+            _addressesTableName = addressesTableName;
         }
 
         /// <summary>
@@ -97,13 +99,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
         /// <returns>An IEnumerable of FlowTag objects representing the tags associated with the specified host and time range.</returns>
-        public async Task<IEnumerable<NetifyApplication>> GetAsync(string host, DateTime start, DateTime end)
+        public async Task<IEnumerable<NetifyTag>> GetAsync(string host, DateTime start, DateTime end)
         {
             try
             {
                 var cmd = PrepareSelectCommand(host);
                 var reader = await cmd.ExecuteReaderAsync();
-                var rowList = new List<NetifyApplication>();
+                var rowList = new List<NetifyTag>();
                 while (await reader.ReadAsync())
                 {
                     var row = ReadNetifyApplication(reader);
@@ -116,7 +118,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             catch (Exception e)
             {
                 _logger.Error(e);
-                return Array.Empty<NetifyApplication>();
+                return Array.Empty<NetifyTag>();
             }
         }
 
@@ -130,19 +132,19 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
 
         /// <summary>
-        /// Retrieves a collection of <see cref="NetifyApplication"/> objects from the database for the given host.
+        /// Retrieves a collection of <see cref="NetifyTag"/> objects from the database for the given host.
         /// </summary>
         /// <param name="hostAddress">The host ip address for which to retrieve the tags.</param>
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
         /// <returns>An IEnumerable of FlowTag objects representing the tags associated with the specified host and time range.</returns>
-        public IEnumerable<NetifyApplication> Get(string host, DateTime start, DateTime end)
+        public IEnumerable<NetifyTag> Get(string host, DateTime start, DateTime end)
         {
             try
             {
                 var addressSelectCmd = PrepareSelectCommand(host);
                 var reader = addressSelectCmd.ExecuteReader();
-                var addressList = new List<NetifyApplication>();
+                var addressList = new List<NetifyTag>();
                 while (reader.Read())
                 {
                     var row = ReadNetifyApplication(reader);
@@ -155,7 +157,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             catch(Exception e)
             {
                 _logger.Error(e);
-                return Array.Empty<NetifyApplication>();
+                return Array.Empty<NetifyTag>();
             }
         }
         /// <summary>
@@ -165,9 +167,9 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="end">The end time of the flow data.</param>
         /// <param name="reader">The NpgsqlDataReader to read the flow data from.</param>
         /// <returns>A NetifyApplication object containing the flow tag data from the current row of the NpgsqlDataReader.</returns>
-        private static NetifyApplication ReadNetifyApplication(NpgsqlDataReader reader)
+        private static NetifyTag ReadNetifyApplication(NpgsqlDataReader reader)
         {
-                return new NetifyApplication
+                return new NetifyTag
                 {
                     Tag = reader.GetString(reader.GetOrdinal("tag")),
                     ShortName = reader.GetString(reader.GetOrdinal("short_name")),
@@ -236,7 +238,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 createValueIndexCmd.CommandText = sqlCreateValueIndex;
                 sucess &= createValueIndexCmd.ExecuteNonQuery() > 0;
                 
-                string sqlCreateAppIdIndex = @$"CREATE INDEX ips_app_id_idx ON netify_addresses (app_id)";
+                string sqlCreateAppIdIndex = @$"CREATE INDEX ips_app_id_idx ON {ipsTableName} (app_id)";
                 var createAppIndexCmd = connection.CreateCommand();
                 createAppIndexCmd.CommandText = sqlCreateAppIdIndex;
                 sucess &= createAppIndexCmd.ExecuteNonQuery() > 0;
@@ -248,7 +250,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <summary>
     /// Represents a web application record.
     /// </summary>
-    public record NetifyApplication
+    public record NetifyTag
     {
         /// <summary>
         /// The tag or label associated with the application.
@@ -279,31 +281,5 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// The category or type of the application.
         /// </summary>
         public string Category { get; init; }
-    }
-
-    /// <summary>
-    /// Represents a network address with additional metadata.
-    /// </summary>
-    public record NetifyAddress
-    {
-        /// <summary>
-        /// The unique identifier for the address.
-        /// </summary>
-        public int Id { get; init; }
-
-        /// <summary>
-        /// The value of the network address (e.g. IP address or network prefix).
-        /// </summary>
-        public IPAddress Value { get; init; }
-
-        /// <summary>
-        /// Indicates whether the address is shared or dedicated.
-        /// </summary>
-        public int Shared { get; init; }
-
-        /// <summary>
-        /// The ID of the web application associated with the address.
-        /// </summary>
-        public int AppId { get; init; }
     }
 }

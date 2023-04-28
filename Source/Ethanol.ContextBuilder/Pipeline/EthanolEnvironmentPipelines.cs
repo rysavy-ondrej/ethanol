@@ -52,7 +52,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         public static EthanolPipeline CreateIpHostContextBuilderPipeline(this ContextBuilderCatalog catalog, PipelineConfiguration configuration, IFlowReader<IpFlow> reader, ContextWriter<object> writer, Action<int> onInputConsumed, Action<int> onOuputProduced)
         {
             var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
-            var enricher = new IpHostContextEnricher(configuration.HostTagEnricherConfiguration.GetHostTagProvider(), configuration.FlowTagEnricherConfiguration.GetFlowTagProvider());
+            var enricher = new IpHostContextEnricher(configuration.HostTagEnricherConfiguration.GetHostTagProvider(), configuration.FlowTagEnricherConfiguration.GetFlowTagProvider(), configuration.NetifyTagEnricherConfiguration.GetNetifyTagProvider());
             var simplifier = new IpHostContextSimplifier();
 
             reader.Do(x => onInputConsumed(1))

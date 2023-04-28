@@ -51,12 +51,12 @@ namespace Ethanol.ContextBuilder.Builders
             return new FlowContextBuilder(configuration.Window, configuration.Hop);
         }
 
-        public override IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildContext(IStreamable<Empty, IpFlow> source)
+        public override IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<FlowKey, TlsContext>> BuildContext(IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> source)
         {
             return BuildTlsContext(source);
         }
 
-        private IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(IStreamable<Empty, IpFlow> source)
+        private IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> source)
         {
             try
             {
@@ -157,7 +157,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <param name="source">Flow stream.</param>
         /// <param name="configuration">Configuration.</param>
         /// <returns>A stream of flows with their contexts.</returns>
-        public static IStreamable<Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
+        public static IStreamable<Microsoft.StreamProcessing.Empty, KeyValuePair<FlowKey, TlsContext>> BuildTlsContext(this ContextBuilderCatalog _, IStreamable<Microsoft.StreamProcessing.Empty, IpFlow> source, TimeSpan windowSize, TimeSpan windowHop)
         {
             var builder = new FlowContextBuilder(windowSize, windowHop);
             return builder.BuildContext(source);

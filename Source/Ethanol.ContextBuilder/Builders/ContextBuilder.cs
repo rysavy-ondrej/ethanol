@@ -31,7 +31,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// </summary>
         /// <param name="source">The source stream.</param>
         /// <returns>The output stream.</returns>
-        public abstract IStreamable<Empty, TIntermediate> BuildContext(IStreamable<Empty, TSource> source);
+        public abstract IStreamable<Microsoft.StreamProcessing.Empty, TIntermediate> BuildContext(IStreamable<Microsoft.StreamProcessing.Empty, TSource> source);
 
         /// <inheritdoc/>>
         public IDisposable Subscribe(IObserver<TTarget> observer)

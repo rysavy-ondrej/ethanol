@@ -10,13 +10,14 @@ namespace Ethanol.ContextBuilder.Simplifier
     /// <param name="RemoteHostAddress">The remote host IP address.</param>
     /// <param name="RemoteHostName">The remote host name.</param>
     /// <param name="RemotePort">The remote port number.</param>
-    /// <param name="Service">The service name associated with the connection.</param>
     /// <param name="Flows">The number of flows associated with the connection.</param>
+    /// <param name="ApplicationProcessName">The name of the application or process that made the request or accepted the connection.</param>
     /// <param name="PacketsSent">The number of packets sent over the connection.</param>
     /// <param name="OctetsSent">The number of octets sent over the connection.</param>
     /// <param name="PacketsRecv">The number of packets received over the connection.</param>
     /// <param name="OctetsRecv">The number of octets received over the connection.</param>
-    public record IpConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string Service, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
+    public record IpConnectionInfo(IPAddress RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
+
 
     /// <summary>
     /// Represents information about a web request, including details about the remote host, port, and URL.

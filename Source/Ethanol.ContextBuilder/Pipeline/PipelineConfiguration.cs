@@ -27,6 +27,8 @@ namespace Ethanol.ContextBuilder.Pipeline
 
         [YamlMember(Alias = "flow-tag-enricher", Description = "The configuration for the flow tag enricher.")]
         public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration FlowTagEnricherConfiguration { get; set; }
+        [YamlMember(Alias = "netify-tag-enricher", Description = "The configuration for the netify tag enricher.")]
+        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration NetifyTagEnricherConfiguration { get; set; }
     }
 
 

@@ -35,7 +35,7 @@ By analyzing these indicators of activities, it is possible to identify internet
 ```sql
 CREATE TABLE hostify_ioa_domains (
     id INT PRIMARY KEY,
-    value VARCHAR(50),
+    value VARCHAR(100),
     shared INT,
     app_id INT,
     dns_domain BOOLEAN,
@@ -47,12 +47,16 @@ CREATE TABLE hostify_ioa_domains (
 Columns:
 
 * id: An integer column that represents the unique identifier of each domain name record in the table. This column is the primary key of the table.
-* value: A string column that represents the domain name with a maximum length of 50 characters.
+* value: A string column that represents the domain name.
 * shared: An integer column that indicates whether the domain name is shared among multiple applications.
 * app_id: An integer column that represents the unique identifier of the application associated with the domain name.
 * dns_domain: A boolean column that indicates whether the domain name is valid for matching names in DNS resolutions.
 * tls_sni: A boolean column that indicates whether the domain name is valid for matching the SNI information.
 * tls_subject: A boolean column that indicates whether the domain name is valid for matching TLS Subject information.
+
+
+Table `hostify_ioa_urls` stores infromation related to HTTP URL requests related to application communication activities.
+The information can be obtained by monitoring HTTP communication of application processes.
 
 ```sql
 CREATE TABLE hostify_ioa_urls (
@@ -63,6 +67,9 @@ CREATE TABLE hostify_ioa_urls (
 );
 ```
 
+Table `hostify_ioa_ips` stores infromation related to IP addresses related to application activities. The table lists IP connections
+established by monitored applications.
+
 ```sql
 CREATE TABLE hostify_ioa_ips (
     id INT PRIMARY KEY,
@@ -70,3 +77,4 @@ CREATE TABLE hostify_ioa_ips (
     shared INT,
     app_id INT,
 );
+```

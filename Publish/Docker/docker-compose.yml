@@ -4,7 +4,7 @@ services:
   fluentbit-service:
     image: fluent/fluent-bit:1.9
     ports:
-      - 5170:5170
+      - 1600:5170
     volumes:
       - ./log:/var/log
       - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
@@ -22,6 +22,8 @@ services:
 
   postgres-service:
     image: postgres:latest
+    ports:
+      - 1605:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

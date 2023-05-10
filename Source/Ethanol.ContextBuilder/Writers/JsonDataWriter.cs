@@ -273,7 +273,7 @@ namespace Ethanol.ContextBuilder.Writers
                 }
                 catch (Exception ex)
                 {
-                    __logger.Error($"Cannot create TcpOutputWriter from '{connectionString}' string: {ex.Message}");
+                    __logger.Error($"Cannot create TcpOutputWriter from '{connectionString}': {ex.Message}");
                     return null;
                 }
             }

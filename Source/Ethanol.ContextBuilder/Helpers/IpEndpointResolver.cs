@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 
 public static class IPEndPointResolver
@@ -17,7 +18,8 @@ public static class IPEndPointResolver
         if (!IPAddress.TryParse(parts[0], out address))
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(parts[0]);
-            address = hostEntry.AddressList[0];
+            address = hostEntry.AddressList.FirstOrDefault() ?? IPAddress.None;
+            __logger.Info($"Dns Resolver: {parts[0]}->{address}");
         }
  
         int resolvedPort = (parts.Length == 2 ? int.Parse(parts[1]) : defaultPort);

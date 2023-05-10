@@ -13,7 +13,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// <remarks>
     /// It is expected that the table has the following structure:
     /// <code>
-    /// CREATE TABLE smartads (
+    /// CREATE TABLE hosttags (
     ///   KeyType VARCHAR(8),
     ///   KeyValue VARCHAR(32),
     ///   Source VARCHAR(40),

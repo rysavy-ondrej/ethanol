@@ -106,8 +106,8 @@ CREATE TABLE netify_addresses (
     asn_entity_id INT
 );
 
-CREATE INDEX ips_value_idx ON netify_addresses (value)
-CREATE INDEX ips_app_id_idx ON netify_addresses (app_id)
+CREATE INDEX ips_value_idx ON netify_addresses (value);
+CREATE INDEX ips_app_id_idx ON netify_addresses (app_id);
 
 -- Smart ADS table enables to annotate host identifies by their IP/MAC addresses with extra information depending on the tag type.
 CREATE TABLE smartads (

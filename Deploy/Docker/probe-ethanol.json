@@ -1,0 +1,56 @@
+{
+    "OPTIONS": "DBUS_MODE=SYSTEM,INSTANCE=exporterethanol,MPLS_MODE=0,SPLIT_BIFLOWS=0",
+    "PLUGIN-DIR": "/usr/lib64/flowmonexp5",
+    "DAEMON": false,
+    "QUEUE-SIZE": 19,
+    "ACTIVE-TIMEOUT": 300,
+    "INACTIVE-TIMEOUT": 30,
+    "NUMA-NODE": 0,
+    "USER": "flowmon",
+    "VERBOSE": "DEBUG",
+    "INPUT": {
+            "NAME": "rawnetcap",
+            "PARAMS": "device=eth2,sampling=0,cache-size=32768,mtu=1518"
+    },
+    "PROCESS": [
+            {
+                    "NAME": "http",
+                    "PARAMS": ""
+            },
+            {
+                    "NAME": "nbar2",
+                    "PARAMS": ""
+            },
+            {
+                    "NAME": "dns",
+                    "PARAMS": ""
+            },
+            {
+                    "NAME": "dhcp",
+                    "PARAMS": ""
+            },
+            {
+                    "NAME": "smb",
+                    "PARAMS": ""
+            },
+            {
+                    "NAME": "tls",
+                    "PARAMS": "fields=MAIN#CLIENT#CERT#JA3"
+            },
+            {
+                    "NAME": "as-helper",
+                    "PARAMS": "/etc/flowmon/flowmon-as.txt"
+            }
+    ],
+    "FILTERS": [
+            {
+                    "NAME": "interface-id",
+                    "PARAMS": "input-id=9,output-id=0"
+            }
+    ],
+    "OUTPUTS": [
+            {
+                    "NAME": "json"
+            }
+    ]
+}

@@ -44,52 +44,6 @@ FOR EACH ROW
 EXECUTE FUNCTION flowtags_transform_and_insert();
 
 -------------------------------------------------------------------------------
--- Host context table contains resulted context computed by 
--- the context builder.
--------------------------------------------------------------------------------
-CREATE TABLE _hostctx (
-    tag TEXT,
-    time TIMESTAMP WITHOUT TIME ZONE,
-    data JSONB
-);
-
-CREATE TABLE  hostctx (
-    HostAddress VARCHAR(32),
-    OperatingSystem VARCHAR(64),
-    InitiatedConnections JSONB,
-    AcceptedConnections JSONB,
-    ResolvedDomains JSONB,
-    WebUrls JSONB,
-    TlsHandshakes JSONB,
-    Validity TSRANGE
-);
-
-CREATE FUNCTION hostctx_transform_and_insert()
-RETURNS TRIGGER AS $$
-DECLARE
-    time_range tsrange;
-    start_time timestamp;
-    end_time timestamp;
-BEGIN
-    start_time := NEW.data->>'StartTime';
-    end_time := NEW.data->>'EndTime';
-    time_range := tsrange(start_time, end_time, '[)');
-    INSERT INTO hostctx (HostAddress, OperatingSystem, InitiatedConnections, AcceptedConnections, ResolvedDomains,WebUrls,TlsHandshakes,Validity)
-    VALUES (NEW.data#>>'{Payload,HostAddress}', NEW.data#>>'{Payload,OperatingSystem}', 
-            NEW.data#>'{Payload,InitiatedConnections}', NEW.data#>'{Payload,AcceptedConnections}',
-            NEW.data#>'{Payload,ResolvedDomains}', NEW.data#>'{Payload,WebUrls}',
-            NEW.data#>'{Payload,TlsHandshakes}', time_range);
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-
-CREATE TRIGGER insert_trigger
-BEFORE INSERT ON _hostctx
-FOR EACH ROW
-EXECUTE FUNCTION hostctx_transform_and_insert();
-
--------------------------------------------------------------------------------
 -- Netify tables support annotation of flows with known web application based 
 -- on Netify provided information.
 -------------------------------------------------------------------------------
@@ -134,3 +88,51 @@ CREATE TABLE hosttags (
 );
 
 CREATE INDEX hosttags_source_idx ON hosttags (Source);
+
+-------------------------------------------------------------------------------
+-- Host context table contains resulted context computed by 
+-- the context builder.
+-------------------------------------------------------------------------------
+CREATE TABLE _hostctx (
+    tag TEXT,
+    time TIMESTAMP WITHOUT TIME ZONE,
+    data JSONB
+);
+
+CREATE TABLE  hostctx (
+    HostAddress VARCHAR(32),
+    OperatingSystem VARCHAR(64),
+    InitiatedConnections JSONB,
+    AcceptedConnections JSONB,
+    ResolvedDomains JSONB,
+    WebUrls JSONB,
+    TlsHandshakes JSONB,
+    Validity TSRANGE
+);
+
+CREATE INDEX hostctx_hostaddress_idx ON hostctx (HostAddress);
+
+CREATE FUNCTION hostctx_transform_and_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+    time_range tsrange;
+    start_time timestamp;
+    end_time timestamp;
+BEGIN
+    start_time := NEW.data->>'StartTime';
+    end_time := NEW.data->>'EndTime';
+    time_range := tsrange(start_time, end_time, '[)');
+    INSERT INTO hostctx (HostAddress, OperatingSystem, InitiatedConnections, AcceptedConnections, ResolvedDomains,WebUrls,TlsHandshakes,Validity)
+    VALUES (NEW.data#>>'{Payload,HostAddress}', NEW.data#>>'{Payload,OperatingSystem}', 
+            NEW.data#>'{Payload,InitiatedConnections}', NEW.data#>'{Payload,AcceptedConnections}',
+            NEW.data#>'{Payload,ResolvedDomains}', NEW.data#>'{Payload,WebUrls}',
+            NEW.data#>'{Payload,TlsHandshakes}', time_range);
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER insert_trigger
+BEFORE INSERT ON _hostctx
+FOR EACH ROW
+EXECUTE FUNCTION hostctx_transform_and_insert();

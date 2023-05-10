@@ -2,12 +2,12 @@ CREATE DATABASE ethanol;
 GRANT ALL PRIVILEGES ON DATABASE ethanol TO postgres;
 
 -- Flow Tags table enables to annotate flows with their process names.
-CREATE TABLE _flowtags (
+CREATE TABLE IF NOT EXISTS _flowtags (
     tag TEXT,
     time TIMESTAMP WITHOUT TIME ZONE,
     data JSONB
 );
-CREATE TABLE flowtags (
+CREATE TABLE IF NOT EXISTS flowtags (
     LocalAddress VARCHAR(32),
     LocalPort INTEGER,
     RemoteAddress VARCHAR(32),
@@ -35,19 +35,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER insert_trigger
+CREATE TRIGGER IF NOT EXISTS insert_trigger
 BEFORE INSERT ON _flowtags
 FOR EACH ROW
 EXECUTE FUNCTION flowtags_transform_and_insert();
 
 -- Host context table contians resulted context computed by the context builder.
-CREATE TABLE _hostctx (
+CREATE TABLE IF NOT EXISTS _hostctx (
     tag TEXT,
     time TIMESTAMP WITHOUT TIME ZONE,
     data JSONB
 );
 
-CREATE TABLE hostctx (
+CREATE TABLE IF NOT EXISTS hostctx (
     HostAddress VARCHAR(32),
     OperatingSystem VARCHAR(64),
     InitiatedConnections JSONB,
@@ -77,13 +77,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER insert_trigger
+CREATE TRIGGER IF NOT EXISTS insert_trigger
 BEFORE INSERT ON _hostctx
 FOR EACH ROW
 EXECUTE FUNCTION hostctx_transform_and_insert();
 
 -- Netify tables support annotation of flows with known web application based on Netify provided information.
-CREATE TABLE netify_applications (
+CREATE TABLE IF NOT EXISTS netify_applications (
     id INT PRIMARY KEY,
     tag VARCHAR(100),
     short_name VARCHAR(50),
@@ -93,7 +93,7 @@ CREATE TABLE netify_applications (
     category VARCHAR(50)
 );
 
-CREATE TABLE netify_addresses (
+CREATE TABLE IF NOT EXISTS netify_addresses (
     id INT PRIMARY KEY,
     value VARCHAR(50),
     ip_version INT,
@@ -106,11 +106,11 @@ CREATE TABLE netify_addresses (
     asn_entity_id INT
 );
 
-CREATE INDEX ips_value_idx ON netify_addresses (value);
-CREATE INDEX ips_app_id_idx ON netify_addresses (app_id);
+CREATE INDEX IF NOT EXISTS ips_value_idx ON netify_addresses (value);
+CREATE INDEX IF NOT EXISTS ips_app_id_idx ON netify_addresses (app_id);
 
 -- Smart ADS table enables to annotate host identifies by their IP/MAC addresses with extra information depending on the tag type.
-CREATE TABLE smartads (
+CREATE TABLE IF NOT EXISTS smartads (
     KeyType VARCHAR(8),
     KeyValue VARCHAR(32),
     Source VARCHAR(40),

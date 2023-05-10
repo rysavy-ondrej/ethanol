@@ -35,7 +35,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS insert_trigger
+CREATE OR REPLACE TRIGGER insert_trigger
 BEFORE INSERT ON _flowtags
 FOR EACH ROW
 EXECUTE FUNCTION flowtags_transform_and_insert();
@@ -77,7 +77,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS insert_trigger
+
+CREATE OR REPLACE TRIGGER insert_trigger
 BEFORE INSERT ON _hostctx
 FOR EACH ROW
 EXECUTE FUNCTION hostctx_transform_and_insert();

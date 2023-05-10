@@ -36,7 +36,7 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 WORKDIR /app
 COPY --from=build /bin ./
 COPY ./Source/Ethanol.ContextBuilder/Configurations ./
-COPY ./Publish/Docker/ethanol-config.yml ./
+COPY ./Deploy/Docker/ethanol-config.yml ./
 # Set the entry point for the container
 #ENTRYPOINT ["./Ethanol.ContextBuilder"]
 # specify the default arguments...

@@ -20,7 +20,7 @@ The application sonar consumes host-based context and outputs the JSON data in t
       "gdrive" : [ "flow2", "flow3" ]
     },
     "Connections":[
-       "flow1": { ... },
+       "flow1": { "Key" : {"SrcIp": "192.168.111.19", "SrcPt": 34562, "DstIp" : "23.54.35.211", "DstPt" : 443}, "Value" : { "OctetsSent" : 24546, "OctetsRecv" : 35465, "PacketsSent" : 435, "PacketsRecv" : 450 } },
        "flow2": { ... },
        "flow3": { ... },
        "flow4": { ... },

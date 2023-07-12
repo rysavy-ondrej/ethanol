@@ -13,7 +13,7 @@ It implements the following tools:
 
 ## Environment and Packages
 
-Tho run the tool .NET SDK or .NET runtime version 5.0 and greater is required. 
+Tho run the tool .NET SDK or .NET runtime version 7.0 is required.
 
 ## Documentation
 
@@ -21,10 +21,10 @@ The documentation is available for [Context Builder 1.0.](Docs/ContextBuilder/Re
 
 ## Usage
 
-The easies way is to use prepared Docker compose to setup application environment consisting of 
-Ethanol for flow processing and context building, Fluent-Bit serving as a stream data router, and PostgreSql for storeing the context and host tag data.
+The easiest way is to use pre-built Docker Compose to set up an application environment consisting of  Ethanol for flow processing and context building, Fluent-Bit as a stream data router, and PostgreSql for context and host tag data storage.
+In addition, the socat tool is used within the infrastructure to glue together the pipeline running on distributed nodes.
 
-See [instructions](Publish/Docker/Readme.md) for the step-by-step guidelines on how to use. 
+See [instructions](Publish/Docker/Readme.md) for the step-by-step guidelines on how to use.
 
 ## Acknowledgments
 

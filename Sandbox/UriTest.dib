@@ -1,0 +1,25 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+//var uri = new Uri("https://www.fit.vutbr.cz/~rysavy/aaa.txt");
+var uri = new Uri(@"aaa.txt");
+
+var path = uri.AbsolutePath;
+Console.WriteLine(path);
+
+if (uri.Scheme == Uri.UriSchemeFile)
+{
+    // Accessing a local file
+    string filePath = uri.LocalPath;
+    Console.WriteLine("Accessing a local file: " + filePath);
+}
+// Check if the URI scheme is "http" or "https"
+else if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+{
+    // Accessing an HTTP document
+    string url = uri.ToString();
+    Console.WriteLine("Accessing an HTTP document: " + url);
+}

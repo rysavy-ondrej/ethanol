@@ -1,0 +1,49 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+using System.Text.Json;
+using System.Text.Json.Serialization;
+public record InternetApplicationRecord
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+    [JsonPropertyName("tag")]
+    public string? Tag { get; set; }
+    [JsonPropertyName("short_name")]
+    public string? ShortName { get; set; }
+    [JsonPropertyName("full_name")]
+    public string? FullName { get; set; }
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+}
+
+public class IntFromFloatJsonConverter : JsonConverter<int>
+    {
+        public override int Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options) =>
+                Convert.ToInt32(reader.GetSingle());
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            int value,
+            JsonSerializerOptions options) =>
+                writer.WriteNumberValue(Convert.ToSingle(value));
+    }
+
+var str = "{\"id\": 48.0, \"tag\": \"app.qq\", \"short_name\": \"Tencent QQ\", \"full_name\": \"Tencent QQ Instant Messenger\", \"description\": \"Tencent QQ, popularly known as QQ, is an instant messaging software service based in China.  Nearly 1 billion active accounts use QQ for chat, gaming, music, shopping and more.\", \"url\": \"http://www.qq.com\", \"category\": \"Messaging\"}";
+
+
+var option = new JsonSerializerOptions();
+option.Converters.Add(new IntFromFloatJsonConverter());
+
+var data = JsonSerializer.Deserialize<InternetApplicationRecord>(str, option);
+data.Display();

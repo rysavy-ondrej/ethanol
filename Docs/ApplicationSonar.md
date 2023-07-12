@@ -12,14 +12,19 @@ The application sonar consumes host-based context and outputs the JSON data in t
   "Payload":{
     "HostAddress":"192.168.111.19",
     "OperatingSystem":"Windows 11",
-    "Applications":[
-
-    ],
-    "Services":[
-
-    ],
+    "Applications": {
+      "edge" : [ "flow1", "flow2", "flow3"],
+      "zoom" : [ "flow4", "flow5"]
+    },
+    "Services": {
+      "gdrive" : [ "flow2", "flow3" ]
+    },
     "Connections":[
-
+       "flow1": { ... },
+       "flow2": { ... },
+       "flow3": { ... },
+       "flow4": { ... },
+       "flow5": { ... }
     ]
   }
 }

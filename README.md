@@ -7,7 +7,8 @@ a rich information for each object or to perfom advanced security threats identi
 
 It implements the following tools:
 
-* [ContexBuilder](Source/Ethanol.ContextBuilder/Readme.md) - building a context for the specified object using the set of predefined queries
+* [ContexBuilder](Source/Ethanol.ContextBuilder/Readme.md) - building a context for the specified object using the set of predefined queries.
+* [ApplicationSonar](Source/Ethanol.ApplicationSonar/Readme.md) - detects the communicating applications with the computed context.
 * [MalwareSonar](Source/Ethanol.MalwareSonar/Readme.md) - performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
 
 ## Environment and Packages

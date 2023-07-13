@@ -27,7 +27,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.ContextBuilder", "Test
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{55939A1F-7666-4507-A837-5088B1DB5016}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethanol.ApplicationSonar", "Source\Ethanol.ApplicationSonar\Ethanol.ApplicationSonar.csproj", "{AF563079-1AFB-4912-A15F-D4C016810B67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.ApplicationSonar", "Source\Ethanol.ApplicationSonar\Ethanol.ApplicationSonar.csproj", "{AF563079-1AFB-4912-A15F-D4C016810B67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethanol.DataObjects", "Source\Ethanol.DataObjects\Ethanol.DataObjects.csproj", "{0767694F-0EBB-4B19-A91B-6952C295BDFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,10 @@ Global
 		{AF563079-1AFB-4912-A15F-D4C016810B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF563079-1AFB-4912-A15F-D4C016810B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF563079-1AFB-4912-A15F-D4C016810B67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -71,6 +77,7 @@ Global
 		{256C987D-FDBA-4179-B30F-DEB908415F21} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
 		{D0783BC6-9034-46AD-8D12-CA8484E11A44} = {55939A1F-7666-4507-A837-5088B1DB5016}
 		{AF563079-1AFB-4912-A15F-D4C016810B67} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
+		{0767694F-0EBB-4B19-A91B-6952C295BDFB} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1A6FA446-B8AD-4956-969B-866E8E57D8D6}

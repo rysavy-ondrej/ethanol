@@ -5,11 +5,12 @@
 // The app fingeprint is also loaded from XXX file and represented as in-memory database NMemory (???)
 // 
 
-using ConsoleAppFramework;
+using Ethanol.DataObjects;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
-using System;
+using System.Text.Json;
+
 namespace Ethanol.ApplicationSonar
 {
     /// <summary>
@@ -69,29 +70,71 @@ namespace Ethanol.ApplicationSonar
 
     internal class ProgramCommands : ConsoleAppBase
     {
+        Logger _logger = LogManager.GetCurrentClassLogger();
+
         [Command("Run", "Runs the tool, consuming context JSON file from stdin and producing results to stdout.")]
         public async Task RunAsync(
         [Option("i", "The URI or local path of the file with Internet address indicator file.")]
                 string ipsUri,
-        [Option("i", "The URI or local path of the file with known Internet Application list.")]
+        [Option("a", "The URI or local path of the file with known Internet Application list.")]
                 string apsUri,
-        [Option("a", "The URI or local path of the file with network application signatures.")]
-                string signatureFileUri,
+        [Option("p", "The URI or local path of the file with network process signatures.")]
+                string processFileUri,
         [Option("f", "The format of the output. It can be JSON (default) or YAML.")]
                 string outputFormat
         )
         {
-            var logger = LogManager.GetCurrentClassLogger();
-            logger.Info("Initializing...");
-            logger.Info("Loading Internet Service database...");
+            _logger.Info("Initializing...");
+            _logger.Info("Loading Internet Service database...");
             var serviceDb = await LoadServiceDatabaseAsync(ipsUri, apsUri);
-            logger.Info($"Service Database Loaded: {serviceDb.AddressCount} Addresses, {serviceDb.ApplicationCount} Applications");
+            _logger.Info($"Service Database Loaded: {serviceDb.AddressCount} Addresses, {serviceDb.ApplicationCount} Applications");
 
-            logger.Info("Loading Application Signature database...");
-            LoadSignatureDatabase(signatureFileUri);
-            logger.Info("Application Signatire Databse loaded:");
+            _logger.Info("Loading Application Signature database...");
+            LoadSignatureDatabase(processFileUri);
+            _logger.Info("Process Signature Databse loaded:");
+
+            _logger.Info("Processing input...");
+            await ProcessInputAsync(serviceDb);
 
         }
+
+        private async Task ProcessInputAsync(InternetApplicationDatabase serviceDb)
+        {
+            string? line;
+            while ((line = await Console.In.ReadLineAsync()) != null)
+            {
+
+                try
+                {
+                    var hostRecord = JsonSerializer.Deserialize<HostContextEvent>(line);
+                    if (hostRecord != null)
+                    {
+                        _logger.Info($"Processing context for host {hostRecord.Payload.HostAddress}, [{hostRecord.StartTime} | {hostRecord.EndTime}].");
+                        // print output now just fo debug:
+                        Console.WriteLine($"host: {hostRecord.Payload.HostAddress}");
+                        foreach (var con in hostRecord.Payload.InitiatedConnections)
+                        {
+                            var remoteAddress = con.RemoteHostAddress;
+                            Console.WriteLine($"  connects-to: {remoteAddress} {con.RemoteHostName} {con.Service}");
+
+                            var applications = serviceDb.GetApplications(remoteAddress);
+                            Console.WriteLine($"     services:");
+                            foreach(var app in applications)
+                            {
+                                Console.WriteLine($"       - {app}");
+                            }
+                            
+                        }
+                    }
+
+                }
+                catch(Exception e)
+                {
+                    _logger.Error(e);
+                }
+            }
+        } 
+
         Uri GetUri(string input)
         {
             try
@@ -107,7 +150,7 @@ namespace Ethanol.ApplicationSonar
         }
         private void LoadSignatureDatabase(string signatureFileUri)
         {
-            throw new NotImplementedException();
+           
         }
 
         private Task<InternetApplicationDatabase> LoadServiceDatabaseAsync(string ipsUri, string apsUri)

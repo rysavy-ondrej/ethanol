@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Ethanol.ApplicationSonar": {
+      "commandName": "Project",
+      "commandLineArgs": "Run -a https://www.fit.vutbr.cz/~rysavy/ethanol/aps.json -i E:\\Ethanol\\NETIFY-DATA\\ips.json -p E:\\Ethanol\\NETIFY-DATA\\net.json -f json < E:\\Ethanol\\webuser1\\webuser.ctx.json > E:\\Ethanol\\webuser1\\apps.yaml"
+    }
+  }
+}

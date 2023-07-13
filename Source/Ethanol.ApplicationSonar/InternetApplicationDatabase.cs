@@ -6,11 +6,9 @@
 // 
 using NLog;
 using NMemory;
-using NMemory.Modularity;
+using NMemory.Indexes;
 using NMemory.Tables;
-using System;
-using System.IO;
-using System.Runtime.Serialization.Json;
+using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,18 +17,26 @@ namespace Ethanol.ApplicationSonar
     /// <summary>
     /// Represents a database for managing internet application records.
     /// </summary>
-    public class InternetApplicationDatabase
+    public partial class InternetApplicationDatabase
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
         private Database _database;
         private Table<InternetApplicationRecord, int> _applicationTable;
         private Table<AddressIndicatorRecord, int> _addressTable;
+        private IIndex<AddressIndicatorRecord, string?> _addressTableIndexOnAddress;
+        private IIndex<AddressIndicatorRecord, int> _addressTableIndexOnApplication;
+        private Relation<InternetApplicationRecord, int, AddressIndicatorRecord, int> _addressToApplicationRelation;
 
         public InternetApplicationDatabase()
         {
             this._database = new Database();
             this._applicationTable = _database.Tables.Create<InternetApplicationRecord, int>(item => item.Id);
             this._addressTable = _database.Tables.Create<AddressIndicatorRecord, int>(item => item.Id);
+
+            _addressTableIndexOnAddress = _addressTable.CreateIndex(new RedBlackTreeIndexFactory(), p => p.Address);
+            _addressTableIndexOnApplication = _addressTable.CreateIndex(new RedBlackTreeIndexFactory(), p => p.ApplicationId);
+
+            //_addressToApplicationRelation = _database.Tables.CreateRelation(_applicationTable.PrimaryKeyIndex, _addressTableIndexOnApplication, x => x, x => x, new RelationOptions());
         }
 
         /// <summary>
@@ -47,34 +53,46 @@ namespace Ethanol.ApplicationSonar
            
             var db = new InternetApplicationDatabase();
 
-            // Get records from URI
             var ipsRecords = await FetchRecordsAsync<AddressIndicatorRecord>(addressIndicatorFileUri);
-            var apsRecords = await FetchRecordsAsync<InternetApplicationRecord>(applicationIndexFileUri);
-
             await db.LoadIpsAsync(ipsRecords);
+            ipsRecords.Dispose();
+
+            var apsRecords = await FetchRecordsAsync<InternetApplicationRecord>(applicationIndexFileUri);
             await db.LoadApsAsync(apsRecords);
+            apsRecords.Dispose();
+
             return db;
         }
 
         private  async Task LoadApsAsync(IAsyncEnumerable<InternetApplicationRecord?> apsRecords)
         {
+            var count = 0;
             await foreach (var item in apsRecords)
             {
                 if (item != null)
-                    _applicationTable.Insert(item);    
+                {
+                    _applicationTable.Insert(item);
+
+                    if (++count % 1000 == 0) _logger.Info($"{count} APS record inserted.");
+                }
             }
         }
 
         private  async Task LoadIpsAsync(IAsyncEnumerable<AddressIndicatorRecord?> ipsRecords)
         {
+            var count = 0;
             await foreach (var item in ipsRecords)
             {
                 if (item != null)
+                {
                     _addressTable.Insert(item);
+                    if (++count % 100000 == 0) _logger.Info($"{count} IPS record inserted.");
+                }
             }
         }
 
-        private static async Task<IAsyncEnumerable<T?>> FetchRecordsAsync<T>(Uri uri, CancellationToken ct = default)
+        
+        private static async Task<DisposableAsyncEnumerable<T?>> FetchRecordsAsync<T>(Uri uri, CancellationToken ct = default)
         {
             var jsonOptions = new JsonSerializerOptions();
             jsonOptions.Converters.Add(new IntFromFloatJsonConverter());
@@ -83,8 +101,8 @@ namespace Ethanol.ApplicationSonar
                 // Accessing a local file
                 string filePath = uri.LocalPath;
                 _logger.Info($"Accessing a local file {filePath}");
-                using var stream = File.OpenRead(filePath);
-                return JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct);
+                var stream = File.OpenRead(filePath);
+                return new DisposableAsyncEnumerable<T?>(JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct), stream);
             }
             // Check if the URI scheme is "http" or "https"
             else if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
@@ -94,10 +112,23 @@ namespace Ethanol.ApplicationSonar
                 _logger.Info($"Accessing an HTTP(S) document {url}");
                 using var client = new HttpClient();
                 var stream = await client.GetStreamAsync(url);
-                return JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct);
+                return new DisposableAsyncEnumerable<T?>(JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct), stream, client);
             }
             throw new FileNotFoundException("The file is found at the specified URI.", uri.ToString());
         }
+
+        internal ICollection<InternetApplicationDescription> GetApplications(string remoteAddress)
+        {
+
+            var z = from adr in _addressTable
+                    join app in _applicationTable
+                    on adr.ApplicationId equals app.Id
+                    where adr.Address == remoteAddress
+                    select new InternetApplicationDescription { ApplicationAddress = adr.Address, ApplicationTag = app.Tag, ApplicationName = app.ShortName, ApplicationUrl = app.Url, Category = app.Category };
+            return z.ToList();
+        }
+
+
 
         /// <summary>
         /// Gets the count of address records in the database.
@@ -158,7 +189,7 @@ namespace Ethanol.ApplicationSonar
             [JsonPropertyName("asn_route")]
             public string? AsnRoute { get; set; }
             [JsonPropertyName("asn_entity_id")]
-            public string? AsnId { get; set; }
+            public int? AsnId { get; set; }
         }
         /// <summary>
         /// Custom JSON converter for converting JSON float values to integers.
@@ -179,4 +210,36 @@ namespace Ethanol.ApplicationSonar
                     writer.WriteNumberValue(Convert.ToSingle(value));
         }
     }
+
+    /// <summary>
+    /// Represents an internet application description.
+    /// </summary>
+    public record InternetApplicationDescription
+    {
+        /// <summary>
+        /// Gets or sets the address of the application.
+        /// </summary>
+        public string ApplicationAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the tag associated with the application.
+        /// </summary>
+        public string ApplicationTag { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the application.
+        /// </summary>
+        public string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the URL of the application.
+        /// </summary>
+        public string ApplicationUrl { get; set; }
+
+        /// <summary>
+        /// Gets or sets the category of the application.
+        /// </summary>
+        public string Category { get; set; }
+    }
+
 }

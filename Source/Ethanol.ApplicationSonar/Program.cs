@@ -114,10 +114,11 @@ namespace Ethanol.ApplicationSonar
                         Console.WriteLine($"host: {hostRecord.Payload.HostAddress}");
                         foreach (var con in hostRecord.Payload.InitiatedConnections)
                         {
+                            var tls = GetTlsForConnection(hostRecord, con);                                                                                  
                             var remoteAddress = con.RemoteHostAddress;
-                            Console.WriteLine($"  connects-to: {remoteAddress} {con.RemoteHostName} {con.Service}");
+                            var applications = serviceDb.GetApplications(remoteAddress, out var shared);
 
-                            var applications = serviceDb.GetApplications(remoteAddress);
+                            Console.WriteLine($"  connects-to: {{ address: {remoteAddress}, hostname: {con.RemoteHostName}, protocol: {con.Service}, ciphers: {tls?.CipherSuites}, sni: {tls?.ServerNameIndication}, shared: {shared} }}");                            
                             Console.WriteLine($"     services:");
                             foreach(var app in applications)
                             {
@@ -133,7 +134,12 @@ namespace Ethanol.ApplicationSonar
                     _logger.Error(e);
                 }
             }
-        } 
+        }
+
+        private TlsHandshake? GetTlsForConnection(HostContextEvent hostRecord, InitiatedConnection con)
+        {
+            return hostRecord.Payload.TlsHandshakes.FirstOrDefault(t => String.Equals(t.RemoteHostAddress, con.RemoteHostAddress) && t.RemotePort == con.RemotePort);
+        }
 
         Uri GetUri(string input)
         {

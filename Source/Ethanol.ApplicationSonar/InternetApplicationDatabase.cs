@@ -117,15 +117,21 @@ namespace Ethanol.ApplicationSonar
             throw new FileNotFoundException("The file is found at the specified URI.", uri.ToString());
         }
 
-        internal ICollection<InternetApplicationDescription> GetApplications(string remoteAddress)
+        internal ICollection<InternetApplicationDescription> GetApplications(string remoteAddress, out int shared)
         {
-
-            var z = from adr in _addressTable
-                    join app in _applicationTable
-                    on adr.ApplicationId equals app.Id
-                    where adr.Address == remoteAddress
-                    select new InternetApplicationDescription { ApplicationAddress = adr.Address, ApplicationTag = app.Tag, ApplicationName = app.ShortName, ApplicationUrl = app.Url, Category = app.Category };
-            return z.ToList();
+            shared = 0;
+            var result = new List<InternetApplicationDescription>();
+            var addressRecord = _addressTable.Where(x => x.Address == remoteAddress);
+            foreach(var adr in addressRecord) 
+            {
+                shared = Math.Max(shared, adr.Shared ?? 0);
+                var app = _applicationTable.Where(x => x.Id == adr.ApplicationId).FirstOrDefault();
+                if (app != null)
+                {
+                    result.Add(new InternetApplicationDescription { ApplicationAddress = adr.Address, ApplicationTag = app.Tag, ApplicationName = app.ShortName, ApplicationUrl = app.Url, Category = app.Category });
+                }
+            }
+            return result;
         }
 
 

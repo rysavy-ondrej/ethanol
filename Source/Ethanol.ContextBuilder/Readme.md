@@ -25,19 +25,18 @@ Usage: Ethanol.ContextBuilder Build-Context [options...]
 Builds the context for flows.
 
 Options:
-  -r, --input-reader <String>        The reader module for processing input stream. (Required)
-  -b, --context-builder <String>     The builder module to create a context. (Required)
-  -e, --context-enricher <String>    The enricher module to extend a context with additional information. (Required)
-  -w, --output-writer <String>       The writer module for producing the output. (Required)
+  -r, --input-reader <String>          The reader module for processing input stream. (Required)
+  -c, --configuration-file <String>    The configuration file used to configure the processing. (Required)
+  -w, --output-writer <String>         The writer module for producing the output. (Required)
 ```
 
 To use the tool, three modules need to be specified:
 
-* Reader necessary to process conrrectly the input files or stream.
-* Builder performing the main task - bulding the context according to the given parameters.
+* Reader necessary to process correctly the input files or stream.
+* Builder performing the main task - building the context according to the given parameters.
 * Writer used to produce the output in the required format and target.
 
-The list of available modules is get by the following command:
+The list of available modules is obtained by the following command:
 
 ```
 > Ethanol.ContextBuilder.exe List-Modules
@@ -55,17 +54,32 @@ WRITERS:
   YamlWriter    Writes YAML formatted file for computed context.
 ```
 
+The builder is configured by providing a [configuration file](Configuration-file.md).
+
 
 ## Building Host Context
 
 To building host context use the following command:
 
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e VoidContextEnricher -w YamlWriter:{file=iphost-csv.contex.yaml}
+> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}
 ```
 
-To building host context enriched from Postgres stored metadata use the following command:
+where the content of configuration file `config.yaml` is:
 
-```
-> Ethanol.ContextBuilder.exe Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e VoidContextEnricher -w YamlWriter:{file=iphost-csv.contex.yaml}
+```yaml
+window-size: 00:05:00
+window-hop: 00:05:00
+target-prefix: 192.168.111.0/24
+flow-tag-enricher:
+    jsonfile:
+        filename: webuser.tcp.json
+        collection: flows
+netify-tag-enricher:
+    jsonfile:
+        filename: netify.json
+        collection: apps,ips
+host-tag-enricher:
+    csvfile:
+        filename: webuser.smartads.csv
 ```

@@ -2,11 +2,13 @@
 using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Readers;
-using Ethanol.ContextBuilder.Simplifier;
+using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Writers;
 using NRules.Diagnostics;
 using System;
+using System.Net;
 using System.Reactive.Linq;
 
 namespace Ethanol.ContextBuilder.Pipeline
@@ -51,21 +53,60 @@ namespace Ethanol.ContextBuilder.Pipeline
     {
         public static EthanolPipeline CreateIpHostContextBuilderPipeline(this ContextBuilderCatalog catalog, PipelineConfiguration configuration, IFlowReader<IpFlow> reader, ContextWriter<object> writer, Action<int> onInputConsumed, Action<int> onOuputProduced)
         {
+            var hostFilter = HostBasedFilter.FromHostPrefix(configuration.TargetHostPrefix);
             var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
             var enricher = new IpHostContextEnricher(configuration.HostTagEnricherConfiguration.GetHostTagProvider(), configuration.FlowTagEnricherConfiguration.GetFlowTagProvider(), configuration.NetifyTagEnricherConfiguration.GetNetifyTagProvider());
-            var simplifier = new IpHostContextSimplifier();
-
+            var polisher = new IpHostContextPolisher();
+            
             reader.Do(x => onInputConsumed(1))
                 .Subscribe(builder);
-            builder.Delay(configuration.EnricherDelay)        // this is to delay outputs from builder to enricher in order to wait to flow tags...
+            builder
+                .Where(hostFilter.Evaluate)                // performs filtering on the generated context, not all context are further processed
+                .Delay(configuration.EnricherDelay)        // this is to delay outputs from builder to enricher in order to wait to flow tags
                 .Subscribe(enricher);
             enricher.Do(x => onOuputProduced(1))
-                .Subscribe(simplifier);
-            simplifier
+                .Subscribe(polisher);
+            polisher
                 .Subscribe(writer);
 
-            return new EthanolPipeline(reader, builder, enricher, simplifier, writer);
+            return new EthanolPipeline(reader, builder, enricher, polisher, writer);
         }
     }
 
+    public class HostBasedFilter
+    {
+        Func<IPAddress, bool> AddressFilter;
+
+        public HostBasedFilter()
+        {
+            AddressFilter = x => true;
+        }
+
+        public HostBasedFilter(Func<IPAddress, bool> value)
+        {
+            this.AddressFilter = value;
+        }
+
+        public static HostBasedFilter FromHostPrefix(IPAddressPrefix targetHostPrefix)
+        {
+            if (targetHostPrefix == null)
+            {
+                return new HostBasedFilter();
+            }
+            else
+            {
+                return new HostBasedFilter(x => targetHostPrefix.Match(x));
+            }
+        }
+
+        public bool Match(IPAddress address)
+        {
+            return AddressFilter(address);
+        }
+
+        public bool Evaluate(ObservableEvent<IpHostContext> evt)
+        {
+            return Match(evt.Payload.HostAddress);
+        }
+    }
 }

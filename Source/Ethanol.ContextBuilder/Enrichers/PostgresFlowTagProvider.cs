@@ -3,6 +3,8 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -151,9 +153,10 @@ namespace Ethanol.ContextBuilder.Enrichers
         private static FlowTag ReadFlowTag(DateTime start, DateTime end, NpgsqlDataReader reader)
         {
             return new FlowTag(start, end,
-                                  reader["LocalAddress"] as string,
+                                  ProtocolType.IP,
+                                  TryConvert.ToIPAddress(reader["LocalAddress"] as string, out var localAddress) ? localAddress : IPAddress.None,
                                   TryConvert.ToUInt16(reader["LocalPort"], out var localPort) ? localPort : (ushort)0,
-                                  reader["RemoteAddress"] as string,
+                                  TryConvert.ToIPAddress(reader["RemoteAddress"] as string, out var remoteAddress) ? remoteAddress : IPAddress.None,
                                   TryConvert.ToUInt16(reader["RemotePort"], out var remotePort) ? remotePort : (ushort)0,
                                   reader["ProcessName"] as string
                                   );

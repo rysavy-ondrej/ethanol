@@ -29,10 +29,15 @@ namespace Ethanol.ContextBuilder.Builders
     
     
     
-    public record IpHostContext(IPAddress HostAddress, IpFlow[] Flows) : IpHostContext<Empty>(HostAddress, Flows, Empty.Default);
-    
-    public record IpHostContext<TagType>(IPAddress HostAddress, IpFlow[] Flows, TagType Tags)
+    public class IpHostContext : IpHostContext<Empty>
     {
+    }
+    
+    public class IpHostContext<TagType>
+    { 
+        public IPAddress HostAddress { get; init; }
+        public IpFlow[] Flows { get; init; }
+        public TagType Tags { get; init; }
         /// <summary>
         /// Gets flows of type <typeparamref name="TFlow"/> using <paramref name="select"/> function. 
         /// </summary>
@@ -40,7 +45,7 @@ namespace Ethanol.ContextBuilder.Builders
         /// <typeparam name="TFlow">The type of flows to retrieve.</typeparam>
         /// <param name="select">The result mapping function.</param>
         /// <returns>Get the enumerablw of flow object created using <paramref name="select"/> funciton.</returns>
-        IEnumerable<TResult> GetFlowsAs<TResult, TFlow>(Func<TFlow, TResult> select) where TFlow : IpFlow
+        public IEnumerable<TResult> GetFlowsAs<TResult, TFlow>(Func<TFlow, TResult> select) where TFlow : IpFlow
             => Flows.Where(f => f is TFlow).Select(f => select(f as TFlow));
     }
     /// <summary>
@@ -53,7 +58,6 @@ namespace Ethanol.ContextBuilder.Builders
     {
         public TimeSpan WindowSize { get; }
         public TimeSpan WindowHop { get; }
-
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         public object SubscribedTo { get; private set; }
@@ -66,6 +70,7 @@ namespace Ethanol.ContextBuilder.Builders
         {
             [YamlMember(Alias = "window", Description = "The time span of window.")]
             public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
+
             [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
             public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
         }
@@ -103,7 +108,7 @@ namespace Ethanol.ContextBuilder.Builders
                         // on error:
                         error => { },
                         // on completed:
-                        () => _egressObservable.OnNext(new ObservableEvent<IpHostContext>(new IpHostContext(IPAddress.Parse(host.Key), flowList.ToArray()), window.StartTime, window.EndTime))
+                        () => _egressObservable.OnNext(new ObservableEvent<IpHostContext>(new IpHostContext { HostAddress = IPAddress.Parse(host.Key), Flows = flowList.ToArray() }, window.StartTime, window.EndTime))
                         );
                     }
                 ),

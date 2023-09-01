@@ -1,0 +1,51 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+#r "nuget:npgsql"
+#r "nuget:CsvHelper"
+using Npgsql;
+using CsvHelper;
+using System.Net;
+using System.IO;
+using System.Globalization;
+
+#!csharp
+
+var connectionString = "Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;";
+var inputfile = @"E:\Ethanol\webuser2\webuser.fakesads.csv";
+
+#!csharp
+
+class CsvHostTag
+{
+    public string KeyType { get; set; }
+    public string KeyValue { get; set; }
+    public string SourceValue { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public double Reliability { get; set; }
+    public string SourceModule { get; set; }
+    public string Value { get; set; }
+
+    public static IEnumerable<CsvHostTag> Load(string filename)
+    {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = false, 
+            BadDataFound = null,
+        };
+        using (var reader = new StreamReader(filename))
+        using (var csv = new CsvReader(reader, config))
+        {
+            var records = csv.GetRecords<CsvHostTag>();
+
+            foreach (var record in records)
+            {
+                yield return record;
+            }
+        }
+    }
+}

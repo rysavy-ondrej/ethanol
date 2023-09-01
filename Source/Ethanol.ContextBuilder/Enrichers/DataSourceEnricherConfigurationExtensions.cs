@@ -17,6 +17,11 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var json = JsonDbHostTagProvider.Create(config.Json);
                 return json;
             }
+            if (config?.Csv != null)
+            {
+                var json = CsvDbHostTagProvider.Create(config.Csv);
+                return json;
+            }
             return null;
         }
         public static IHostDataProvider<FlowTag> GetFlowTagProvider(this DataSourceEnricherConfiguration config)

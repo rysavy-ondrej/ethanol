@@ -9,16 +9,16 @@ using System.Net;
 using System.Reactive.Subjects;
 
 
-namespace Ethanol.ContextBuilder.Simplifier
+namespace Ethanol.ContextBuilder.Polishers
 {
     /// <summary>
     /// Transforms a rich IP host context into a simplified IP host context.
     /// </summary>
-    public class IpHostContextSimplifier : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpSimpleHostContext>>, IPipelineNode
+    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
     {
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
-        private Subject<ObservableEvent<IpSimpleHostContext>> _subject;
+        private Subject<ObservableEvent<IpTargetHostContext>> _subject;
 
         /// <summary>
         /// Gets the type of pipeline node represented by this instance, which is always Transformer.
@@ -28,9 +28,9 @@ namespace Ethanol.ContextBuilder.Simplifier
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
         /// </summary>
-        public IpHostContextSimplifier()
+        public IpHostContextPolisher()
         {
-            _subject = new Subject<ObservableEvent<IpSimpleHostContext>>();
+            _subject = new Subject<ObservableEvent<IpTargetHostContext>>();
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Ethanol.ContextBuilder.Simplifier
 
             var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
 
-            var ftagResolver = new Resolver<string, FlowTag>(value.Payload.FlowTags, flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+            var ftagResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.HasValueType<FlowTag>()).Select(x=>x.Cast<FlowKey, FlowTag>().Value), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
             string ResolveDomain(IPAddress x)
             {
@@ -73,7 +73,7 @@ namespace Ethanol.ContextBuilder.Simplifier
                 return ftagResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
             }
 
-            var osInfo = value.Payload.HostTags.Where(x => x.Name == "os_by_tcpip").FirstOrDefault()?.Value;
+            var tags = value.Payload.Tags;
 
             var upflows = value.Payload.Flows.Where(x => x.SourceAddress.Equals(value.Payload.HostAddress)).ToList();
             
@@ -87,9 +87,9 @@ namespace Ethanol.ContextBuilder.Simplifier
             
             var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !String.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress, ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
             
-            var simpleContext = new IpSimpleHostContext(value.Payload.HostAddress, osInfo, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
+            var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, tags, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
             
-            _subject.OnNext(new ObservableEvent<IpSimpleHostContext>(simpleContext, value.StartTime, value.EndTime));
+            _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
         }
  
         /// <summary>
@@ -138,7 +138,7 @@ namespace Ethanol.ContextBuilder.Simplifier
         /// </summary>
         /// <param name="observer">The observer to subscribe.</param>
         /// <returns>An IDisposable object that can be used to unsubscribe the observer.</returns>
-        public IDisposable Subscribe(IObserver<ObservableEvent<IpSimpleHostContext>> observer)
+        public IDisposable Subscribe(IObserver<ObservableEvent<IpTargetHostContext>> observer)
         {
             return _subject.Subscribe(observer);    
         }

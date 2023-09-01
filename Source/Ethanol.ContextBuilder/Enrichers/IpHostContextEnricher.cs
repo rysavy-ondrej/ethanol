@@ -5,10 +5,12 @@ using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reactive.Subjects;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
+    public class IpRichHostContext : IpHostContext<ContextTag[]> { }
     /// <summary>
     /// Implements a transformer that enrich <see cref="IpHostContext"/> and produces <see cref="IpRichHostContext"/>.
     /// </summary>
@@ -52,15 +54,17 @@ namespace Ethanol.ContextBuilder.Enrichers
             var end = value.EndTime;
 
             // collects tags related to the host...
-            var envTags = (_hostTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>()).ToArray();
+            var envTags = (_hostTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<HostTag>()).Select(x=> new ContextTag<string, HostTag> { Name = nameof(HostTag), Key = x.Name, Value = x, Reliability = x.Reliability}).Cast<ContextTag>();
                         
             // collects tags related to host's flows...
-            var flowTags = (_flowTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<FlowTag>()).ToArray();
+            var flowTags = (_flowTagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<FlowTag>()).Select(x=> new ContextTag<FlowKey, FlowTag> { Name = nameof(FlowTag), Key = x.GetFlowKey(), Value =x, Reliability = 1.0}).Cast<ContextTag>();
             
             // collects web applications related to host's flows...
-            var webApps = GetWebAppsForFlows(value.Payload.Flows,start, end);
+            var webApps = GetWebAppsForFlows(value.Payload.Flows,start, end).Select(x=> new ContextTag<IPAddress, NetifyTag[]> { Name = nameof(NetifyTag), Key = x.Key, Value = x.Value, Reliability = 1.0 }).Cast<ContextTag>();
 
-            _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext(value.Payload.HostAddress, value.Payload.Flows, envTags, flowTags, webApps), value.StartTime, value.EndTime));
+            var tags = envTags.Concat(flowTags).Concat(webApps).ToArray();
+
+            _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags },  value.StartTime, value.EndTime));
         }
 
         /// <summary>
@@ -75,14 +79,15 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>A dictionary where the key is a string representation of a remote address (from the IpFlow array), and the
         /// value is an array of NetifyApplication objects that match the given remote address and time range.
         /// </returns>
-        private IDictionary<string, NetifyTag[]> GetWebAppsForFlows(IpFlow[] flows, DateTime start, DateTime end)
+        private IDictionary<IPAddress, NetifyTag[]> GetWebAppsForFlows(IpFlow[] flows, DateTime start, DateTime end)
         {
-            var dictionary = new Dictionary<string, NetifyTag[]>();
+            var dictionary = new Dictionary<IPAddress, NetifyTag[]>();
+            if (_netifyTagQueryable == null) return dictionary;           
             var remoteAddresses = flows.Select(x=>x.DestinationAddress).Distinct();
             foreach(var addr in remoteAddresses)
             {
-                var apps = _netifyTagQueryable?.Get(addr.ToString(), start, end) ?? Enumerable.Empty<NetifyTag>();
-                dictionary.Add(addr.ToString(), apps.ToArray());
+                var apps = _netifyTagQueryable.Get(addr.ToString(), start, end) ?? Enumerable.Empty<NetifyTag>();
+                dictionary.Add(addr, apps.ToArray());
             }
             return dictionary;
         }

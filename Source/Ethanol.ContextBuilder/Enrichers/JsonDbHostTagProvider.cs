@@ -1,8 +1,10 @@
 ﻿using JsonFlatFileDataStore;
+using Microsoft.StreamProcessing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using YamlDotNet.Core;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -11,6 +13,9 @@ namespace Ethanol.ContextBuilder.Enrichers
         private DataStore _store;
         private readonly IDocumentCollection<HostTag> _collection;
         private readonly IEnumerable<HostTag> _queryable;
+
+
+
 
         public JsonDbHostTagProvider(string jsonFile, string collectionName)
         {
@@ -34,7 +39,12 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         internal static IHostDataProvider<HostTag> Create(IpHostContextEnricherPlugin.JsonConfiguration json)
         {
-            return new JsonDbHostTagProvider(json.Filename, json.Collection);
+                return JsonDbHostTagProvider.LoadFromJson(json.Filename, json.Collection);
+        }
+
+        private static IHostDataProvider<HostTag> LoadFromJson(string filename, string collection)
+        {
+            return new JsonDbHostTagProvider(filename, collection);
         }
     }
 }

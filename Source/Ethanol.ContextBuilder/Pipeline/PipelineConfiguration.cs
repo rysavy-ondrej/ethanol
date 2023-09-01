@@ -19,6 +19,9 @@ namespace Ethanol.ContextBuilder.Pipeline
         [YamlMember(Alias = "window-hop", Description = "The hop interval of the window. ")]
         public TimeSpan WindowHop { get; set; }
 
+        [YamlMember(Alias = "target-prefix", Description = "IP address prefix of target context host.")]
+        public IPAddressPrefix TargetHostPrefix { get; set; }
+
         [YamlMember(Alias = "enricher-delay", Description = "Specifies the delay for data between builder and enricher. For online processing that includes flow tag enricher we need to wait until the data is available to enricher.")]
         public TimeSpan EnricherDelay { get; set; } = TimeSpan.Zero;
 
@@ -29,6 +32,8 @@ namespace Ethanol.ContextBuilder.Pipeline
         public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration FlowTagEnricherConfiguration { get; set; }
         [YamlMember(Alias = "netify-tag-enricher", Description = "The configuration for the netify tag enricher.")]
         public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration NetifyTagEnricherConfiguration { get; set; }
+
+        
     }
 
 
@@ -38,8 +43,8 @@ namespace Ethanol.ContextBuilder.Pipeline
     public static class PipelineConfigurationSerializer
     {
         static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
-        static YamlDotNet.Serialization.IDeserializer deserializer = new YamlDotNet.Serialization.Deserializer();
-        static YamlDotNet.Serialization.ISerializer serializer = new YamlDotNet.Serialization.Serializer();
+        static IDeserializer deserializer = new DeserializerBuilder().WithTypeConverter(new IPAddressPrefixTypeConverter()).Build();
+        static ISerializer serializer = new SerializerBuilder().WithTypeConverter(new IPAddressPrefixTypeConverter()).Build();
 
         /// <summary>
         /// Creates a new <see cref="PipelineConfiguration"/> object from the specified YAML string.
@@ -70,7 +75,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         }
 
         /// <summary>
-        /// Replaces every reference to an environment variables, e.g., ${VARIABLE}, by its content or e,pty string if the variable is not set.
+        /// Replaces every reference to an environment variables, e.g., ${VARIABLE}, by its content or empty string if the variable is not set.
         /// </summary>
         private static string ResolveEnvironmentVariables(string input)
         {
@@ -96,5 +101,4 @@ namespace Ethanol.ContextBuilder.Pipeline
             File.AppendAllText(path, configurationString);
         }
     }
-
 }

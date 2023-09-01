@@ -37,6 +37,14 @@ namespace Ethanol.ContextBuilder.Enrichers
 
             [YamlMember(Alias = "jsonfile", Description = "The JSON file data source configuration.")]
             public JsonConfiguration Json { get; set; }
+            [YamlMember(Alias = "csvfile", Description = "The CSV file data source configuration.")]
+            public CsvSourceConfiguration Csv { get; set; }
+        }
+
+        public record CsvSourceConfiguration
+        {
+            [YamlMember(Alias = "filename", Description = "The name of the source JSON file.")]
+            public string Filename { get; set; }
         }
 
         public record JsonConfiguration

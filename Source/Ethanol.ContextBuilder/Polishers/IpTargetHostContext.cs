@@ -1,9 +1,14 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers;
 using System.Net;
 
 
-namespace Ethanol.ContextBuilder.Simplifier
+namespace Ethanol.ContextBuilder.Polishers
 {
+
+    public record CustomHostAttribute(string Name, object Value, float Reliability);
+
+
     /// <summary>
     /// Represents information about an IP connection, including details on packet and flow counts.
     /// </summary>
@@ -57,16 +62,16 @@ namespace Ethanol.ContextBuilder.Simplifier
     /// <summary>
     /// Represents a simplified IP host context.
     /// </summary>
-    public record IpSimpleHostContext(
+    public record IpTargetHostContext(
         /// <summary>
         /// The IP address of the host.
         /// </summary>
         IPAddress HostAddress,
 
         /// <summary>
-        /// The operating system running on the host.
+        /// An array of other attributes associated with the context.
         /// </summary>
-        string OperatingSystem,
+        ContextTag[] CustomAttributes,
 
         /// <summary>
         /// An array of IP connection information for connections initiated by the host.

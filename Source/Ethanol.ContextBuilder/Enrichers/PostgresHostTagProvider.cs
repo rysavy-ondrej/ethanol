@@ -26,7 +26,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// </remarks>
     public class PostgresHostTagProvider : IHostDataProvider<HostTag>
     {
-        static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly NpgsqlConnection _connection;
         private readonly string _tableName;
 
@@ -51,13 +51,13 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                logger.Info($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
+                _logger.Info($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
 
                 return new PostgresHostTagProvider(connection, tableName);
             }
             catch (Exception ex)
             {
-                logger.Error(ex, $"Cannot create {nameof(PostgresHostTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
+                _logger.Error(ex, $"Cannot create {nameof(PostgresHostTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
                 return null;
             }
         }
@@ -96,11 +96,13 @@ namespace Ethanol.ContextBuilder.Enrichers
                                           reader["Data"] as string);
                     rowList.Add(row);
                 }
+                await reader.CloseAsync();
+                _logger.Debug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
             }
             catch (Exception e)
             {
-                logger.Error(e);
+                _logger.Error(e);
                 return Array.Empty<HostTag>();
             }
         }
@@ -124,11 +126,12 @@ namespace Ethanol.ContextBuilder.Enrichers
                     rowList.Add(row);
                 }
                 reader.Close();
+                _logger.Debug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
             }
             catch (Exception e)
             {
-                logger.Error(e);
+                _logger.Error(e);
                 return Array.Empty<HostTag>();
             }
         }

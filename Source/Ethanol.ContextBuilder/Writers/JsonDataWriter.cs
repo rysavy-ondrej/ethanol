@@ -89,7 +89,9 @@ namespace Ethanol.ContextBuilder.Writers
             /// <inheritdoc/>
             protected override void Write(object value)
             {
-                _writer.WriteLine(JsonSerializer.Serialize(value, _jsonOptions));
+                if (value == null) return;
+                var valueType = value.GetType();
+                _writer.WriteLine(JsonSerializer.Serialize(value, valueType, _jsonOptions));
             }
 
             public override string ToString()

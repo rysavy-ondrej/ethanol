@@ -54,7 +54,7 @@ WRITERS:
   YamlWriter    Writes YAML formatted file for computed context.
 ```
 
-The builder is configured by providing a [configuration file](configuration-file.md).
+The builder is configured by providing a [configuration file](Configuration-file.md).
 
 
 ## Building Host Context
@@ -62,11 +62,24 @@ The builder is configured by providing a [configuration file](configuration-file
 To building host context use the following command:
 
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e VoidContextEnricher -w YamlWriter:{file=iphost-csv.contex.yaml}
+> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}
 ```
 
-To building host context enriched from Postgres stored metadata use the following command:
+where the content of configuration file `config.yaml` is:
 
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r NfdumpCsv:{file=test.nfdump.csv} -b IpHostContext:{window=00:05:00,hop=00:05:00} -e VoidContextEnricher -w YamlWriter:{file=iphost-csv.contex.yaml}
+window-size: 00:05:00
+window-hop: 00:05:00
+target-prefix: 192.168.111.0/24
+flow-tag-enricher:
+    jsonfile:
+        filename: webuser.tcp.json
+        collection: flows
+netify-tag-enricher:
+    jsonfile:
+        filename: netify.json
+        collection: apps,ips
+host-tag-enricher:
+    csvfile:
+        filename: webuser.smartads.csv
 ```

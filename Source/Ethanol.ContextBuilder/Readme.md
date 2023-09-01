@@ -67,7 +67,7 @@ To building host context use the following command:
 
 where the content of configuration file `config.yaml` is:
 
-```
+```yaml
 window-size: 00:05:00
 window-hop: 00:05:00
 target-prefix: 192.168.111.0/24

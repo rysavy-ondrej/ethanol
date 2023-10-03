@@ -1,9 +1,18 @@
-﻿using Npgsql;
+﻿using CsvHelper.Configuration;
+using CsvHelper;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
+using static Ethanol.ContextBuilder.ProgramCommands;
+using CsvHelper.Configuration.Attributes;
+using System.Reflection.Metadata.Ecma335;
+using System.Text.Json;
+using System.Linq;
+using static Ethanol.ContextBuilder.Enrichers.PostgresHostTagProvider;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -170,11 +179,11 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
                 string sqlCreateTable = @$"
                 CREATE TABLE {tableName}(
-                    KeyType VARCHAR(8),
-                    KeyValue VARCHAR(32),
-                    Source VARCHAR(40),
+                    KeyType VARCHAR(16),
+                    KeyValue VARCHAR(64),
+                    Source VARCHAR(80),
                     Reliability REAL,
-                    Module VARCHAR(40),
+                    Module VARCHAR(80),
                     Data JSON,
                     Validity TSRANGE
                 );";
@@ -185,6 +194,86 @@ namespace Ethanol.ContextBuilder.Enrichers
             else
             {
                 return true;
+            }
+        }
+
+        internal static int BulkInsert(NpgsqlConnection connection, string inputFile, string tableName)
+        {
+            var recordCount = 0;
+            using (var reader = new StreamReader(inputFile))
+            {
+
+                var records = ParseCsv(reader).ToList();
+
+                var sample = records[1282];
+
+                using (var writer = connection.BeginBinaryImport($"COPY {tableName} (keytype, keyvalue, source, reliability, module, data, validity) FROM STDIN (FORMAT BINARY)"))
+                {
+                    foreach (var record in records)
+                    {
+                        recordCount++;
+
+                        var json = JsonSerializer.Deserialize<dynamic>(record.Data);
+                        var jsonText = json.ToString();
+
+                        writer.StartRow();
+                        writer.Write(record.KeyType, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(record.KeyValue, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(record.Source, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(record.Reliability, NpgsqlTypes.NpgsqlDbType.Real);
+                        writer.Write(record.Module, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(json, NpgsqlTypes.NpgsqlDbType.Json);
+                        writer.Write(new NpgsqlTypes.NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlTypes.NpgsqlDbType.TimestampRange);
+                    }
+
+                    writer.Complete();
+                }
+            }
+            return recordCount;
+        }
+        internal record CsvHostTagRecord(
+            [Index(0)] string KeyType,
+            [Index(1)] string KeyValue,
+            [Index(2)] string Source,
+            [Index(3)] DateTime StartTime,
+            [Index(4)] DateTime EndTime,
+            [Index(5)] double Reliability,
+            [Index(6)] string Module,
+            [Index(7)] string Data
+        );
+
+        /// <summary>
+        /// Parses the input data using custom CSV parser. The custom parser is needed as source CSV is not properly quoted.
+        /// </summary>
+        /// <param name="reader">The source reader.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        static IEnumerable<CsvHostTagRecord> ParseCsv(TextReader reader)
+        {
+            string line;
+
+            while ((line = reader.ReadLine()) != null)
+            {
+                var parts = line.Split(',', 8);
+                // shorter lines are silently ignored...
+                if (parts.Length != 8)
+                {
+                    _logger.Warn($"Invalid line: {line}");
+                   continue;
+                }
+
+                var record = new CsvHostTagRecord(
+                    KeyType: parts[0],
+                    KeyValue: parts[1],
+                    Source: parts[2],
+                    StartTime: DateTime.Parse(parts[3]),
+                    EndTime: DateTime.Parse(parts[4]),
+                    Reliability: double.Parse(parts[5]),
+                    Module: parts[6],
+                    Data: parts[7]
+                );
+
+                yield return record;
             }
         }
     }

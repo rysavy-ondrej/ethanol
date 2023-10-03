@@ -3,9 +3,12 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Threading.Tasks;
+using static Ethanol.ContextBuilder.Enrichers.PostgresFlowTagProvider.FlowsBatch;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -60,7 +63,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
                 _logger.Error(ex, $"Cannot create {nameof(PostgresFlowTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
                 return null;
-            }            
+            }
         }
 
         /// <summary>
@@ -137,7 +140,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 _logger.Debug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _logger.Error(e);
                 return Array.Empty<FlowTag>();
@@ -195,5 +198,35 @@ namespace Ethanol.ContextBuilder.Enrichers
                 return true;
             }
         }
+
+
+        public record FlowsBatch(FlowTagRecord[] Flows)
+        {
+            public record FlowTagRecord(DateTime StartTime, DateTime EndTime, string Protocol, string LocalAddress, ushort LocalPort, string RemoteAddress, ushort RemotePort, string ProcessName);
+
+        }
+        public static int BulkInsert(NpgsqlConnection connection, string inputFile, string tableName)
+        {
+            var flowCount = 0;
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var batch = JsonSerializer.Deserialize<FlowsBatch>(File.ReadAllText(inputFile), options);
+            using (var writer = connection.BeginBinaryImport($"COPY {tableName} (localaddress, localport, remoteaddress, remoteport, processname, validity) FROM STDIN (FORMAT BINARY)"))
+            {
+                foreach (var flowTag in batch.Flows)
+                {
+                    flowCount++;
+                    writer.StartRow();
+                    writer.Write(flowTag.LocalAddress.ToString(), NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write((int)flowTag.LocalPort, NpgsqlTypes.NpgsqlDbType.Integer);
+                    writer.Write(flowTag.RemoteAddress.ToString(), NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write((int)flowTag.RemotePort, NpgsqlTypes.NpgsqlDbType.Integer);
+                    writer.Write(flowTag.ProcessName, NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write(new NpgsqlTypes.NpgsqlRange<DateTime>(flowTag.StartTime, flowTag.EndTime), NpgsqlTypes.NpgsqlDbType.TimestampRange);
+                }
+                writer.Complete();
+            }
+            return flowCount;
+        }
+
     }
 }

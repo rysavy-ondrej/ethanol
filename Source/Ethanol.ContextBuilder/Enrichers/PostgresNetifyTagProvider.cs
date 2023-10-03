@@ -1,7 +1,12 @@
-﻿using Npgsql;
+﻿using CsvHelper.Configuration;
+using CsvHelper;
+using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+using CsvHelper.Configuration.Attributes;
+using CsvHelper.TypeConversion;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -26,7 +31,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// CREATE TABLE netify_addresses (
     ///     id INT PRIMARY KEY,
     ///     value VARCHAR(50),
-    ///     ip_version INT,
+    ///     ip_version VARCHAR(10),
     ///     shared INT,
     ///     app_id INT,
     ///     platform_id INT,
@@ -43,6 +48,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         private readonly NpgsqlConnection _connection;
         private readonly string _applicationsTableName;
         private readonly string _addressesTableName;
+        private readonly string _domainTableName;
 
         /// <summary>
         /// Creates the object using the provided connection string. An format of the string is:
@@ -51,8 +57,11 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         /// <param name="connectionString"></param>
         /// <returns></returns>
-        public static PostgresNetifyTagProvider Create(string connectionString, string applicationsTableName, string addressesTableName)
+        public static PostgresNetifyTagProvider Create(string connectionString, string tablePrefix)
         {
+            var applicationsTableName = tablePrefix + "_applications";
+            var addressesTableName = tablePrefix + "_addresses";
+            var domainTableName = tablePrefix + "_domains";
             try
             {
                 var connection = new NpgsqlConnection(connectionString);
@@ -70,13 +79,13 @@ namespace Ethanol.ContextBuilder.Enrichers
                 _logger.Info($"Postgres connected '{connectionString}'.");
                 _logger.Info($"Available {appsRowCount} records in table '{applicationsTableName}'. ");
                 _logger.Info($"Available {ipsRowCount} records in table '{addressesTableName}'. ");
-                return new PostgresNetifyTagProvider(connection, applicationsTableName, addressesTableName);
+                return new PostgresNetifyTagProvider(connection, applicationsTableName, addressesTableName, domainTableName);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, $"Cannot create {nameof(PostgresFlowTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
                 return null;
-            }            
+            }
         }
 
         /// <summary>
@@ -85,11 +94,12 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="connectionString"></param>
         /// <param name="applicationsTableName">The name of the table to read application records from.</param>
         /// <param name="addressesTableName">The name of the table to read address records from.</param>
-        PostgresNetifyTagProvider(NpgsqlConnection connection, string applicationsTableName, string addressesTableName)
+        PostgresNetifyTagProvider(NpgsqlConnection connection, string applicationsTableName, string addressesTableName, string domainTableName)
         {
             _connection = connection;
             _applicationsTableName = applicationsTableName;
             _addressesTableName = addressesTableName;
+            this._domainTableName = domainTableName;
         }
 
         /// <summary>
@@ -152,9 +162,9 @@ namespace Ethanol.ContextBuilder.Enrichers
                 }
                 reader.Close();
                 _logger.Debug($"Query {addressSelectCmd.CommandText} returned {addressList.Count} rows.");
-                return addressList;    
+                return addressList;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _logger.Error(e);
                 return Array.Empty<NetifyTag>();
@@ -169,15 +179,15 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>A NetifyApplication object containing the flow tag data from the current row of the NpgsqlDataReader.</returns>
         private static NetifyTag ReadNetifyApplication(NpgsqlDataReader reader)
         {
-                return new NetifyTag
-                {
-                    Tag = reader.GetString(reader.GetOrdinal("tag")),
-                    ShortName = reader.GetString(reader.GetOrdinal("short_name")),
-                    FullName = reader.GetString(reader.GetOrdinal("full_name")),
-                    Description = reader.GetString(reader.GetOrdinal("description")),
-                    Url = reader.GetString(reader.GetOrdinal("url")),
-                    Category = reader.GetString(reader.GetOrdinal("category"))
-                };
+            return new NetifyTag
+            {
+                Tag = reader.GetString(reader.GetOrdinal("tag")),
+                ShortName = reader.GetString(reader.GetOrdinal("short_name")),
+                FullName = reader.GetString(reader.GetOrdinal("full_name")),
+                Description = reader.GetString(reader.GetOrdinal("description")),
+                Url = reader.GetString(reader.GetOrdinal("url")),
+                Category = reader.GetString(reader.GetOrdinal("category"))
+            };
         }
 
         /// <summary>
@@ -185,67 +195,304 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         /// <param name="applicationsTableName">The name of the netify application table to create.</param>
         /// <param name="ipsTableName">The name of the netify address table to create.</param>
-        /// <returns>True if the table exsists or was created.</returns>
-        public static bool CreateTablesIfNotExists(NpgsqlConnection connection, string applicationsTableName, string ipsTableName)
+        /// <param name="dropTables">If set to true, the tables will be dropped and recreated.</param>
+        public static void CreateTables(NpgsqlConnection connection, string tablePrefix, bool dropTables = false)
         {
-            var sucess = true;
-            var testApplicationTableExistCmd = connection.CreateCommand();
-            testApplicationTableExistCmd.CommandText = $@"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = '{applicationsTableName}');";
-            var applicationTableExists = (bool)testApplicationTableExistCmd.ExecuteScalar();
+            var applicationsTableName = tablePrefix + "_applications";
+            var addressesTableName = tablePrefix + "_addresses";
+            var domainsTableName = tablePrefix + "_domains";
 
-            if (!applicationTableExists)
+            if (dropTables)
             {
-                string sqlCreateTable = @$"
-                CREATE TABLE {applicationsTableName} (
-                    id INT PRIMARY KEY,
-                    tag VARCHAR(100),
-                    short_name VARCHAR(50),
-                    full_name VARCHAR(100),
-                    description TEXT,
-                    url VARCHAR(255),
-                    category VARCHAR(50)
-                );";
-                var createCmd = connection.CreateCommand();
-                createCmd.CommandText = sqlCreateTable;
-                sucess &= createCmd.ExecuteNonQuery() > 0;
+                connection.DropTable(applicationsTableName);
+                connection.DropTable(addressesTableName);
+                connection.DropTable(domainsTableName);
             }
 
-            var testIpsTableExistCmd = connection.CreateCommand();
-            testIpsTableExistCmd.CommandText = $@"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = '{ipsTableName}');";
-            var ipsTableExists = (bool)testIpsTableExistCmd.ExecuteScalar();
+            connection.CreateTable(applicationsTableName,
+                "id INT PRIMARY KEY",
+                "tag VARCHAR(100)",
+                "short_name VARCHAR(50)",
+                "full_name VARCHAR(100)",
+                "description TEXT",
+                "url VARCHAR(255)",
+                "category VARCHAR(50)");
 
-            if (!ipsTableExists)
+            connection.CreateTable(addressesTableName,
+                    "id INT PRIMARY KEY",
+                    "value VARCHAR(50)",
+                    "ip_version VARCHAR(10)",
+                    "shared INT",
+                    "app_id INT",
+                    "platform_id VARCHAR(20)",
+                    "asn_tag VARCHAR(20)",
+                    "asn_label VARCHAR(128)",
+                    "asn_route VARCHAR(50)",
+                    "asn_entity_id INT"
+                );
+            connection.CreateIndex(addressesTableName, "value");
+            connection.CreateIndex(addressesTableName, "app_id");
+
+            connection.CreateTable(domainsTableName,
+                    "id INT PRIMARY KEY",
+                    "value VARCHAR(128)",
+                    "app_id INT",
+                    "platform_id  VARCHAR(20)"
+                );
+            connection.CreateIndex(domainsTableName, "value");
+        }
+
+        public class EmptyStringToIntConverter : Int32Converter
+        {
+            public override object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
             {
-                string sqlCreateTable = @$"
-                CREATE TABLE {ipsTableName} (
-                    id INT PRIMARY KEY,
-                    value VARCHAR(50),
-                    ip_version INT,
-                    shared INT,
-                    app_id INT,
-                    platform_id INT,
-                    asn_tag VARCHAR(20),
-                    asn_label VARCHAR(128),
-                    asn_route VARCHAR(50),
-                    asn_entity_id INT
-                );";
-                var createCmd = connection.CreateCommand();
-                createCmd.CommandText = sqlCreateTable;
-                sucess &= createCmd.ExecuteNonQuery() > 0;
-
-                string sqlCreateValueIndex = @$"CREATE INDEX ips_value_idx ON {ipsTableName} (value)";
-                var createValueIndexCmd = connection.CreateCommand();
-                createValueIndexCmd.CommandText = sqlCreateValueIndex;
-                sucess &= createValueIndexCmd.ExecuteNonQuery() > 0;
-                
-                string sqlCreateAppIdIndex = @$"CREATE INDEX ips_app_id_idx ON {ipsTableName} (app_id)";
-                var createAppIndexCmd = connection.CreateCommand();
-                createAppIndexCmd.CommandText = sqlCreateAppIdIndex;
-                sucess &= createAppIndexCmd.ExecuteNonQuery() > 0;
+                if (string.IsNullOrWhiteSpace(text) || String.Equals(text, "none", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return 0;
+                }
+                return base.ConvertFromString(text, row, memberMapData);
             }
-            return sucess;
+        }
+
+
+        public class NetifyAppRecord
+        {
+            [Name("id")]
+            public int Id { get; set; }
+
+            [Name("tag")]
+            public string Tag { get; set; }
+
+            [Name("short_name")]
+            public string ShortName { get; set; }
+
+            [Name("full_name")]
+            public string FullName { get; set; }
+
+            [Name("description")]
+            public string Description { get; set; }
+
+            [Name("url")]
+            public string Url { get; set; }
+
+            [Name("category")]
+            public string Category { get; set; }
+
+            internal static void LoadAndStore(NpgsqlConnection connection, string appsFile, string tableName)
+            {
+                // Load from Apps
+                var reader = new StreamReader(appsFile);
+                var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                var csv = new CsvReader(reader, config);
+                var appsList = csv.GetRecords<NetifyAppRecord>();
+
+                foreach (var app in appsList)
+                {
+                    var insertCommand = new NpgsqlCommand(
+                        $@"INSERT INTO {tableName} (id, tag, short_name, full_name, description, url, category) 
+                          VALUES (@id, @tag, @short_name, @full_name, @description, @url, @category)", connection);
+
+                    insertCommand.Parameters.AddWithValue("@id", app.Id);
+                    insertCommand.Parameters.AddWithValue("@tag", app.Tag ?? (object)DBNull.Value); // If app.Tag can be null
+                    insertCommand.Parameters.AddWithValue("@short_name", app.ShortName ?? (object)DBNull.Value);
+                    insertCommand.Parameters.AddWithValue("@full_name", app.FullName ?? (object)DBNull.Value);
+                    insertCommand.Parameters.AddWithValue("@description", app.Description ?? (object)DBNull.Value);
+                    insertCommand.Parameters.AddWithValue("@url", app.Url ?? (object)DBNull.Value);
+                    insertCommand.Parameters.AddWithValue("@category", app.Category ?? (object)DBNull.Value);
+
+                    insertCommand.ExecuteNonQuery();
+                }
+            }
+        }
+        internal static int ApplicationsBulkInsert(NpgsqlConnection connection, string inputFile, string tableName)
+        {
+            var recordCount = 0;
+            using (var reader = new StreamReader(inputFile))
+            {
+                var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                var csv = new CsvReader(reader, config);
+                var appsList = csv.GetRecords<NetifyAppRecord>();
+
+                using (var writer = connection.BeginBinaryImport($"COPY {tableName} (id, tag, short_name, full_name, description, url, category) FROM STDIN (FORMAT BINARY)"))
+                {
+                    foreach (var app in appsList)
+                    {
+                        recordCount++;
+
+                        writer.StartRow();
+                        writer.Write(app.Id, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.Tag, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.ShortName, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.FullName, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.Description, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.Url, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.Category, NpgsqlTypes.NpgsqlDbType.Text);
+                    }
+
+                    writer.Complete();
+                }
+            }
+            return recordCount;
+        }
+
+        public class NetifyIpsRecord
+        {
+            [Name("id")]
+            public int Id { get; set; }
+
+            [Name("value")]
+            public string Value { get; set; }
+
+            [Name("ip_version")]
+            public string IpVersion { get; set; }
+
+            [Name("shared")]
+            [TypeConverter(typeof(EmptyStringToIntConverter))]
+            public int Shared { get; set; }
+
+            [Name("app_id")]
+            public int AppId { get; set; }
+
+            [Name("platform_id")]
+            public string PlatformId { get; set; }
+
+            [Name("asn_tag")]
+            public string AsnTag { get; set; }
+
+            [Name("asn_label")]
+            public string AsnLabel { get; set; }
+
+            internal static void LoadAndStore(NpgsqlConnection connection, string appsFile, string tableName)
+            {
+                // Load from Apps
+                using (var reader = new StreamReader(appsFile))
+                {
+                    var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                    var csv = new CsvReader(reader, config);
+                    var appsList = csv.GetRecords<NetifyIpsRecord>();
+
+                    foreach (var app in appsList)
+                    {
+                        var insertCommand = new NpgsqlCommand(
+                            $@"INSERT INTO {tableName} (id, value, ip_version, shared, app_id, platform_id, asn_tag, asn_label) 
+                      VALUES (@id, @value, @ip_version, @shared, @app_id, @platform_id, @asn_tag, @asn_label)", connection);
+
+                        insertCommand.Parameters.AddWithValue("@id", app.Id);
+                        insertCommand.Parameters.AddWithValue("@value", app.Value ?? (object)DBNull.Value);
+                        insertCommand.Parameters.AddWithValue("@ip_version", app.IpVersion ?? (object)DBNull.Value);
+                        insertCommand.Parameters.AddWithValue("@shared", app.Shared);
+                        insertCommand.Parameters.AddWithValue("@app_id", app.AppId);
+                        insertCommand.Parameters.AddWithValue("@platform_id", app.PlatformId);
+                        insertCommand.Parameters.AddWithValue("@asn_tag", app.AsnTag ?? (object)DBNull.Value);
+                        insertCommand.Parameters.AddWithValue("@asn_label", app.AsnLabel ?? (object)DBNull.Value);
+
+                        insertCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+        internal static int AddressesBulkInsert(NpgsqlConnection connection, string inputFile, string tableName)
+        {
+            var recordCount = 0;
+            using (var reader = new StreamReader(inputFile))
+            {
+                var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                var csv = new CsvReader(reader, config);
+                var appsList = csv.GetRecords<NetifyIpsRecord>();
+
+                using (var writer = connection.BeginBinaryImport($"COPY {tableName}  (id, value, ip_version, shared, app_id, platform_id, asn_tag, asn_label) FROM STDIN (FORMAT BINARY)"))
+                {
+                    foreach (var app in appsList)
+                    {
+                        recordCount++;
+
+                        writer.StartRow();
+                        writer.Write(app.Id, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.Value, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.IpVersion, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.Shared, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.AppId, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.PlatformId, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.AsnTag, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.AsnLabel, NpgsqlTypes.NpgsqlDbType.Text);
+                    }
+
+                    writer.Complete();
+                }
+            }
+            return recordCount;
+        }
+
+
+        public class NetifyDomainRecord
+        {
+            [Name("id")]
+            public int Id { get; set; }
+
+            [Name("value")]
+            public string Value { get; set; }
+
+            [Name("app_id")]
+            public int AppId { get; set; }
+
+            [Name("platform_id")]
+            public string PlatformId { get; set; }
+
+            internal static void LoadAndStore(NpgsqlConnection connection, string inputFile, string tableName)
+            {
+                // Load from Apps
+                using (var reader = new StreamReader(inputFile))
+                {
+                    var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                    var csv = new CsvReader(reader, config);
+                    var appsList = csv.GetRecords<NetifyDomainRecord>();
+
+                    foreach (var app in appsList)
+                    {
+                        var insertCommand = new NpgsqlCommand(
+                            $@"INSERT INTO {tableName} (id, value, app_id, platform_id) 
+                      VALUES (@id, @value, @app_id, @platform_id)", connection);
+
+                        insertCommand.Parameters.AddWithValue("@id", app.Id);
+                        insertCommand.Parameters.AddWithValue("@value", app.Value ?? (object)DBNull.Value);
+                        insertCommand.Parameters.AddWithValue("@app_id", app.AppId);
+                        insertCommand.Parameters.AddWithValue("@platform_id", app.PlatformId);
+
+                        insertCommand.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        public static int DomainsBulkInsert(NpgsqlConnection connection, string inputFile, string tableName)
+        {
+            var recordCount = 0;
+            using (var reader = new StreamReader(inputFile))
+            {
+                var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ";", BadDataFound = null };
+                var csv = new CsvReader(reader, config);
+                var appsList = csv.GetRecords<NetifyDomainRecord>();
+
+                using (var writer = connection.BeginBinaryImport($"COPY {tableName} (id, value, app_id, platform_id) FROM STDIN (FORMAT BINARY)"))
+                {
+                    foreach (var app in appsList)
+                    {
+                        recordCount++;
+
+                        writer.StartRow();
+                        writer.Write(app.Id, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.Value, NpgsqlTypes.NpgsqlDbType.Text);
+                        writer.Write(app.AppId, NpgsqlTypes.NpgsqlDbType.Integer);
+                        writer.Write(app.PlatformId, NpgsqlTypes.NpgsqlDbType.Text);
+                    }
+
+                    writer.Complete();
+                }
+            }
+            return recordCount;
         }
     }
+    
 
     /// <summary>
     /// Represents a web application record.

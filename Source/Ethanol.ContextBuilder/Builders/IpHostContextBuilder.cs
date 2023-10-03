@@ -12,23 +12,7 @@ using System.Reactive.Subjects;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
-{
-    // TODO: Generate "compact" context using the following records:
-    // Host { ha = 192.168.111.32}: 
-    //   Flow { pr = UDP, sa = 192.168.111.32, sp = 54698, da = 192.168.111.1, dp = 53, ts = 11/9/2021 6:00:02 AM, te = 11/9/2021 6:00:02 AM, pkt = 1, byt = 77 }
-    //   Flow { pr = UDP, sa = 192.168.111.32, sp = 50994, da = 192.168.111.1, dp = 53, ts = 11/9/2021 6:00:22 AM, te = 11/9/2021 6:00:22 AM, pkt = 1, byt = 69 }
-    //   Flow { pr = ARP, sa = 192.168.111.1, sp = 0, da = 192.168.111.32, dp = 0, ts = 11/9/2021 6:00:02 AM, te = 11/9/ 2021 6:00:02 AM, pkt = 1, byt = 28 }
-    //   WebReq { hurl = www.google.com }
-    //   DnsMap { dn = www.google.com, ip = 134.25.53.5 }
-    //   TlsCon { ... }
-    //
-    public record DnsMap(string dn, string ip);
-    public record WebReq(string hurl);
-    public record TlsCon(string ver, string sni, string scn, string icn, string ja3);
-    public record Netflow(string pr, string sa, ushort sp, string da, ushort dp, DateTime ts, DateTime te, int pkt, int byt);
-    
-    
-    
+{    
     public class IpHostContext : IpHostContext<Empty>
     {
     }

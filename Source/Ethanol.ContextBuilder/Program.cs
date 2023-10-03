@@ -7,10 +7,12 @@ using Ethanol.ContextBuilder.Writers;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 
 namespace Ethanol.ContextBuilder
 {
@@ -79,7 +81,7 @@ namespace Ethanol.ContextBuilder
         public string Argument { get; }
         public string Reason { get; }
     }
-    public class ProgramCommands : ConsoleAppBase
+    public partial class ProgramCommands : ConsoleAppBase
     {
         /// <summary>
         /// Builds the context for input read by <paramref name="inputReader"/> using <paramref name="contextBuilder"/>. The output is written using <paramref name="outputWriter"/>.
@@ -160,6 +162,79 @@ namespace Ethanol.ContextBuilder
             foreach (var obj in WriterFactory.Instance.PluginObjects)
             {
                 Console.WriteLine($"  {obj.Name}    {obj.Description}");
+            }
+        }
+
+        [Command("Insert-Netify", "Inserts Netify data from the given CSV files to SQL database.")]
+        public void InsertToNetifyTables(string connectionString, string tablePrefix, string appsFile, string ipsFile, string domainsFile)
+        {
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                PostgresNetifyTagProvider.CreateTables(conn, tablePrefix, true);
+
+                logger.Info($"Netify tables exist: {tablePrefix}_applications, {tablePrefix}_addresses,  {tablePrefix}_domains.");
+                logger.Info($"Loading applications from '{appsFile}'...");
+                var appsCount = PostgresNetifyTagProvider.ApplicationsBulkInsert(conn, appsFile, tablePrefix + "_applications");
+                logger.Info($"Inserted {appsCount} applications.");
+
+                logger.Info($"Loading ips from '{ipsFile}'...");
+                var ipsCount = PostgresNetifyTagProvider.AddressesBulkInsert(conn, ipsFile, tablePrefix + "_addresses");
+                logger.Info($"Inserted {ipsCount} addresses.");
+
+                logger.Info($"Loading domains from '{domainsFile}'...");
+                var domsCount = PostgresNetifyTagProvider.DomainsBulkInsert(conn, domainsFile, tablePrefix + "_domains");
+                logger.Info($"Inserted {domsCount} domains.");
+            }
+        }
+
+        /// <summary>
+        /// Inserts flow tags from JSON file to SQL database.
+        /// </summary>
+        /// <param name="connectionString">String like this: "Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;"</param>
+        /// <param name="tableName"></param>
+        /// <param name="inputfile"></param>
+        [Command("Insert-FlowTags", "Inserts to SQL database FlowTag data from the given input file.")]
+        public void InsertFlowTags(string connectionString, string tableName, string inputFile)
+        {
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+
+                // test if the table exists:
+                PostgresFlowTagProvider.CreateTableIfNotExists(conn, tableName);
+                logger.Info($"FlowTags table exists: {tableName}.");
+
+                logger.Info($"Loading flow tags from '{inputFile}'...");
+                var ftCount = PostgresFlowTagProvider.BulkInsert(conn, inputFile, tableName);
+                logger.Info($"Inserted {ftCount} flow tags.");
+            }
+        }
+
+        /// <summary>
+        /// Inserts flow tags from JSON file to SQL database.
+        /// </summary>
+        /// <param name="connectionString">String like this: "Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;"</param>
+        /// <param name="tableName"></param>
+        /// <param name="inputfile"></param>
+        [Command("Insert-HostTags", "Inserts to SQL database HostTag data from the given input file.")]
+        public void InsertHostTags(string connectionString, string tableName, string inputFile)
+        {
+            var logger = NLog.LogManager.GetCurrentClassLogger();
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+
+                // test if the table exists:
+                PostgresHostTagProvider.CreateTableIfNotExists(conn, tableName);
+                logger.Info($"HostTags table exists: {tableName}.");
+
+                logger.Info($"Loading host tags from '{inputFile}'...");
+                var count = PostgresHostTagProvider.BulkInsert(conn, inputFile, tableName);
+                logger.Info($"Inserted {count} host tags.");
             }
         }
     }

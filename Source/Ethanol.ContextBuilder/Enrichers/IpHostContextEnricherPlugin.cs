@@ -37,8 +37,6 @@ namespace Ethanol.ContextBuilder.Enrichers
 
             [YamlMember(Alias = "jsonfile", Description = "The JSON file data source configuration.")]
             public JsonConfiguration Json { get; set; }
-            [YamlMember(Alias = "csvfile", Description = "The CSV file data source configuration.")]
-            public CsvSourceConfiguration Csv { get; set; }
         }
 
         public record CsvSourceConfiguration
@@ -103,13 +101,11 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
         [PluginCreate]
-        internal static IObservableTransformer Create(DataSourceEnricherConfiguration hostTagConfiguraiton, DataSourceEnricherConfiguration flowTagConfiguraiton, DataSourceEnricherConfiguration webAppsConfiguraiton)
+        internal static IObservableTransformer Create(DataSourceEnricherConfiguration hostTagConfiguraiton)
         {
-            IHostDataProvider<HostTag> hostTags = hostTagConfiguraiton.GetHostTagProvider();
-            IHostDataProvider<FlowTag> flowTags = flowTagConfiguraiton.GetFlowTagProvider();
-            IHostDataProvider<NetifyTag> netifyTags = webAppsConfiguraiton.GetNetifyTagProvider();
+            ITagDataProvider<TagRecord> tagsProvider = hostTagConfiguraiton.GetTagProvider();
           
-            var enricher = new IpHostContextEnricher(hostTags, flowTags, netifyTags);
+            var enricher = new IpHostContextEnricher(tagsProvider);
             return new IpHostContextEnricherPlugin(enricher);
         }
 

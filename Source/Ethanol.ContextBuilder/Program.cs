@@ -10,6 +10,7 @@ using NLog.Targets;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -165,29 +166,71 @@ namespace Ethanol.ContextBuilder
             }
         }
 
-        [Command("Insert-Netify", "Inserts Netify data from the given CSV files to SQL database.")]
-        public void InsertToNetifyTables(string connectionString, string tablePrefix, string appsFile, string ipsFile, string domainsFile)
+        [Command("Insert-Netify", "Updates (delete+insert) Netify tags from the given CSV files to the given table in the SQL database.")]
+        public void InsertNetify(string connectionString, string tableName, string appsFile, string ipsFile, string domainsFile)
         {
             var logger = NLog.LogManager.GetCurrentClassLogger();
 
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
-                PostgresNetifyTagProvider.CreateTables(conn, tablePrefix, true);
+                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
 
-                logger.Info($"Netify tables exist: {tablePrefix}_applications, {tablePrefix}_addresses,  {tablePrefix}_domains.");
+                // delete previous netify records:
+                // "DELETE FROM {tableName} WHERE type = {nameof(NetifyTag)}"
+
+                logger.Info($"Tag table: {tableName}");
                 logger.Info($"Loading applications from '{appsFile}'...");
-                var appsCount = PostgresNetifyTagProvider.ApplicationsBulkInsert(conn, appsFile, tablePrefix + "_applications");
-                logger.Info($"Inserted {appsCount} applications.");
+                var applications = NetifyCsvSource.LoadApplicationsFromFile(appsFile);
+                logger.Info($"Loaded {applications.Count} applications.");
 
                 logger.Info($"Loading ips from '{ipsFile}'...");
-                var ipsCount = PostgresNetifyTagProvider.AddressesBulkInsert(conn, ipsFile, tablePrefix + "_addresses");
-                logger.Info($"Inserted {ipsCount} addresses.");
+                var addresses = NetifyCsvSource.LoadAddressesFromFile(ipsFile);
+                var addressTags = ConvertToTag(applications, addresses);
+                var addressesInserted = PostgresTagProvider.BulkInsert(conn, tableName, addressTags);
+                logger.Info($"Inserted {addressesInserted} addresses.");
 
                 logger.Info($"Loading domains from '{domainsFile}'...");
-                var domsCount = PostgresNetifyTagProvider.DomainsBulkInsert(conn, domainsFile, tablePrefix + "_domains");
-                logger.Info($"Inserted {domsCount} domains.");
+                var domains = NetifyCsvSource.LoadDomainsFromFile(domainsFile);
+                var domainTags = ConvertToTag(applications, domains);
+                var domainsInserted = PostgresTagProvider.BulkInsert(conn, tableName, domainTags);
+                logger.Info($"Inserted {domainsInserted} domains.");
             }
+        }
+
+        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, NetifyCsvSource.NetifyAppRecord> applications, IEnumerable<NetifyCsvSource.NetifyIpsRecord> addresses)
+        {
+            return addresses.Select(item =>
+            {
+                var app = applications.TryGetValue(item.AppId, out var appRec) ? appRec : null;
+                var record = new TagRecord 
+                { 
+                    Key = item.Value, 
+                    Type = nameof(NetifyTag), 
+                    Value = app?.Tag ?? String.Empty, 
+                    Reliability = 1.0, 
+                    Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)  
+                };
+                record.SetDetails(NetifyCsvSource.ConvertToTag(app));
+                return record;
+            });
+        }
+        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, NetifyCsvSource.NetifyAppRecord> applications, IEnumerable<NetifyCsvSource.NetifyDomainRecord> domains)
+        {
+            return domains.Select(item =>
+            {
+                var app = applications.TryGetValue(item.AppId, out var appRec) ? appRec : null;
+                var record = new TagRecord
+                {
+                    Key = item.Value,
+                    Type = nameof(NetifyTag),
+                    Value = app?.Tag ?? String.Empty,
+                    Reliability = 1.0,
+                    Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)
+                };
+                record.SetDetails(NetifyCsvSource.ConvertToTag(app));
+                return record;
+            });
         }
 
         /// <summary>
@@ -227,13 +270,12 @@ namespace Ethanol.ContextBuilder
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
+                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
 
-                // test if the table exists:
-                PostgresHostTagProvider.CreateTableIfNotExists(conn, tableName);
                 logger.Info($"HostTags table exists: {tableName}.");
-
+                var records = CsvHostTagProvider.LoadFromFile(inputFile);
                 logger.Info($"Loading host tags from '{inputFile}'...");
-                var count = PostgresHostTagProvider.BulkInsert(conn, inputFile, tableName);
+                var count = PostgresTagProvider.BulkInsert(conn, tableName, records);
                 logger.Info($"Inserted {count} host tags.");
             }
         }

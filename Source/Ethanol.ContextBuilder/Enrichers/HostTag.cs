@@ -32,4 +32,5 @@ namespace Ethanol.ContextBuilder.Enrichers
         public double Reliability { get; set; }
         public string Value { get; set; }
     }
+
 }

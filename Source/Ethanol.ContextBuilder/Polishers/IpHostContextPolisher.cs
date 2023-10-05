@@ -62,7 +62,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
             var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
 
-            var ftagResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.HasValueType<FlowTag>()).Select(x=>x.Cast<FlowKey, FlowTag>().Value), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+            var processResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(FlowTag)).Select<TagRecord,FlowTag>(x=>x.GetDetails<FlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
             string ResolveDomain(IPAddress x)
             {
@@ -70,7 +70,7 @@ namespace Ethanol.ContextBuilder.Polishers
             }
             string ResolveProcessName(FlowKey flowKey)
             {
-                return ftagResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
+                return processResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
             }
 
             var tags = value.Payload.Tags;

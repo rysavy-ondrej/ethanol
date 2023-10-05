@@ -55,7 +55,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         {
             var hostFilter = HostBasedFilter.FromHostPrefix(configuration.TargetHostPrefix);
             var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);
-            var enricher = new IpHostContextEnricher(configuration.HostTagEnricherConfiguration.GetHostTagProvider(), configuration.FlowTagEnricherConfiguration.GetFlowTagProvider(), configuration.NetifyTagEnricherConfiguration.GetNetifyTagProvider());
+            var enricher = new IpHostContextEnricher(configuration.TagEnricherConfiguration.GetTagProvider());
             var polisher = new IpHostContextPolisher();
             
             reader.Do(x => onInputConsumed(1))

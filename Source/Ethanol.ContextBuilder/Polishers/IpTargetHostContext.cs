@@ -71,7 +71,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// An array of other attributes associated with the context.
         /// </summary>
-        ContextTag[] CustomAttributes,
+        TagRecord[] CustomAttributes,
 
         /// <summary>
         /// An array of IP connection information for connections initiated by the host.

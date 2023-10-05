@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 
 namespace Ethanol.ContextBuilder.Context
 {
@@ -59,6 +60,10 @@ namespace Ethanol.ContextBuilder.Context
         public static IEnumerable<T> SelectFlows<T>(this IEnumerable<IpFlow> flows) where T : IpFlow
         {
             return flows.Where(x => x is T).Cast<T>();
+        }
+        public static IPAddress GetRemoteAddress(this IpFlow flow, IPAddress host)
+        {
+            return host.Equals(flow.SourceAddress) ? flow.DestinationAddress : flow.SourceAddress;
         }
     }
 

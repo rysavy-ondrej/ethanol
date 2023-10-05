@@ -25,15 +25,8 @@ namespace Ethanol.ContextBuilder.Pipeline
         [YamlMember(Alias = "enricher-delay", Description = "Specifies the delay for data between builder and enricher. For online processing that includes flow tag enricher we need to wait until the data is available to enricher.")]
         public TimeSpan EnricherDelay { get; set; } = TimeSpan.Zero;
 
-        [YamlMember(Alias = "host-tag-enricher", Description = "The configuration for the IP host context enricher.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration HostTagEnricherConfiguration { get; set; }
-
-        [YamlMember(Alias = "flow-tag-enricher", Description = "The configuration for the flow tag enricher.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration FlowTagEnricherConfiguration { get; set; }
-        [YamlMember(Alias = "netify-tag-enricher", Description = "The configuration for the netify tag enricher.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration NetifyTagEnricherConfiguration { get; set; }
-
-        
+        [YamlMember(Alias = "tag-enricher", Description = "The configuration for the uniform context enricher.")]
+        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration TagEnricherConfiguration { get; set; }        
     }
 
 

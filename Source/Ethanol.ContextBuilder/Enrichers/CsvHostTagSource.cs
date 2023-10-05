@@ -3,11 +3,55 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using CsvHelper.Configuration;
+using CsvHelper;
 using CsvHelper.Configuration.Attributes;
+using static Ethanol.ContextBuilder.Enrichers.CsvNetifySource;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    class CsvHostTagProvider
+    public record FlowTag(
+        DateTime StartTime,
+        DateTime EndTime,
+        string Protocol,
+        string LocalAddress,
+        int LocalPort,
+        string RemoteAddress,
+        int RemotePort,
+        string ProcessName
+    );
+
+    class CsvFlowTagSource
+    {
+        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+
+        public static IEnumerable<TagRecord> LoadFromFile(string filename)
+        {
+            var reader = new StreamReader(filename);
+            var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ",", BadDataFound = null };
+            using var csv = new CsvReader(reader, config);
+            var records = csv.GetRecords<FlowTag>();
+            foreach(var  record in records)
+            {
+                yield return ConvertToTag(record);
+            }
+        }
+
+        private static TagRecord ConvertToTag(FlowTag row)
+        {
+            var record = new TagRecord
+            {
+                Key = $"Tcp@{row.LocalAddress}:{row.LocalPort}-{row.RemoteAddress}:{row.RemotePort}",
+                Type = nameof(FlowTag),
+                Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(row.StartTime, row.EndTime),
+                Reliability = 1.0,
+                Value = row.ProcessName
+            };
+            record.SetDetails(row);
+            return record;
+        }
+    }
+    class CsvHostTagSource
     {
         static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         internal record CsvHostTagRecord(
@@ -35,13 +79,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             var record = new TagRecord
             {
-                Key = row.KeyValue,
+                Key = row.KeyValue?.Trim('"') ?? String.Empty,
                 Type = row.Source,
                 Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(row.StartTime, row.EndTime),
                 Reliability = row.Reliability,
                 Value = row.Data
             };
-            record.SetDetails< CsvHostTagRecord >(row);
+            record.SetDetails(row);
             return record;
         }
 

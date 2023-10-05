@@ -47,7 +47,7 @@
     },
     "Insert-FlowTags": {
       "commandName": "Project",
-      "commandLineArgs": "Insert-FlowTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name flowtags --input-file webuser.tcp.json",
+      "commandLineArgs": "Insert-FlowTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name unitags --input-file webuser.tcp.csv",
       "workingDirectory": "e:\\Ethanol\\webuser2\\"
     },
     "Insert-HostTags": {

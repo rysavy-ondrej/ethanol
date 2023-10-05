@@ -34,10 +34,10 @@ namespace Ethanol.ContextBuilder.Enrichers
         private FlowTag GetFlowTag(JsonDbFlowTagRecord record)
         {
             return new FlowTag(record.StartTime, record.EndTime,
-                                  ProtocolType.IP,
-                                  TryConvert.ToIPAddress(record.LocalAddress, out var localAddress) ? localAddress : IPAddress.None,
+                                  ProtocolType.IP.ToString(),
+                                  (TryConvert.ToIPAddress(record.LocalAddress, out var localAddress) ? localAddress : IPAddress.None).ToString(),
                                   TryConvert.ToUInt16(record.LocalPort, out var localPort) ? localPort : (ushort)0,
-                                  TryConvert.ToIPAddress(record.RemoteAddress, out var remoteAddress) ? remoteAddress : IPAddress.None,
+                                  (TryConvert.ToIPAddress(record.RemoteAddress, out var remoteAddress) ? remoteAddress : IPAddress.None).ToString(),
                                   TryConvert.ToUInt16(record.RemotePort, out var remotePort) ? remotePort : (ushort)0,
                                   record.ProcessName
                                   );

@@ -181,24 +181,24 @@ namespace Ethanol.ContextBuilder
 
                 logger.Info($"Tag table: {tableName}");
                 logger.Info($"Loading applications from '{appsFile}'...");
-                var applications = NetifyCsvSource.LoadApplicationsFromFile(appsFile);
+                var applications = CsvNetifySource.LoadApplicationsFromFile(appsFile);
                 logger.Info($"Loaded {applications.Count} applications.");
 
                 logger.Info($"Loading ips from '{ipsFile}'...");
-                var addresses = NetifyCsvSource.LoadAddressesFromFile(ipsFile);
+                var addresses = CsvNetifySource.LoadAddressesFromFile(ipsFile);
                 var addressTags = ConvertToTag(applications, addresses);
                 var addressesInserted = PostgresTagProvider.BulkInsert(conn, tableName, addressTags);
                 logger.Info($"Inserted {addressesInserted} addresses.");
 
                 logger.Info($"Loading domains from '{domainsFile}'...");
-                var domains = NetifyCsvSource.LoadDomainsFromFile(domainsFile);
+                var domains = CsvNetifySource.LoadDomainsFromFile(domainsFile);
                 var domainTags = ConvertToTag(applications, domains);
                 var domainsInserted = PostgresTagProvider.BulkInsert(conn, tableName, domainTags);
                 logger.Info($"Inserted {domainsInserted} domains.");
             }
         }
 
-        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, NetifyCsvSource.NetifyAppRecord> applications, IEnumerable<NetifyCsvSource.NetifyIpsRecord> addresses)
+        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyIpsRecord> addresses)
         {
             return addresses.Select(item =>
             {
@@ -211,11 +211,11 @@ namespace Ethanol.ContextBuilder
                     Reliability = 1.0, 
                     Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)  
                 };
-                record.SetDetails(NetifyCsvSource.ConvertToTag(app));
+                record.SetDetails(CsvNetifySource.ConvertToTag(app));
                 return record;
             });
         }
-        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, NetifyCsvSource.NetifyAppRecord> applications, IEnumerable<NetifyCsvSource.NetifyDomainRecord> domains)
+        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyDomainRecord> domains)
         {
             return domains.Select(item =>
             {
@@ -228,7 +228,7 @@ namespace Ethanol.ContextBuilder
                     Reliability = 1.0,
                     Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)
                 };
-                record.SetDetails(NetifyCsvSource.ConvertToTag(app));
+                record.SetDetails(CsvNetifySource.ConvertToTag(app));
                 return record;
             });
         }
@@ -248,11 +248,11 @@ namespace Ethanol.ContextBuilder
                 conn.Open();
 
                 // test if the table exists:
-                PostgresFlowTagProvider.CreateTableIfNotExists(conn, tableName);
+                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
                 logger.Info($"FlowTags table exists: {tableName}.");
-
+                var records = CsvFlowTagSource.LoadFromFile(inputFile);
                 logger.Info($"Loading flow tags from '{inputFile}'...");
-                var ftCount = PostgresFlowTagProvider.BulkInsert(conn, inputFile, tableName);
+                var ftCount = PostgresTagProvider.BulkInsert(conn, tableName, records);
                 logger.Info($"Inserted {ftCount} flow tags.");
             }
         }
@@ -273,7 +273,7 @@ namespace Ethanol.ContextBuilder
                 PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
 
                 logger.Info($"HostTags table exists: {tableName}.");
-                var records = CsvHostTagProvider.LoadFromFile(inputFile);
+                var records = CsvHostTagSource.LoadFromFile(inputFile);
                 logger.Info($"Loading host tags from '{inputFile}'...");
                 var count = PostgresTagProvider.BulkInsert(conn, tableName, records);
                 logger.Info($"Inserted {count} host tags.");

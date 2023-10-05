@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    public class NetifyCsvSource
+    public class CsvNetifySource
     { 
         public class EmptyStringToIntConverter : Int32Converter
         {

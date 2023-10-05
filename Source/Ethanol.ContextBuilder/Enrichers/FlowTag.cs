@@ -1,10 +1,15 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Net;
-using System.Net.Sockets;
+﻿using System;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-
+    public record FlowTag(
+        DateTime StartTime,
+        DateTime EndTime,
+        string Protocol,
+        string LocalAddress,
+        int LocalPort,
+        string RemoteAddress,
+        int RemotePort,
+        string ProcessName
+    );
 }

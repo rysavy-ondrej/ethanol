@@ -29,7 +29,7 @@ namespace Ethanol.ContextBuilder.Enrichers
 
         public IEnumerable<TagRecord> Get(string tagKey, DateTime start, DateTime end)
         {
-            return _queryable.Where(x => x.Key.ToString() == tagKey && x.Validity.LowerBound <= start && x.Validity.UpperBound >= end);
+            return _queryable.Where(x => x.Key.ToString() == tagKey && x.StartTime <= start && x.EndTime >= end);
         }
 
         public Task<IEnumerable<TagRecord>> GetAsync(string host, DateTime start, DateTime end)

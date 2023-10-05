@@ -42,14 +42,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <summary>
         /// Gets or sets the validity range for the tag.
         /// </summary>
-        [Column("validity")]
-        public NpgsqlRange<DateTime> Validity { get; set; }
-
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
         /// <summary>
         /// Gets or sets the detailed information for the tag in JSON format.
         /// </summary>
         [Column("details")]
-        public string Details { get; set; }
+        public dynamic Details { get; set; }
 
         /// <summary>
         /// Reads a TagRecord from the provided NpgsqlDataReader.
@@ -58,30 +57,31 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>The TagRecord extracted from the reader.</returns>
         internal static TagRecord Read(NpgsqlDataReader reader)
         {
+            var validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity");
             return new TagRecord
             {
                 Type = reader.GetString("type"),
                 Key = reader.GetString("key"),
                 Value = reader.GetString("value"),
                 Reliability = reader.GetFloat("reliability"),
-                Validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity"),
-                Details = reader.GetString("details")
+                StartTime = validity.LowerBound,
+                EndTime =validity.UpperBound,
+                Details = JsonSerializer.Deserialize<dynamic>(reader.GetString("details"))
             };
         }
 
-        /// <summary>
-        /// Deserializes the 'Details' property into the specified type.
-        /// </summary>
-        /// <typeparam name="T">The type to deserialize into.</typeparam>
-        /// <returns>The deserialized details.</returns>
-        public T GetDetails<T>() => JsonSerializer.Deserialize<T>(Details ?? "null");
-
-        /// <summary>
-        /// Serializes <paramref name="details"/> to <see cref="Details"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of details object.</typeparam>
-        /// <param name="details">The details object to be stored after serialization to Details.</param>
-        public void SetDetails<T>(T details) => Details = JsonSerializer.Serialize<T>(details);
+        internal T GetDetails<T>()
+        {
+            if (typeof(T) == Details.GetType())
+            {
+                return (T)Details;
+            }
+            else
+            {
+                var json = JsonSerializer.Serialize(Details);
+                return JsonSerializer.Deserialize<T>(json);
+            } 
+        }
 
         /// <summary>
         /// Represents the SQL columns and their types for the TagRecord.

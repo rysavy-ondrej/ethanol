@@ -209,9 +209,10 @@ namespace Ethanol.ContextBuilder
                     Type = nameof(NetifyTag), 
                     Value = app?.Tag ?? String.Empty, 
                     Reliability = 1.0, 
-                    Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)  
+                    StartTime = DateTime.MinValue, 
+                    EndTime = DateTime.MaxValue  
                 };
-                record.SetDetails(CsvNetifySource.ConvertToTag(app));
+                record.Details = CsvNetifySource.ConvertToTag(app);
                 return record;
             });
         }
@@ -226,9 +227,10 @@ namespace Ethanol.ContextBuilder
                     Type = nameof(NetifyTag),
                     Value = app?.Tag ?? String.Empty,
                     Reliability = 1.0,
-                    Validity = new NpgsqlTypes.NpgsqlRange<DateTime>(DateTime.MinValue, DateTime.MaxValue)
+                    StartTime = DateTime.MinValue,
+                    EndTime = DateTime.MaxValue
                 };
-                record.SetDetails(CsvNetifySource.ConvertToTag(app));
+                record.Details = CsvNetifySource.ConvertToTag(app);
                 return record;
             });
         }

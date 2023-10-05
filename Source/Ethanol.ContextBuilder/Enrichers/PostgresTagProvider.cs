@@ -148,14 +148,13 @@ namespace Ethanol.ContextBuilder.Enrichers
                 foreach (var record in records)
                 {
                     recordCount++;
-                    var json = record.GetDetails<object>();
                     writer.StartRow();
                     writer.Write(Truncate(record.Type,TagRecord.TypeLength), NpgsqlTypes.NpgsqlDbType.Text);
                     writer.Write(Truncate(record.Key, TagRecord.KeyLength), NpgsqlTypes.NpgsqlDbType.Text);
                     writer.Write(Truncate(record.Value, TagRecord.ValueLength), NpgsqlTypes.NpgsqlDbType.Text);
                     writer.Write(record.Reliability, NpgsqlTypes.NpgsqlDbType.Real);
-                    writer.Write(record.Validity, NpgsqlTypes.NpgsqlDbType.TimestampRange);
-                    writer.Write(json, NpgsqlTypes.NpgsqlDbType.Json);
+                    writer.Write(new NpgsqlTypes.NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlTypes.NpgsqlDbType.TimestampRange);
+                    writer.Write(record.Details, NpgsqlTypes.NpgsqlDbType.Json);
                 }
 
                 writer.Complete();

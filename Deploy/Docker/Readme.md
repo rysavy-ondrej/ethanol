@@ -1,23 +1,75 @@
 # Docker-based deployment
 
-The docker-based deployment conists of three containers:
+The docker-based deployment consists of three containers:
 
 * Fluent-Bit
-* PostreSQL
+* PostgreSQL
 * Ethanol.ContextBuilder
 
-The only Fluent-Bit is publicly accessible as it performs data stream routing for the application:
+Fluent-Bit and PostgreSQL are publicly accessible:
 
-* tcp/1600 is an input entry point accepting Flowmon's JSON data. These records are then forwared to ethanol application for processing.
-* tcp/1605 is an entry point for communicating with PostreSQL. It can be used to populate enrichment table `enrichment_data` used by ethanol for reading
-some extra information for hosts and also to access the table with computed context called `host_context`.
+* tcp/1600 is an input entry point accepting Flowmon's JSON data. These records are then forwarded to the ethanol application for processing.
+* tcp/1605 is an entry point for communicating with PostgreSQL. It can be used to populate the enrichment table `enrichment_data` used by ethanol for reading
+some extra information for hosts and access the table with a computed context called `host_context`.
 
-The application works by reading the input data from Flowmon and processing them to context-based information.
-The resulting data is then stored in PostreSQL table `host_context`.
+The application works by reading the input data from Flowmon and processing them into context-based information.
+The resulting data is then stored in PostgreSQL table `host_context`.
+
+
+![Docker Architecture](EthanolDockerArchitecture.png)
+
+The PostgreSQL database is created with two tables:
+
+Table `enrichment_data` is intended to store additional or supplementary information to enrich the context around computed IP host data: 
+
+```sql
+CREATE TABLE IF NOT EXISTS enrichment_data (
+    type VARCHAR(32) NOT NULL,
+    key VARCHAR(64) NOT NULL,
+    value VARCHAR(128),
+    reliability REAL,
+    validity TSRANGE,
+    details JSON
+);
+```
+
+The meaning of the columns is as follows:
+
+* `type` represents the kind or category of enrichment data.
+* `key` serves as a unique identifier or key for the enrichment data. It might link the enrichment data with a host or flow.
+* `value` stores the actual enrichment data corresponding to the key. For example, if the key is an IP address, the value could be its geolocation, domain name, device type, or other relevant information.
+* `reliability` indicates the trustworthiness or confidence level of the enrichment data. It could be a score between 0 and 1, where 1 means highly reliable, and 0 means not reliable at all.
+* `validity` indicates the time range when the enrichment data is considered valid or accurate. After this range, the data might be outdated or less reliable.
+* `details` can store more detailed enrichment information in a structured JSON format. This can include nested data, arrays, or other details that don't fit neatly into the table's more rigid structure.
+
+
+Table `host_context` is intended to store computed context related to IP hosts:
+
+```sql
+CREATE TABLE IF NOT EXISTS host_context (    
+    key VARCHAR(255) NOT NULL,
+    tags JSON,
+    initiatedconnections JSON,
+    acceptedconnections JSON,
+    resolveddomains JSON,
+    weburls JSON,
+    tlshandshakes JSON,
+    validity TSRANGE
+);
+```
+
+* `key` represents the unique identifier for each IP host, which could be the IP address itself or another related unique value.
+* `tags` can store a set of descriptive tags or labels associated with the IP host. These tags come from `enrichment_data` table.
+* `initiatedconnections` represents connections that the IP host has initiated. This includes destination IPs, ports, number of flows, packets, duration, and other relevant connection details.
+* `acceptedconnections` represents incoming connections that the IP host has accepted. 
+* `resolveddomains` contains information about domain names that the IP host has resolved.
+* `weburls` lists URLs with which the IP host might have accessed or interacted. It gives insights into the web activity of the host.
+* `tlshandshakes` contains information about TLS (Transport Layer Security) handshakes initiated by the IP host. This provides insights into the secure communications of the host and can include details like cipher suites, certificates, or protocols.
+* `validity` indicates the time range during which the host's context data is considered valid or accurate. 
 
 ## Deployment
 
-Change working folder to `Publish/Docker` and execute `docker-compose` command to build and run the application.
+Change the working folder to `Publish/Docker` and execute `docker-compose` command to build and run the application.
 
 __Building application:__ Docker compose is used to build the application from the source codes by running the following command:
 

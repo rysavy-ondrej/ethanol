@@ -9,11 +9,11 @@ The docker-based deployment conists of three containers:
 The only Fluent-Bit is publicly accessible as it performs data stream routing for the application:
 
 * tcp/1600 is an input entry point accepting Flowmon's JSON data. These records are then forwared to ethanol application for processing.
-* tcp/1605 is an entry point for communicating with PostreSQL. It can be used to populate enrichment table `hosttags` used by ethanol for reading
-some extra information for hosts and also to access the table with computed context called `hostctx`.
+* tcp/1605 is an entry point for communicating with PostreSQL. It can be used to populate enrichment table `enrichment_data` used by ethanol for reading
+some extra information for hosts and also to access the table with computed context called `host_context`.
 
 The application works by reading the input data from Flowmon and processing them to context-based information.
-The resulting data is then stored in PostreSQL table `hostctx`.
+The resulting data is then stored in PostreSQL table `host_context`.
 
 ## Deployment
 
@@ -53,7 +53,7 @@ The system is accessible through two primary endpoints:
 
 After the system is running, you can easily feed it with a continuous stream of netflow data in JSON format using the Flowmon exporter tool.
 
-### Export Netflows
+### Online mode: Export Netflows from flowmonexp5
 
 The configuration for the IPFIX export using the Flowmon exporter is specified in the [probe-ethanol.json](probe-ethanol.json) configuration file.
 This file should be uploaded to the `~/flowmonexp` folder on the Flowmon host. To generate IPFIX records in the required JSON format, run the following command on the Flowmon host:
@@ -63,6 +63,16 @@ sudo flowmonexp5 ~/flowmonexp/probe-ethanol.json | while(true); do nc --send-onl
 ```
 
 The exporter is set up to listen on the local monitoring interface, and it sends the IPFIX records to the standard output. These records are then consumed by netcat and forwarded to the ethanol context builder for further processing.
+
+### Batch mode: Read flows from JSON file
+
+The JSON file with exported IPFIX records can be sent to the ethanol by using nc tool by the followig command:
+
+```bash
+cat SOURCE-JSON-FILE | cat ../webuser1/webuser.flows.json | nc -q 0 IP-OF-DOCKER-HOST 1600
+```
+
+Note that `-q 0` option is required to end the connection after sending all data.
 
 ### Consume the context
 
@@ -77,5 +87,5 @@ psql -U postgres -W postgres -h IP-OF-DOCKER-HOST:1605 -d ethanol
 2. Once you're connected to the PostgreSQL server, you can use the following SQL command to query the hostctx table:
 
 ```sql
-SELECT * FROM hostctx;
+SELECT * FROM host_context;
 ```

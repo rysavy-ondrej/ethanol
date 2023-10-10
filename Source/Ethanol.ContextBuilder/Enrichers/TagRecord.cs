@@ -94,8 +94,8 @@ namespace Ethanol.ContextBuilder.Enrichers
             ("validity", "TSRANGE"),
             ("details", "JSON")
             };
-        public static int TypeLength = 64;
-        public static int KeyLength = 128;
-        public static int ValueLength = 512;
+        public static int TypeLength = 32;
+        public static int KeyLength = 64;
+        public static int ValueLength = 128;
     }
 }

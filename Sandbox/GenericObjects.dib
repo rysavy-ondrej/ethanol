@@ -1,3 +1,34 @@
 #!meta
 
 {"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+    public abstract class ContextTag
+    {
+        public string Name { get; set; }
+        public abstract Type KeyType { get; }
+        public abstract Type ValueType { get; }
+        public double Reliability { get; set; }
+
+        public ContextTag<K, V> Cast<K, V>() => this as ContextTag<K, V>;
+    }
+
+    public class ContextTag<TK, TV> : ContextTag
+    {
+        public TK Key { get; set; }
+        public TV Value { get; set; }
+
+        public override Type KeyType => typeof(TK);
+
+        public override Type ValueType => typeof(TV);
+    }
+
+     public record FlowTag(DateTime StartTime, DateTime EndTime, string LocalAddress, ushort LocalPort, string RemoteAddress, ushort RemotePort, string ProcessName);
+
+#!csharp
+
+var t = new ContextTag<string, FlowTag> { Name = "WebApps", Key = "12.34.2.5", Value = new FlowTag(DateTime.Now, DateTime.Now,  "1.1.1.1", 123, "2.2.2.2", 345, "msedge"), Reliability = 0.5  };
+var s = t as ContextTag;
+var r = s.Cast<string, FlowTag>();
+r.Display();

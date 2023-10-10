@@ -1,25 +1,10 @@
 window-size: 00:05:00
 window-hop: 00:05:00
-host-tag-enricher:
+tag-enricher:
   postgres:
     server: ${POSTGRES_IP}
     port: ${POSTGRES_PORT}
     database: ${POSTGRES_DATABASE}
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
-    tableName: hosttags
-flow-tag-enricher:
-  postgres:
-      server: ${POSTGRES_IP}
-      port: ${POSTGRES_PORT}
-      database:  ${POSTGRES_DATABASE}
-      user: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
-      tableName: flowtags
-netify-tag-enricher:
-  postgres:
-      server: ${POSTGRES_IP}
-      port: ${POSTGRES_PORT}
-      database:  ${POSTGRES_DATABASE}
-      user: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
+    tableName: enrichment_data

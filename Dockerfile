@@ -37,9 +37,10 @@ WORKDIR /app
 COPY --from=build /bin ./
 COPY ./Source/Ethanol.ContextBuilder/Configurations ./
 COPY ./Deploy/Docker/ethanol-config.yml ./
-# Set the entry point for the container
-#ENTRYPOINT ["./Ethanol.ContextBuilder"]
-# specify the default arguments...
-#CMD [ "Build-Context", "-r", "FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}}", "-c", "ethanol-config.yml", "-w", "JsonWriter:{tcp=${FLUENTBIT_IP}:${FLUENTBIT_PORT}}" ]
 
-CMD sh -c './Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}} -c ethanol-config.yml -w JsonWriter:{tcp=${FLUENTBIT_IP}:${FLUENTBIT_PORT}}'
+# Set the entry point for the container
+# This runs the builder with the following i/o bindings:
+# input: Tcp server listens for incoming JSON formated data with input flows
+# output: PostreSQL table hostcontext is inserted with generated context
+
+CMD sh -c './Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}} -c ethanol-config.yml -w PostgresWriter:{server=${POSTGRES_IP},port=${POSTGRES_PORT},database=ethanol,user=${POSTGRES_USER},password=${POSTGRES_PASSWORD},tableName=host_context}'

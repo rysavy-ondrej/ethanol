@@ -49,3 +49,24 @@ class CsvHostTag
         }
     }
 }
+
+#!csharp
+
+var records = CsvHostTag.Load(inputfile);
+
+using (var conn = new NpgsqlConnection(connectionString))
+{
+    conn.Open();
+    foreach(var tag in records)    
+    using (var cmd = new NpgsqlCommand("INSERT INTO hosttags (keytype, keyvalue, source, reliability, module, data, validity) VALUES (@keytype, @keyvalue, @source, @reliability, @module, @data, @validity)", conn))
+    {
+        cmd.Parameters.AddWithValue("keytype", tag.KeyType);
+        cmd.Parameters.AddWithValue("keyvalue", tag.KeyValue);
+        cmd.Parameters.AddWithValue("source", tag.SourceValue);
+        cmd.Parameters.AddWithValue("reliability", tag.Reliability);
+        cmd.Parameters.AddWithValue("module", tag.SourceModule);
+        cmd.Parameters.AddWithValue("data", tag.Value);
+        cmd.Parameters.AddWithValue("validity", new NpgsqlTypes.NpgsqlRange<DateTime>(tag.StartTime, tag.EndTime));
+        cmd.ExecuteNonQuery();
+    }
+}

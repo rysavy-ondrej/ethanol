@@ -32,17 +32,17 @@
     },
     "Insert-Netify": {
       "commandName": "Project",
-      "commandLineArgs": "Insert-Netify --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name unitags --apps-file applications.csv --ips-file ips.csv --domains-file domains.csv",
+      "commandLineArgs": "Insert-Netify --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name enrichment_data --apps-file applications.csv --ips-file ips.csv --domains-file domains.csv",
       "workingDirectory": "e:\\Ethanol\\NETIFY-DATA\\"
     },
     "Insert-FlowTags": {
       "commandName": "Project",
-      "commandLineArgs": "Insert-FlowTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name unitags --input-file webuser.tcp.csv",
+      "commandLineArgs": "Insert-FlowTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name  enrichment_data --input-file webuser.tcp.csv",
       "workingDirectory": "e:\\Ethanol\\webuser2\\"
     },
     "Insert-HostTags": {
       "commandName": "Project",
-      "commandLineArgs": "Insert-HostTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name unitags --input-file webuser.fakesads.csv",
+      "commandLineArgs": "Insert-HostTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name  enrichment_data --input-file webuser.fakesads.csv",
       "workingDirectory": "e:\\Ethanol\\webuser2\\"
     },
     "webuser-postgres-yaml": {

@@ -13,7 +13,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         public static IEnumerable<TagRecord> LoadFromFile(string filename)
         {
             var reader = new StreamReader(filename);
-            var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ",", BadDataFound = null };
+            var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ",", BadDataFound = null, MissingFieldFound = null };
             using var csv = new CsvReader(reader, config);
             var records = csv.GetRecords<FlowTag>();
             foreach(var  record in records)

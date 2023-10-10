@@ -156,7 +156,6 @@ namespace Ethanol.ContextBuilder.Enrichers
         private static FlowTag ReadFlowTag(DateTime start, DateTime end, NpgsqlDataReader reader)
         {
             return new FlowTag(start, end,
-                                  ProtocolType.IP.ToString(),
                                   (TryConvert.ToIPAddress(reader["LocalAddress"] as string, out var localAddress) ? localAddress : IPAddress.None).ToString(),
                                   TryConvert.ToUInt16(reader["LocalPort"], out var localPort) ? localPort : (ushort)0,
                                   (TryConvert.ToIPAddress(reader["RemoteAddress"] as string, out var remoteAddress) ? remoteAddress : IPAddress.None).ToString(),

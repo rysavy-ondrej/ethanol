@@ -4,11 +4,15 @@
 
 #!csharp
 
-//var uri = new Uri("https://www.fit.vutbr.cz/~rysavy/aaa.txt");
-var uri = new Uri(@"aaa.txt");
+using System.IO;
+//var input = "https://www.fit.vutbr.cz/~rysavy/aaa.txt";
+var input = @"UrirTest.dib";
 
-var path = uri.AbsolutePath;
-Console.WriteLine(path);
+
+// Convert relative path to absolute path
+string absolutePath = Path.GetFullPath(input);
+
+var uri = File.Exists(absolutePath) ? new Uri(absolutePath) : new Uri(input);
 
 if (uri.Scheme == Uri.UriSchemeFile)
 {

@@ -49,6 +49,8 @@ services:
       FLUENTBIT_IP: fluentbit-service
       FLUENTBIT_PORT: 5175
       ETHANOL_PORT: 5180
+    volumes:
+      - ./netify:/var/netify
     depends_on:
       postgres-service:
         condition: service_healthy

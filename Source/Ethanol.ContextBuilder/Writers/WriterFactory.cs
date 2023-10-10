@@ -1,13 +1,15 @@
-﻿using Ethanol.ContextBuilder.Plugins;
+﻿using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Polishers;
 using System;
 
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
-    /// Factory class supporting to instantiating flow readers.
+    /// Factory class for creating context writers.
     /// </summary>
-    public class WriterFactory : PluginFactory<ContextWriter<object>>
+    public class WriterFactory : PluginFactory<ContextWriter<ObservableEvent<IpTargetHostContext>>>
     {
         protected override bool FilterPlugins((Type Type, PluginAttribute Plugin) plugin)
         {

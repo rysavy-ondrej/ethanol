@@ -1,12 +1,10 @@
-﻿using CsvHelper;
-using Npgsql;
+﻿using Npgsql;
 using NpgsqlTypes;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
-using System.Security.Cryptography;
+using System.Dynamic;
 using System.Text.Json;
-using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -66,11 +64,11 @@ namespace Ethanol.ContextBuilder.Enrichers
                 Reliability = reader.GetFloat("reliability"),
                 StartTime = validity.LowerBound,
                 EndTime =validity.UpperBound,
-                Details = JsonSerializer.Deserialize<dynamic>(reader.GetString("details"))
+                Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
             };
         }
 
-        internal T GetDetails<T>()
+        internal T GetDetailsAs<T>()
         {
             if (typeof(T) == Details.GetType())
             {

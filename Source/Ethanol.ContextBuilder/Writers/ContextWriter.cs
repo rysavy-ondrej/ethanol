@@ -5,7 +5,7 @@ using Ethanol.ContextBuilder.Pipeline;
 namespace Ethanol.ContextBuilder.Writers
 {
     /// <summary>
-    /// Represets a base class for all writers. A writer outputs 
+    /// Represets a base class for all context writers. A writer outputs 
     /// context-based data in the specifc output format. 
     /// </summary>
     public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode

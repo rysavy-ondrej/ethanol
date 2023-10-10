@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Pipeline
 
     public static class EthanolEnvironmentPipelines
     {
-        public static EthanolPipeline CreateIpHostContextBuilderPipeline(this ContextBuilderCatalog catalog, PipelineConfiguration configuration, IFlowReader<IpFlow> reader, ContextWriter<object> writer, Action<int> onInputConsumed, Action<int> onOuputProduced)
+        public static EthanolPipeline CreateIpHostContextBuilderPipeline(this ContextBuilderCatalog catalog, PipelineConfiguration configuration, IFlowReader<IpFlow> reader, ContextWriter<ObservableEvent<IpTargetHostContext>> writer, Action<int> onInputConsumed, Action<int> onOuputProduced)
         {
             var hostFilter = HostBasedFilter.FromHostPrefix(configuration.TargetHostPrefix);
             var builder = new IpHostContextBuilder(configuration.WindowSize, configuration.WindowHop);

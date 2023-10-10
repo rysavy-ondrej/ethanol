@@ -25,20 +25,10 @@
       "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w JsonWriter:{file=context.nfdump.short.json}",
       "workingDirectory": "..\\..\\TestData\\basic"
     },
-    "webuser": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}",
-      "workingDirectory": "E:\\Ethanol\\webuser2"
-    },
     "fluent": {
       "commandName": "Project",
       "commandLineArgs": "Build-Context -r FlowmonJson:{file=flow.ndjson} -c config.yaml -w JsonWriter:{file=context.ndjson}",
       "workingDirectory": "..\\..\\TestData\\fluent"
-    },
-    "webuser-postgres": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w JsonWriter:{file=webuser.ctx.json}",
-      "workingDirectory": "E:\\Ethanol\\webuser2"
     },
     "Insert-Netify": {
       "commandName": "Project",
@@ -54,6 +44,21 @@
       "commandName": "Project",
       "commandLineArgs": "Insert-HostTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name unitags --input-file webuser.fakesads.csv",
       "workingDirectory": "e:\\Ethanol\\webuser2\\"
+    },
+    "webuser-postgres-yaml": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w YamlWriter:{file=webuser.ctx.yaml}",
+      "workingDirectory": "E:\\Ethanol\\webuser2"
+    },
+    "webuser-postgres-json": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w JsonWriter:{file=webuser.ctx.json}",
+      "workingDirectory": "E:\\Ethanol\\webuser2"
+    },
+    "webuser-postgres-postgres": {
+      "commandName": "Project",
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=hostcontext}",
+      "workingDirectory": "E:\\Ethanol\\webuser2"
     }
   }
 }

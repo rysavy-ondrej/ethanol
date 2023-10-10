@@ -1,17 +1,18 @@
-﻿using Ethanol.ContextBuilder.Plugins.Attributes;
+﻿using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Plugins.Attributes;
+using Ethanol.ContextBuilder.Polishers;
+using NLog;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
-using NLog;
-using YamlDotNet.Serialization;
-using Ethanol.ContextBuilder.Context;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Primitives;
-using System.Collections.Generic;
+using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -19,7 +20,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// Produces NDJSON output for arbitrary object type.
     /// </summary>
     [Plugin(PluginCategory.Writer, "JsonWriter", "Writes NDJSON formatted file for computed context.")]
-    public abstract class JsonDataWriter : ContextWriter<object>
+    public abstract class JsonDataWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
     {
         static protected readonly Logger __logger = LogManager.GetCurrentClassLogger();
 
@@ -87,7 +88,7 @@ namespace Ethanol.ContextBuilder.Writers
                 // already opened.    
             }
             /// <inheritdoc/>
-            protected override void Write(object value)
+            protected override void Write(ObservableEvent<IpTargetHostContext> value)
             {
                 if (value == null) return;
                 var valueType = value.GetType();
@@ -136,7 +137,7 @@ namespace Ethanol.ContextBuilder.Writers
             /// </summary>
             /// <param name="value">The object to write.</param>
             /// <exception cref="System.IO.IOException">Thrown if the object cannot be written.</exception>
-            protected override void Write(object value)
+            protected override void Write(ObservableEvent<IpTargetHostContext> value)
             {
                 var stringValue = JsonSerializer.Serialize(value, _jsonOptions);
                 _queue.Add(stringValue);

@@ -145,7 +145,7 @@ SELECT * FROM host_context;
 
 ## Enrichment Data
 
-Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data` table unifies the representation of various data, providing specific information in the `details' column. 
+Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data` table unifies the representation of various data, providing specific information in the `details` column. 
 
 The examples of different data are shown in the following table:
 
@@ -156,6 +156,6 @@ The examples of different data are shown in the following table:
 | NetifyTag | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Description":"Netflix is an online video streaming service that provides movies, TV shows, documentaries and other video formats.","Url":"https://www.netflix.com","Category":"Streaming Media"} |
 | NetifyTag | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Description":"At Microsoft our mission and values are to help people and businesses throughout the world realize their full potential.","Url":"https://www.microsoft.com","Category":"Business"} |
 
-
+As you can see, the table stores different types of tags. The tag key can be an IP address, domain name, flow key, or other key-like value.
 
 

@@ -42,6 +42,7 @@ The meaning of the columns is as follows:
 * `validity` indicates the time range when the enrichment data is considered valid or accurate. After this range, the data might be outdated or less reliable.
 * `details` can store more detailed enrichment information in a structured JSON format. This can include nested data, arrays, or other details that don't fit neatly into the table's more rigid structure.
 
+For the various examples of enrichment data see section bellow.
 
 Table `host_context` is intended to store computed context related to IP hosts:
 
@@ -141,3 +142,15 @@ psql -U postgres -W postgres -h IP-OF-DOCKER-HOST:1605 -d ethanol
 ```sql
 SELECT * FROM host_context;
 ```
+
+## Enrichment Data
+
+Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data' table unifies the representation of various data, allowing specific information to be provided in the `details' column. 
+The examples of different data are shown in the following table:
+
+| type | key |value | reliability | validity | details |
+| ---- | --- | ---- | ------------| ---------| --------|
+| activity_bytes | 192.168.123.254 | 4560.0 | 1 | [2021-11-09 03:30:00,2021-11-09 03:40:00] | {"KeyType":"ip","KeyValue":"192.168.123.254","Source":"activity_bytes","StartTime":"2021-11-09T03:30:00","EndTime":"2021-11-09T03:40:00","Reliability":1,"Module":"ip_activity_new@netmonlab","Data":4560.0} |
+| os_by_tcpip|147.229.13.244|"Linux"|1|[2021-11-09 03:41:07.289802,2021-11-09 03:46:26.679065] | {"KeyType":"ip","KeyValue":"147.229.13.244","Source":"os_by_tcpip","StartTime":"2021-11-09T03:41:07.289802","EndTime":"2021-11-09T03:46:26.679065","Reliability":1,"Module":"os_by_tcpip@collector-enta","Data":"Linux"} |
+
+

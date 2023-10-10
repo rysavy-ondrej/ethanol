@@ -145,12 +145,17 @@ SELECT * FROM host_context;
 
 ## Enrichment Data
 
-Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data' table unifies the representation of various data, allowing specific information to be provided in the `details' column. 
+Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data` table unifies the representation of various data, providing specific information in the `details' column. 
+
 The examples of different data are shown in the following table:
 
 | type | key |value | reliability | validity | details |
 | ---- | --- | ---- | ------------| ---------| --------|
 | activity_bytes | 192.168.123.254 | 4560.0 | 1 | [2021-11-09 03:30:00,2021-11-09 03:40:00] | {"KeyType":"ip","KeyValue":"192.168.123.254","Source":"activity_bytes","StartTime":"2021-11-09T03:30:00","EndTime":"2021-11-09T03:40:00","Reliability":1,"Module":"ip_activity_new@netmonlab","Data":4560.0} |
-| os_by_tcpip|147.229.13.244|"Linux"|1|[2021-11-09 03:41:07.289802,2021-11-09 03:46:26.679065] | {"KeyType":"ip","KeyValue":"147.229.13.244","Source":"os_by_tcpip","StartTime":"2021-11-09T03:41:07.289802","EndTime":"2021-11-09T03:46:26.679065","Reliability":1,"Module":"os_by_tcpip@collector-enta","Data":"Linux"} |
+| os_by_tcpip | 147.229.13.244 | "Linux" | 1 | [2021-11-09 03:41:07.289802,2021-11-09 03:46:26.679065] | {"KeyType":"ip","KeyValue":"147.229.13.244","Source":"os_by_tcpip","StartTime":"2021-11-09T03:41:07.289802","EndTime":"2021-11-09T03:46:26.679065","Reliability":1,"Module":"os_by_tcpip@collector-enta","Data":"Linux"} |
+| NetifyTag | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Description":"Netflix is an online video streaming service that provides movies, TV shows, documentaries and other video formats.","Url":"https://www.netflix.com","Category":"Streaming Media"} |
+| NetifyTag | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Description":"At Microsoft our mission and values are to help people and businesses throughout the world realize their full potential.","Url":"https://www.microsoft.com","Category":"Business"} |
+
+
 
 

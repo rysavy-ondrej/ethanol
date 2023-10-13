@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using CsvHelper.Configuration;
 using CsvHelper;
+using Microsoft.Extensions.Logging;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
     class CsvFlowTagSource
     {
-        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        static ILogger _logger = LogManager.GetCurrentClassLogger();
 
         public static IEnumerable<TagRecord> LoadFromFile(string filename)
         {

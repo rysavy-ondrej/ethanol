@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using Microsoft.Extensions.Logging;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,7 +11,7 @@ namespace Ethanol.ContextBuilder.Enrichers
 
     public class PostgresTagProvider : ITagDataProvider<TagRecord>
     {
-        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        static ILogger _logger = LogManager.GetCurrentClassLogger();
         private readonly NpgsqlConnection _connection;
         private readonly string _tableName;
 
@@ -35,13 +36,13 @@ namespace Ethanol.ContextBuilder.Enrichers
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                _logger.Info($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
+                _logger.LogInformation($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
 
                 return new PostgresTagProvider(connection, tableName);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Cannot create {nameof(PostgresHostTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
+                _logger.LogError(ex, $"Cannot create {nameof(PostgresTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
                 return null;
             }
         }
@@ -77,12 +78,12 @@ namespace Ethanol.ContextBuilder.Enrichers
                     rowList.Add(row);
                 }
                 await reader.CloseAsync();
-                _logger.Debug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
+                _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
             }
             catch (Exception e)
             {
-                _logger.Error(e);
+                _logger.LogError(e, null);
                 return Array.Empty<TagRecord>();
             }
         }
@@ -106,12 +107,12 @@ namespace Ethanol.ContextBuilder.Enrichers
                     rowList.Add(row);
                 }
                 reader.Close();
-                _logger.Debug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
+                _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
             }
             catch (Exception e)
             {
-                _logger.Error(e);
+                _logger.LogError(e, null);
                 return Array.Empty<TagRecord>();
             }
         }
@@ -134,6 +135,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         public static bool CreateTableIfNotExists(NpgsqlConnection connection, string tableName)
         {
             connection.CreateTable(tableName, TagRecord.SqlColumns.Select(x => $" {x.Item1} {x.Item2}").ToArray());
+            connection.CreateIndex(tableName, "type");
             connection.CreateIndex(tableName, "key");
             return true;
         }

@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using System;
+using static Npgsql.Replication.PgOutput.Messages.RelationMessage;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -47,6 +48,11 @@ namespace Ethanol.ContextBuilder.Enrichers
             return cmd.ExecuteNonQuery() > 0;
         }
 
-
+        internal static int Delete(NpgsqlConnection connection, string tableName, string whereClause)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = @$"DELETE FROM {tableName} WHERE {whereClause}";
+            return cmd.ExecuteNonQuery();
+        }
     }
 }

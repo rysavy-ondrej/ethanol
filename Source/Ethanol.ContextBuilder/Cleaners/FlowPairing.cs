@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;

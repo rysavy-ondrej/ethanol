@@ -12,7 +12,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// Reads <see cref="IpFlow"/> collection as exported from Ipfixcol2 tool (https://github.com/CESNET/ipfixcol2), which is basically NDJSON.
     /// </summary>
     [Plugin(PluginCategory.Reader, "IpfixcolJson", "Reads NDJSON exported from ipfixcol2 tool.")]
-    public class IpfixcolReader : FlowReader<IpFlow>
+    public class IpfixcolReader : BaseFlowReader<IpFlow>
     {
         private readonly TextReader _textReader;
 

@@ -14,9 +14,6 @@ namespace Ethanol.ContextBuilder.Enrichers
         private readonly IDocumentCollection<TagRecord> _collection;
         private readonly IEnumerable<TagRecord> _queryable;
 
-
-
-
         public JsonDbTagProvider(string jsonFile, string collectionName)
         {
             // Open database (create new if file doesn't exist)

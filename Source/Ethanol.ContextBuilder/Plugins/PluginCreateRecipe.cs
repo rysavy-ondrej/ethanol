@@ -33,17 +33,5 @@ namespace Ethanol.ContextBuilder.Plugins
                 return new PluginCreateRecipe(input, string.Empty);
             }
         }
-
-        private static KeyValuePair<string, string> splitToPair(string input, char sep)
-        {
-            var splitIndex = input.IndexOf(sep);
-            if (splitIndex > 0)
-            {
-                var key = input.Substring(0, splitIndex);
-                var val = input.Substring(splitIndex + 1);
-                return new KeyValuePair<string, string>(key, val);
-            }
-            return new KeyValuePair<string, string>(input, string.Empty);
-        }
     }
 }

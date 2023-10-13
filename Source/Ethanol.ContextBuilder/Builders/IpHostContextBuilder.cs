@@ -12,31 +12,29 @@ using System.Reactive.Subjects;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
-{    
-    public class IpHostContext : IpHostContext<Empty>
-    {
-    }
-    
-    public class IpHostContext<TagType>
-    { 
-        public IPAddress HostAddress { get; init; }
-        public IpFlow[] Flows { get; init; }
-        public TagType Tags { get; init; }
-        /// <summary>
-        /// Gets flows of type <typeparamref name="TFlow"/> using <paramref name="select"/> function. 
-        /// </summary>
-        /// <typeparam name="TResult">The type of result.</typeparam>
-        /// <typeparam name="TFlow">The type of flows to retrieve.</typeparam>
-        /// <param name="select">The result mapping function.</param>
-        /// <returns>Get the enumerablw of flow object created using <paramref name="select"/> funciton.</returns>
-        public IEnumerable<TResult> GetFlowsAs<TResult, TFlow>(Func<TFlow, TResult> select) where TFlow : IpFlow
-            => Flows.Where(f => f is TFlow).Select(f => select(f as TFlow));
-    }
+{
     /// <summary>
-    /// Builds the context for Ip hosts identified in the source IPFIX stream.
-    /// <para/>
-    /// This implementation directly use Observable contrary to <see cref="HostContextBuilder"/> which is based on Streamable.
+    /// Builds the contextual information for IP hosts identified from the source IPFIX stream.
     /// </summary>
+    /// <remarks>
+    /// The <c>IpHostContextBuilder</c> class is an essential component that transforms raw IP flows 
+    /// from IPFIX streams into a structured and contextual representation specific to IP hosts.
+    ///
+    /// The builder leverages the Observable pattern to continuously ingest input flows and process 
+    /// them in real-time. This design allows for more scalable and efficient handling of large-scale 
+    /// IPFIX data streams.
+    ///
+    /// The transformation process involves:
+    /// - Wrapping each IP flow with metadata about its start and end times.
+    /// - Segmenting the flow stream into defined time windows.
+    /// - Grouping the flows by their source and destination addresses.
+    ///
+    /// The resulting observable provides a detailed view of grouped IP flows for every IP host within 
+    /// the specified time windows.
+    /// </remarks>
+    /// <seealso cref="IObservableTransformer{TInput,TOutput}" />
+    /// <seealso cref="IPipelineNode" />
+    /// <seealso cref="PluginAttribute" />
     [Plugin(PluginCategory.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
     public class IpHostContextBuilder : IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>>, IPipelineNode
     {
@@ -110,18 +108,28 @@ namespace Ethanol.ContextBuilder.Builders
         }
 
         /// <summary>
-        /// Collects flows to hosts within each window.
+        /// Builds the context for IP host flows by segmenting and grouping flows based on their IP addresses.
         /// </summary>
-        /// <param name="source">The source observable of <see cref="IpFlow"/> objects.</param>
-        /// <returns>The observable of windows within flows are grouped to hosts.</returns>
+        /// <param name="source">The source observable of raw IP flows.</param>
+        /// <returns>An observable of grouped IP flows, contextualized by IP host within specified time windows.</returns>
         private IObservable<ObservableEvent<IObservable<IGroupedObservable<string, IpFlow>>>> BuildHostFlowContext(IObservable<IpFlow> source)
         {
-            var flowStream = source.Select(x => new ObservableEvent<IpFlow>(x, x.TimeStart, x.TimeStart + x.TimeDuration));
+            var flowStream = source.Select(x => 
+                new ObservableEvent<IpFlow>(x, x.TimeStart, x.TimeStart + x.TimeDuration));
+
             var windows = flowStream.WindowHop(WindowSize);
             return windows.Select(window =>
             {
-                var fhost = window.Payload.SelectMany(flow => (new[] { new KeyValuePair<string, IpFlow>(flow.SourceAddress.ToString(), flow), new KeyValuePair<string, IpFlow>(flow.DestinationAddress.ToString(), flow) }).ToObservable());
-                return new ObservableEvent<IObservable<IGroupedObservable<string, IpFlow>>>(fhost.GroupBy(flow => flow.Key, flow => flow.Value), window.StartTime, window.EndTime);
+                var fhost = window.Payload.SelectMany(flow => 
+                    (new[] 
+                    { 
+                        new KeyValuePair<string, IpFlow>(flow.SourceAddress.ToString(), flow), 
+                        new KeyValuePair<string, IpFlow>(flow.DestinationAddress.ToString(), flow) 
+                    }).ToObservable());
+                return new ObservableEvent<IObservable<IGroupedObservable<string, IpFlow>>>(
+                    fhost.GroupBy(flow => flow.Key, flow => flow.Value), 
+                    window.StartTime, 
+                    window.EndTime);
             });
         }
 

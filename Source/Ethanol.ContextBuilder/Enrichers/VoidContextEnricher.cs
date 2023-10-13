@@ -1,4 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 
 namespace Ethanol.ContextBuilder.Enrichers

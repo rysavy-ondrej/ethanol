@@ -1,13 +1,25 @@
+using Ethanol.ContextBuilder;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Net;
 
+/// <summary>
+/// Provides utility methods for resolving IPEndPoints from string representations.
+/// </summary>
 public static class IPEndPointResolver
 {
-    static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
+    static ILogger __logger = LogManager.GetCurrentClassLogger();
+
+    /// <summary>
+    /// Resolves an <see cref="IPEndPoint"/> from the provided input string.
+    /// </summary>
+    /// <param name="input">A string representation of an IP endpoint in the format "host:port" or just "host".</param>
+    /// <param name="defaultPort">The default port to use if the input does not specify a port.</param>
+    /// <returns>The resolved <see cref="IPEndPoint"/> based on the provided input and default port.</returns>
+    /// <exception cref="ArgumentException">Thrown when the input string contains more than one colon.</exception>
     public static IPEndPoint GetIPEndPoint(string input, int defaultPort = 0)
     {
-        
         string[] parts = input.Split(':');
         if (parts.Length > 2)
         {
@@ -19,7 +31,7 @@ public static class IPEndPointResolver
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(parts[0]);
             address = hostEntry.AddressList.FirstOrDefault() ?? IPAddress.None;
-            __logger.Info($"Dns Resolver: {parts[0]}->{address}");
+            __logger.LogInformation($"Dns Resolver: {parts[0]}->{address}");
         }
  
         int resolvedPort = (parts.Length == 2 ? int.Parse(parts[1]) : defaultPort);

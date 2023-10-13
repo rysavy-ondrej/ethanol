@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 
 namespace Ethanol.ContextBuilder.Context
 {
@@ -12,59 +9,53 @@ namespace Ethanol.ContextBuilder.Context
         BidirectionFlow,
     }
     /// <summary>
-    /// Represents a (possibly) bidirectional internet flow. 
+    /// Represents a detailed Internet Protocol (IP) flow data structure that extends the basic <see cref="InternetFlow"/>.
     /// </summary>
+    /// <remarks>
+    /// The <see cref="IpFlow"/> class provides essential information about a specific flow in an IP network. 
+    /// It captures flow direction, duration, starting time, and specifics about packets and octets sent and received. 
+    /// Additionally, it includes metadata about the recognized application protocol used in the flow.
+    /// </remarks>
     public class IpFlow : InternetFlow
     {
         /// <summary>
-        /// The type of flow: request flow, response flow, or bidirectional flow.
+        /// Gets or sets the type of flow, which can be either a request flow, response flow, or bidirectional flow.
         /// </summary>
         public FlowType FlowType { get; set; }
+
         /// <summary>
-        /// Stands for the recognized application protocol. 
+        /// Gets or sets the recognized application protocol tag associated with the flow.
         /// </summary>
         public string ApplicationTag { get; set; }
 
-        public DateTime TimeStart { get; set; }
         /// <summary>
-        /// The duration of the flow.
+        /// Gets or sets the starting time of the flow.
+        /// </summary>
+        public DateTime TimeStart { get; set; }
+
+        /// <summary>
+        /// Gets or sets the duration of the flow.
         /// </summary>
         public TimeSpan TimeDuration { get; set; }
 
         /// <summary>
-        /// Packet Delta Count field is a data field that represents the number of packets that have been sent between two network devices during a particular flow.
+        /// Gets or sets the Packet Delta Count, representing the number of packets sent between two network devices during this flow.
         /// </summary>
         public int SentPackets { get; set; }
 
         /// <summary>
-        /// Octet Delta Count field is a data field that represents the number of octets (bytes) that have been sent between two network devices during a particular flow. 
+        /// Gets or sets the Octet Delta Count, representing the number of octets (bytes) sent between two network devices during this flow.
         /// </summary>
         public int SentOctets { get; set; }
+
         /// <summary>
-        /// Packet Delta Count field is a data field that represents the number of packets that have been sent between two network devices during a particular flow.
+        /// Gets or sets the Packet Delta Count, representing the number of packets received between two network devices during this flow.
         /// </summary>
         public int RecvPackets { get; set; }
 
         /// <summary>
-        /// Octet Delta Count field is a data field that represents the number of octets (bytes) that have been sent between two network devices during a particular flow. 
+        /// Gets or sets the Octet Delta Count, representing the number of octets (bytes) received between two network devices during this flow.
         /// </summary>
         public int RecvOctets { get; set; }
     }
-
-    public static class IpFlowExtensions
-    {
-        public static IEnumerable<R> SelectFlows<T, R>(this IEnumerable<IpFlow> flows, Func<T, R> func) where T : IpFlow
-        {
-            return flows.Where(x => x is T).Cast<T>().Select(func);
-        }
-        public static IEnumerable<T> SelectFlows<T>(this IEnumerable<IpFlow> flows) where T : IpFlow
-        {
-            return flows.Where(x => x is T).Cast<T>();
-        }
-        public static IPAddress GetRemoteAddress(this IpFlow flow, IPAddress host)
-        {
-            return host.Equals(flow.SourceAddress) ? flow.DestinationAddress : flow.SourceAddress;
-        }
-    }
-
 }

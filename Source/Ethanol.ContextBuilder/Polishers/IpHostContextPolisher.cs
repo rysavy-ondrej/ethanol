@@ -14,6 +14,18 @@ namespace Ethanol.ContextBuilder.Polishers
     /// <summary>
     /// Transforms a rich IP host context into a simplified IP host context.
     /// </summary>
+    /// <remarks>
+    /// The <see cref="IpHostContextPolisher"/> class is designed to take in an IP host context with abundant details (represented by <see cref="IpRichHostContext"/>) 
+    /// and transform it into a more streamlined or simplified format, represented by <see cref="IpTargetHostContext"/>.
+    /// 
+    /// This transformation can be essential for scenarios where only specific details of the IP host are required, 
+    /// thus reducing overhead and optimizing performance or readability.
+    /// 
+    /// The class implements the <see cref="IObservableTransformer{TInput,TOutput}"/> interface, indicating its ability to observe
+    /// events of type <see cref="IpRichHostContext"/> and produce transformed events of type <see cref="IpTargetHostContext"/>.
+    /// Additionally, by implementing the <see cref="IPipelineNode"/> interface, it suggests that this class plays a role in a processing pipeline, 
+    /// as a node that performs specific transformations.
+    /// </remarks>
     public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
     {
         // We use subject as the simplest way to implement the transformer.

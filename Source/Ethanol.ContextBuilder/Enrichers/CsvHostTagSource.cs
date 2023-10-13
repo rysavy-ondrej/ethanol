@@ -4,13 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using CsvHelper.Configuration.Attributes;
+using Microsoft.Extensions.Logging;
 using static Ethanol.ContextBuilder.Enrichers.CsvNetifySource;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
     class CsvHostTagSource
     {
-        static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
+        static ILogger _logger = LogManager.GetCurrentClassLogger();
         internal record CsvHostTagRecord(
             [Index(0)] string KeyType,
             [Index(1)] string KeyValue,
@@ -63,7 +64,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 // shorter lines are silently ignored...
                 if (parts.Length != 8)
                 {
-                    _logger.Warn($"Invalid line: {line}");
+                    _logger.LogWarning($"Invalid line: {line}");
                    continue;
                 }
 

@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Plugins.Attributes;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Ethanol.ContextBuilder.Plugins
     /// <typeparam name="TDestination">The object type of plugins to be created by the target factory.</typeparam>
     public abstract class PluginFactory<TDestination>
     {
-        static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
+        static ILogger __logger = LogManager.GetCurrentClassLogger();
         private readonly IDeserializer _configurationDeserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).IgnoreUnmatchedProperties().Build();
         Dictionary<string, (Type Type, PluginAttribute Plugin)> __factoryPlugins;
 
@@ -116,7 +117,7 @@ namespace Ethanol.ContextBuilder.Plugins
             /*
             foreach (var p in plugins)
             {
-                __logger.Debug($"Available plugin: name={p.Plugin.Name}, category={p.Plugin.Category}, class={p.Type}.");
+                __logger.LogDebug($"Available plugin: name={p.Plugin.Name}, category={p.Plugin.Category}, class={p.Type}.");
             }*/
             return plugins;
         }

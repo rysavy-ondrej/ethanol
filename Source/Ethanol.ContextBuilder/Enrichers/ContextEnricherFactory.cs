@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Observable;
+﻿using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;

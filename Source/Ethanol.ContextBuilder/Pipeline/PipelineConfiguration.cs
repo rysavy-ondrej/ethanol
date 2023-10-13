@@ -1,4 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Serialization;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -35,9 +37,9 @@ namespace Ethanol.ContextBuilder.Pipeline
     /// </summary>
     public static class PipelineConfigurationSerializer
     {
-        static NLog.Logger __logger = NLog.LogManager.GetCurrentClassLogger();
-        static IDeserializer deserializer = new DeserializerBuilder().WithTypeConverter(new IPAddressPrefixTypeConverter()).Build();
-        static ISerializer serializer = new SerializerBuilder().WithTypeConverter(new IPAddressPrefixTypeConverter()).Build();
+        static ILogger __logger = LogManager.GetCurrentClassLogger();
+        static IDeserializer deserializer = new DeserializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
+        static ISerializer serializer = new SerializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
 
         /// <summary>
         /// Creates a new <see cref="PipelineConfiguration"/> object from the specified YAML string.
@@ -62,7 +64,7 @@ namespace Ethanol.ContextBuilder.Pipeline
             {
                 configurationString = ResolveEnvironmentVariables(configurationString);
             }
-            __logger.Info($"Loading pipeline configuration: {configurationString}");
+            __logger.LogInformation($"Loading pipeline configuration: {configurationString}");
             var config = deserializer.Deserialize<PipelineConfiguration>(configurationString);
             return config;
         }

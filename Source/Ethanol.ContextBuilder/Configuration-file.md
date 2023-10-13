@@ -1,5 +1,8 @@
 # Configuration File
 
+
+TODO: Update the documentation...
+
 Configuration is a YAML-formatted file that is meant for setting up input data processing and data analysis pipelines.
 The file has several parameters that control aspects like window size, target IP range, and various data enrichment sources.
 

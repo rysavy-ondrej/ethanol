@@ -35,7 +35,7 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 # Set the working directory to /app and copy the published output
 WORKDIR /app
 COPY --from=build /bin ./
-COPY ./Source/Ethanol.ContextBuilder/Configurations ./
+# COPY ./Source/Ethanol.ContextBuilder/Configurations ./
 COPY ./Deploy/Docker/ethanol-config.yml ./
 
 # Set the entry point for the container

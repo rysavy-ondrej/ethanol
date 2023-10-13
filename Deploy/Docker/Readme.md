@@ -122,7 +122,7 @@ The exporter is set up to listen on the local monitoring interface, and it sends
 The JSON file with exported IPFIX records can be sent to the ethanol by using nc tool by the followig command:
 
 ```bash
-cat SOURCE-JSON-FILE | cat ../webuser1/webuser.flows.json | nc -q 0 IP-OF-DOCKER-HOST 1600
+cat SOURCE-JSON-FILE | nc -q 0 IP-OF-DOCKER-HOST 1600
 ```
 
 Note that `-q 0` option is required to end the connection after sending all data.

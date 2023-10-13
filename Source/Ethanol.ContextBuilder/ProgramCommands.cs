@@ -1,5 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins;
 using Ethanol.ContextBuilder.Readers;
@@ -155,12 +157,12 @@ namespace Ethanol.ContextBuilder
             }
         }
 
-        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyIpsRecord> addresses)
+        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyIpsRecord> addresses)
         {
             return addresses.Select(item =>
             {
                 var app = applications.TryGetValue(item.AppId, out var appRec) ? appRec : null;
-                var record = new TagRecord 
+                var record = new TagObject 
                 { 
                     Key = item.Value, 
                     Type = nameof(NetifyTag), 
@@ -173,12 +175,12 @@ namespace Ethanol.ContextBuilder
                 return record;
             });
         }
-        private static IEnumerable<TagRecord> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyDomainRecord> domains)
+        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyDomainRecord> domains)
         {
             return domains.Select(item =>
             {
                 var app = applications.TryGetValue(item.AppId, out var appRec) ? appRec : null;
-                var record = new TagRecord
+                var record = new TagObject
                 {
                     Key = item.Value,
                     Type = nameof(NetifyTag),

@@ -1,15 +1,28 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Helpers;
+using Microsoft.Extensions.Logging;
 using Npgsql;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Dynamic;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-
-    public class PostgresTagProvider : ITagDataProvider<TagRecord>
+    /// <summary>
+    /// Provides a concrete implementation of <see cref="ITagDataProvider{T}"/> for PostgreSQL databases.
+    /// This class is responsible for fetching tag data from a PostgreSQL database, allowing for integration
+    /// between the application and a relational database system.
+    /// </summary>
+    /// <remarks>
+    /// The class uses Npgsql, a .NET data provider for PostgreSQL, to manage database connections and operations.
+    /// </remarks>
+    public class PostgresTagProvider : ITagDataProvider<TagObject>
     {
         static ILogger _logger = LogManager.GetCurrentClassLogger();
         private readonly NpgsqlConnection _connection;
@@ -22,7 +35,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         /// <param name="connectionString"></param>
         /// <returns></returns>
-        public static ITagDataProvider<TagRecord> Create(string connectionString, string tableName)
+        public static ITagDataProvider<TagObject> Create(string connectionString, string tableName)
         {
             try
             {
@@ -65,16 +78,16 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
         /// <returns>An IEnumerable of HostTag objects representing the tags associated with the specified host and time range.</returns>
-        public async Task<IEnumerable<TagRecord>> GetAsync(string key, DateTime start, DateTime end)
+        public async Task<IEnumerable<TagObject>> GetAsync(string key, DateTime start, DateTime end)
         {
             try
             {
                 NpgsqlCommand cmd = PrepareCommand(key, start, end);
                 var reader = await cmd.ExecuteReaderAsync();
-                var rowList = new List<TagRecord>();
+                var rowList = new List<TagObject>();
                 while (await reader.ReadAsync())
                 {
-                    var row = TagRecord.Read(reader);
+                    var row = ReadRow(reader);
                     rowList.Add(row);
                 }
                 await reader.CloseAsync();
@@ -84,7 +97,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             catch (Exception e)
             {
                 _logger.LogError(e, null);
-                return Array.Empty<TagRecord>();
+                return Array.Empty<TagObject>();
             }
         }
         /// <summary>
@@ -94,16 +107,16 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
         /// <returns>An IEnumerable of HostTag objects representing the tags associated with the specified host and time range.</returns>
-        public IEnumerable<TagRecord> Get(string tagKey, DateTime start, DateTime end)
+        public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
         {
             try
             {
                 NpgsqlCommand cmd = PrepareCommand(tagKey, start, end);
                 var reader = cmd.ExecuteReader();
-                var rowList = new List<TagRecord>();
+                var rowList = new List<TagObject>();
                 while (reader.Read())
                 {
-                    var row = TagRecord.Read(reader);
+                    var row = ReadRow(reader);
                     rowList.Add(row);
                 }
                 reader.Close();
@@ -113,7 +126,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             catch (Exception e)
             {
                 _logger.LogError(e, null);
-                return Array.Empty<TagRecord>();
+                return Array.Empty<TagObject>();
             }
         }
 
@@ -134,13 +147,13 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>True if the table exsists or was created.</returns>
         public static bool CreateTableIfNotExists(NpgsqlConnection connection, string tableName)
         {
-            connection.CreateTable(tableName, TagRecord.SqlColumns.Select(x => $" {x.Item1} {x.Item2}").ToArray());
+            connection.CreateTable(tableName, SqlColumns.Select(x => $" {x.Item1} {x.Item2}").ToArray());
             connection.CreateIndex(tableName, "type");
             connection.CreateIndex(tableName, "key");
             return true;
         }
 
-        public static int BulkInsert(NpgsqlConnection connection, string tableName, IEnumerable<TagRecord> records)
+        public static int BulkInsert(NpgsqlConnection connection, string tableName, IEnumerable<TagObject> records)
         {
 
             string Truncate(string input, int maxsize) => input.Substring(0, System.Math.Min(input.Length, maxsize));
@@ -151,9 +164,9 @@ namespace Ethanol.ContextBuilder.Enrichers
                 {
                     recordCount++;
                     writer.StartRow();
-                    writer.Write(Truncate(record.Type,TagRecord.TypeLength), NpgsqlTypes.NpgsqlDbType.Text);
-                    writer.Write(Truncate(record.Key, TagRecord.KeyLength), NpgsqlTypes.NpgsqlDbType.Text);
-                    writer.Write(Truncate(record.Value, TagRecord.ValueLength), NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write(Truncate(record.Type, ColumnTypeLength), NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlTypes.NpgsqlDbType.Text);
+                    writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlTypes.NpgsqlDbType.Text);
                     writer.Write(record.Reliability, NpgsqlTypes.NpgsqlDbType.Real);
                     writer.Write(new NpgsqlTypes.NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlTypes.NpgsqlDbType.TimestampRange);
                     writer.Write(record.Details, NpgsqlTypes.NpgsqlDbType.Json);
@@ -162,6 +175,43 @@ namespace Ethanol.ContextBuilder.Enrichers
                 writer.Complete();
             }
             return recordCount;
+        }
+
+        /// <summary>
+        /// Represents the SQL columns and their types for the TagRecord.
+        /// </summary>
+        static (string, string)[] SqlColumns =>
+            new (string, string)[]
+            {
+            ("type", $"VARCHAR({ColumnTypeLength}) NOT NULL"),
+            ("key", $"VARCHAR({ColumnKeyLength}) NOT NULL"),
+            ("value", $"VARCHAR({ColumnValueLength})"),
+            ("reliability", "REAL"),
+            ("validity", "TSRANGE"),
+            ("details", "JSON")
+            };
+        static int ColumnTypeLength = 32;
+        static int ColumnKeyLength = 64;
+        static int ColumnValueLength = 128;
+
+        /// <summary>
+        /// Reads a TagRecord from the provided NpgsqlDataReader.
+        /// </summary>
+        /// <param name="reader">The NpgsqlDataReader containing the tag data.</param>
+        /// <returns>The TagRecord extracted from the reader.</returns>
+        static TagObject ReadRow(NpgsqlDataReader reader)
+        {
+            var validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity");
+            return new TagObject
+            {
+                Type = reader.GetString("type"),
+                Key = reader.GetString("key"),
+                Value = reader.GetString("value"),
+                Reliability = reader.GetFloat("reliability"),
+                StartTime = validity.LowerBound,
+                EndTime = validity.UpperBound,
+                Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
+            };
         }
     }
 }

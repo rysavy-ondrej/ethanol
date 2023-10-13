@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Ethanol.ContextBuilder.Enrichers
+namespace Ethanol.ContextBuilder.Helpers
 {
     /// <summary>
     /// A static class with methods for safely converting objects to various data types, returning a bool indicating whether the conversion was successful, and an output parameter containing the converted value on success.

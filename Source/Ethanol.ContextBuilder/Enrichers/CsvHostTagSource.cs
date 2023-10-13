@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using CsvHelper.Configuration.Attributes;
+using Ethanol.ContextBuilder.Context;
 using Microsoft.Extensions.Logging;
 using static Ethanol.ContextBuilder.Enrichers.CsvNetifySource;
 
@@ -23,7 +24,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             [Index(7)] string Data
         );
 
-        public static IEnumerable<TagRecord> LoadFromFile(string filename)
+        public static IEnumerable<TagObject> LoadFromFile(string filename)
         {
             using var reader = new StreamReader(File.OpenRead(filename));
             var rows = ParseCsv(reader).Select(row => ConvertToTag(row));
@@ -33,9 +34,9 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
 
-        private static TagRecord ConvertToTag(CsvHostTagRecord row)
+        private static TagObject ConvertToTag(CsvHostTagRecord row)
         {
-            var record = new TagRecord
+            var record = new TagObject
             {
                 Key = row.KeyValue?.Trim('"') ?? String.Empty,
                 Type = row.Source,

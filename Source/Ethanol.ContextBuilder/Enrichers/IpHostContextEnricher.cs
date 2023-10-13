@@ -13,23 +13,23 @@ using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    public class IpRichHostContext : IpHostContext<TagRecord[]> { }
+    public class RawHostContext : IpHostContext<TagObject[]> { }
     /// <summary>
-    /// Implements a transformer that enrich <see cref="IpHostContext"/> and produces <see cref="IpRichHostContext"/>.
+    /// Implements a transformer that enrich <see cref="IpHostContext"/> and produces <see cref="RawHostContext"/>.
     /// </summary>
-    public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpRichHostContext>>, IPipelineNode
+    public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
     { 
-        private readonly Subject<ObservableEvent<IpRichHostContext>> _subject;
-        private readonly ITagDataProvider<TagRecord> _tagQueryable;
+        private readonly Subject<ObservableEvent<RawHostContext>> _subject;
+        private readonly ITagDataProvider<TagObject> _tagQueryable;
 
         /// <summary>
         /// Creates an instance of the context enricher where the additional data sources are <paramref name="hostTagQueryable"/> and <paramref name="flowTagQueryable"/>.
         /// </summary>
         /// <param name="hostTagQueryable">The queryable for the enviroment.</param>
         /// <param name="flowTagQueryable">The queryable for the state.</param>
-        public IpHostContextEnricher(ITagDataProvider<TagRecord> tagQueryable)
+        public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable)
         {
-            _subject = new Subject<ObservableEvent<IpRichHostContext>>();
+            _subject = new Subject<ObservableEvent<RawHostContext>>();
             _tagQueryable = tagQueryable;
         }
 
@@ -49,10 +49,10 @@ namespace Ethanol.ContextBuilder.Enrichers
         public void OnNext(ObservableEvent<IpHostContext> value)
         {
             var tags = GetTags(value);
-            _subject.OnNext(new ObservableEvent<IpRichHostContext>(new IpRichHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() },  value.StartTime, value.EndTime));
+            _subject.OnNext(new ObservableEvent<RawHostContext>(new RawHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() },  value.StartTime, value.EndTime));
         }
 
-        private IEnumerable<TagRecord> GetTags(ObservableEvent<IpHostContext> value)
+        private IEnumerable<TagObject> GetTags(ObservableEvent<IpHostContext> value)
         {
             var host = value.Payload.HostAddress;
             var start = value.StartTime;
@@ -63,12 +63,12 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
                 return  GetLocalTags(host, start, end).Concat(GetRemoteTags(remoteHosts, start, end)).Concat(GetFlowTags(flows, start, end));
             }
-            return Array.Empty<TagRecord>();
+            return Array.Empty<TagObject>();
         }
 
-        private IEnumerable<TagRecord> GetLocalTags(IPAddress host, DateTime start, DateTime end)
+        private IEnumerable<TagObject> GetLocalTags(IPAddress host, DateTime start, DateTime end)
         {
-            return _tagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<TagRecord>();
+            return _tagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<TagObject>();
         }
         /// <summary>
         /// This method takes an array of IpFlow objects and two DateTime values, and returns a dictionary
@@ -82,17 +82,17 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>A dictionary where the key is a string representation of a remote address (from the IpFlow array), and the
         /// value is an array of NetifyApplication objects that match the given remote address and time range.
         /// </returns>
-        private IEnumerable<TagRecord> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTime start, DateTime end)
+        private IEnumerable<TagObject> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTime start, DateTime end)
         {                
-            return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), start, end) ?? Enumerable.Empty<TagRecord>());
+            return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), start, end) ?? Enumerable.Empty<TagObject>());
         }
-        private IEnumerable<TagRecord> GetFlowTags(IEnumerable<IpFlow> flows, DateTime start, DateTime end)
+        private IEnumerable<TagObject> GetFlowTags(IEnumerable<IpFlow> flows, DateTime start, DateTime end)
         {
-            return flows.SelectMany(flow => _tagQueryable?.Get(flow.FlowKey.ToString(), start, end) ?? Enumerable.Empty<TagRecord>());
+            return flows.SelectMany(flow => _tagQueryable?.Get(flow.FlowKey.ToString(), start, end) ?? Enumerable.Empty<TagObject>());
         }
 
         /// <inheritdoc/>
-        public IDisposable Subscribe(IObserver<ObservableEvent<IpRichHostContext>> observer)
+        public IDisposable Subscribe(IObserver<ObservableEvent<RawHostContext>> observer)
         {
             return _subject.Subscribe(observer);
         }

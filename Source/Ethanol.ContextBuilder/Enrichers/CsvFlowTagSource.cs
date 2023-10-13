@@ -4,6 +4,7 @@ using System.IO;
 using CsvHelper.Configuration;
 using CsvHelper;
 using Microsoft.Extensions.Logging;
+using Ethanol.ContextBuilder.Context;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -11,7 +12,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     {
         static ILogger _logger = LogManager.GetCurrentClassLogger();
 
-        public static IEnumerable<TagRecord> LoadFromFile(string filename)
+        public static IEnumerable<TagObject> LoadFromFile(string filename)
         {
             var reader = new StreamReader(filename);
             var config = new CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture) { Delimiter = ",", BadDataFound = null, MissingFieldFound = null };
@@ -23,9 +24,9 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
 
-        private static TagRecord ConvertToTag(FlowTag row)
+        private static TagObject ConvertToTag(FlowTag row)
         {
-            var record = new TagRecord
+            var record = new TagObject
             {
                 Key = $"Tcp@{row.LocalAddress}:{row.LocalPort}-{row.RemoteAddress}:{row.RemotePort}",
                 Type = nameof(FlowTag),

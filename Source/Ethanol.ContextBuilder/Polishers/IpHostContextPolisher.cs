@@ -15,18 +15,18 @@ namespace Ethanol.ContextBuilder.Polishers
     /// Transforms a rich IP host context into a simplified IP host context.
     /// </summary>
     /// <remarks>
-    /// The <see cref="IpHostContextPolisher"/> class is designed to take in an IP host context with abundant details (represented by <see cref="IpRichHostContext"/>) 
+    /// The <see cref="IpHostContextPolisher"/> class is designed to take in an IP host context with abundant details (represented by <see cref="RawHostContext"/>) 
     /// and transform it into a more streamlined or simplified format, represented by <see cref="IpTargetHostContext"/>.
     /// 
     /// This transformation can be essential for scenarios where only specific details of the IP host are required, 
     /// thus reducing overhead and optimizing performance or readability.
     /// 
     /// The class implements the <see cref="IObservableTransformer{TInput,TOutput}"/> interface, indicating its ability to observe
-    /// events of type <see cref="IpRichHostContext"/> and produce transformed events of type <see cref="IpTargetHostContext"/>.
+    /// events of type <see cref="RawHostContext"/> and produce transformed events of type <see cref="IpTargetHostContext"/>.
     /// Additionally, by implementing the <see cref="IPipelineNode"/> interface, it suggests that this class plays a role in a processing pipeline, 
     /// as a node that performs specific transformations.
     /// </remarks>
-    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpRichHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
+    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<RawHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
     {
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
@@ -66,7 +66,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// Performs transformation on the new input in the form of an observable event containing a rich IP host context.
         /// </summary>
         /// <param name="value">The input observable event containing a rich IP host context.</param>
-        public void OnNext(ObservableEvent<IpRichHostContext> value)
+        public void OnNext(ObservableEvent<RawHostContext> value)
         {
             var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
                 .Select(x=>new ResolvedDomainInfo(x.DestinationAddress.ToString(), x.QuestionName, x.ResponseData, x.ResponseCode))
@@ -74,7 +74,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
             var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
 
-            var processResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(FlowTag)).Select<TagRecord,FlowTag>(x=>x.GetDetailsAs<FlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+            var processResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(FlowTag)).Select<TagObject,FlowTag>(x=>x.GetDetailsAs<FlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
             string ResolveDomain(IPAddress x)
             {

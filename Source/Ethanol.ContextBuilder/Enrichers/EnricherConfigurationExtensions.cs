@@ -1,11 +1,12 @@
 ﻿using System;
+using Ethanol.ContextBuilder.Context;
 using static Ethanol.ContextBuilder.Enrichers.IpHostContextEnricherPlugin;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    public static class DataSourceEnricherConfigurationExtensions
+    public static class EnricherConfigurationExtensions
     {
-        public static ITagDataProvider<TagRecord> GetTagProvider(this DataSourceEnricherConfiguration config)
+        public static ITagDataProvider<TagObject> GetTagProvider(this EnricherConfiguration config)
         {
             if (config?.Postgres != null)
             {

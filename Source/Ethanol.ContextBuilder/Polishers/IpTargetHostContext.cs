@@ -1,5 +1,4 @@
 ﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers;
 using System.Net;
 
 namespace Ethanol.ContextBuilder.Polishers
@@ -80,7 +79,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// An array of other attributes associated with the context.
         /// </summary>
-        TagRecord[] Tags,
+        TagObject[] Tags,
 
         /// <summary>
         /// An array of IP connection information for connections initiated by the host.

@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Polishers;
@@ -6,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
 using System;
-using static Ethanol.ContextBuilder.Enrichers.IpHostContextEnricherPlugin;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -113,7 +113,7 @@ namespace Ethanol.ContextBuilder.Writers
         /// <param name="configuration">Configuration settings for the writer.</param>
         /// <returns>Returns an instance of <see cref="PostgresTargetHostContextWriter"/>.</returns>
         [PluginCreate]
-        public static PostgresTargetHostContextWriter Create(PostgresCofiguration configuration)
+        public static PostgresTargetHostContextWriter Create(EnricherConfiguration.PostgresConfiguration configuration)
         {
             var connection = new NpgsqlConnection(configuration.ToPostgresConnectionString());
             return new PostgresTargetHostContextWriter(connection, configuration.TableName);

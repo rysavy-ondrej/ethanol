@@ -28,7 +28,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         public TimeSpan EnricherDelay { get; set; } = TimeSpan.Zero;
 
         [YamlMember(Alias = "tag-enricher", Description = "The configuration for the uniform context enricher.")]
-        public IpHostContextEnricherPlugin.DataSourceEnricherConfiguration TagEnricherConfiguration { get; set; }        
+        public EnricherConfiguration TagEnricherConfiguration { get; set; }        
     }
 
 

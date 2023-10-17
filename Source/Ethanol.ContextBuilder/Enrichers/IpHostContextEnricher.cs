@@ -1,21 +1,17 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
-using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
-using YamlDotNet.Core.Tokens;
-using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
-    public class RawHostContext : IpHostContext<TagObject[]> { }
     /// <summary>
-    /// Implements a transformer that enrich <see cref="IpHostContext"/> and produces <see cref="RawHostContext"/>.
+    /// Enriches the context of IP hosts by applying additional data from provided data sources.
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
     { 
@@ -23,35 +19,46 @@ namespace Ethanol.ContextBuilder.Enrichers
         private readonly ITagDataProvider<TagObject> _tagQueryable;
 
         /// <summary>
-        /// Creates an instance of the context enricher where the additional data sources are <paramref name="hostTagQueryable"/> and <paramref name="flowTagQueryable"/>.
+        /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
         /// </summary>
-        /// <param name="hostTagQueryable">The queryable for the enviroment.</param>
-        /// <param name="flowTagQueryable">The queryable for the state.</param>
+        /// <param name="tagQueryable">Provides querying capabilities for tags.</param>
         public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable)
         {
             _subject = new Subject<ObservableEvent<RawHostContext>>();
             _tagQueryable = tagQueryable;
         }
 
+        /// <summary>
+        /// Gets the type of the pipeline node, which in this case is Transformer.
+        /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Signals that the enrichment process has completed.
+        /// </summary>
         public void OnCompleted()
         {
             _subject.OnCompleted();
         }
-        /// <inheritdoc/>
+        /// <summary>
+        /// Notifies observers that an exception has occurred.
+        /// </summary>
         public void OnError(Exception error)
         {
             _subject.OnError(error);
         }
-        /// <inheritdoc/>
+        /// <summary>
+        /// Enriches the provided <see cref="IpHostContext"/> and notifies observers of the enriched context.
+        /// </summary>
         public void OnNext(ObservableEvent<IpHostContext> value)
         {
             var tags = GetTags(value);
             _subject.OnNext(new ObservableEvent<RawHostContext>(new RawHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() },  value.StartTime, value.EndTime));
         }
 
+        /// <summary>
+        /// Retrieves the tags associated with the provided <see cref="IpHostContext"/>.
+        /// </summary>
         private IEnumerable<TagObject> GetTags(ObservableEvent<IpHostContext> value)
         {
             var host = value.Payload.HostAddress;
@@ -65,17 +72,23 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
             return Array.Empty<TagObject>();
         }
-
+        /// <summary>
+        /// Gets tags associated with the local host for a specified time range.
+        /// </summary>
         private IEnumerable<TagObject> GetLocalTags(IPAddress host, DateTime start, DateTime end)
         {
             return _tagQueryable?.Get(host.ToString(), start, end) ?? Enumerable.Empty<TagObject>();
         }
+
         /// <summary>
+        /// Retrieves tags associated with remote hosts for a specified time range.
+        /// </summary>
+        /// <remarks>
         /// This method takes an array of IpFlow objects and two DateTime values, and returns a dictionary
         /// where the key is a string representation of a remote address (from the IpFlow array), and the
         /// value is an array of NetifyApplication objects that match the given remote address and time range.
         /// If there are no matching NetifyApplication objects, an empty array is returned.
-        /// </summary>
+        /// </remarks>
         /// <param name="flows">The array of IpFlow objects.</param>
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
@@ -86,12 +99,20 @@ namespace Ethanol.ContextBuilder.Enrichers
         {                
             return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), start, end) ?? Enumerable.Empty<TagObject>());
         }
+
+        /// <summary>
+        /// Gets tags associated with specific IP flows for a given time range.
+        /// </summary>
         private IEnumerable<TagObject> GetFlowTags(IEnumerable<IpFlow> flows, DateTime start, DateTime end)
         {
             return flows.SelectMany(flow => _tagQueryable?.Get(flow.FlowKey.ToString(), start, end) ?? Enumerable.Empty<TagObject>());
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Subscribes an observer to the enriched context.
+        /// </summary>
+        /// <param name="observer">The observer that will receive notifications.</param>
+        /// <returns>Disposable object representing the subscription.</returns>
         public IDisposable Subscribe(IObserver<ObservableEvent<RawHostContext>> observer)
         {
             return _subject.Subscribe(observer);

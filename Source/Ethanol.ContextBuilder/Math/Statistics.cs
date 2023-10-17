@@ -39,35 +39,4 @@ namespace Ethanol.ContextBuilder.Math
             return parts.Select(ComputeEntropy).ToArray();
         }
     }
-
-    public static class RandomStringDetector
-    {
-        // Define a threshold value for entropy (bits per character)
-        private const double EntropyThreshold = 17.0;
-
-        // Define a function to compute the entropy of a string
-        public static double ComputeEntropy(string s)
-        {
-            // Compute the frequency of each character in the string
-            var charFreqs = s.GroupBy(c => c)
-                             .Select(g => (Char: g.Key, Freq: (double)g.Count() / s.Length))
-                             .ToList();
-
-            // Compute the Shannon entropy of the frequency distribution
-            var entropy = -charFreqs.Sum(cf => cf.Freq * System.Math.Log(cf.Freq, 2));
-
-            // Compute the entropy per character
-            var entropyPerChar = entropy / System.Math.Log(2, s.Length);
-
-            return entropyPerChar;
-        }
-
-        // Define a function to detect random strings
-        public static bool IsRandomString(string s)
-        {
-            var entropy = ComputeEntropy(s);
-
-            return entropy > EntropyThreshold;
-        }
-    }
 }

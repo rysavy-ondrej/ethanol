@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Ethanol.ContextBuilder.Enrichers
+namespace Ethanol.ContextBuilder.Enrichers.TagProviders
 {
     /// <summary>
     /// Defines a provider for retrieving <see cref="TagDataType"/> based on specified criteria.

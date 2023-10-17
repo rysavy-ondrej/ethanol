@@ -2,12 +2,6 @@
 
 namespace Ethanol.ContextBuilder.Context
 {
-    public enum FlowType
-    {
-        RequestFlow,
-        ResponseFlow,
-        BidirectionFlow,
-    }
     /// <summary>
     /// Represents a detailed Internet Protocol (IP) flow data structure that extends the basic <see cref="InternetFlow"/>.
     /// </summary>

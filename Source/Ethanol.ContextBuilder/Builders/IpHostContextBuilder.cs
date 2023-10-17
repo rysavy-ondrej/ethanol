@@ -38,16 +38,30 @@ namespace Ethanol.ContextBuilder.Builders
     [Plugin(PluginCategory.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
     public class IpHostContextBuilder : IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>>, IPipelineNode
     {
+        /// <summary>
+        /// Gets the size of the window for aggregating IP flows.
+        /// </summary>
         public TimeSpan WindowSize { get; }
+        /// <summary>
+        /// Gets the time interval to move the window forward in the IP flow stream.
+        /// </summary>
         public TimeSpan WindowHop { get; }
+        /// <summary>
+        /// Gets the type of node this instance represents in a data processing pipeline.
+        /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
+        /// <summary>
+        /// Gets the entity to which this instance is subscribed.
+        /// </summary>
         public object SubscribedTo { get; private set; }
 
         private Subject<IpFlow> _ingressObservable;
 
         private Subject<ObservableEvent<IpHostContext>> _egressObservable;
 
+        /// <summary>
+        /// Represents the configuration options for the IpHostContextBuilder, including window size and hop duration.
+        /// </summary>
         public class Configuration
         {
             [YamlMember(Alias = "window", Description = "The time span of window.")]
@@ -57,6 +71,11 @@ namespace Ethanol.ContextBuilder.Builders
             public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IpHostContextBuilder"/> class, specifying the window size and hop duration.
+        /// </summary>
+        /// <param name="windowSize">The size of the time window for aggregation.</param>
+        /// <param name="windowHop">The interval for moving the time window forward.</param>
         public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop)
         {
             WindowSize = windowSize;
@@ -101,6 +120,11 @@ namespace Ethanol.ContextBuilder.Builders
             );
         }
 
+        /// <summary>
+        /// Creates an instance of the <see cref="IpHostContextBuilder"/> based on the provided configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration options for the builder.</param>
+        /// <returns>A new instance of the <see cref="IpHostContextBuilder"/>.</returns>
         [PluginCreate]
         internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
         {
@@ -117,7 +141,7 @@ namespace Ethanol.ContextBuilder.Builders
             var flowStream = source.Select(x => 
                 new ObservableEvent<IpFlow>(x, x.TimeStart, x.TimeStart + x.TimeDuration));
 
-            var windows = flowStream.WindowHop(WindowSize);
+            var windows = flowStream.HoppingWindow(WindowSize);
             return windows.Select(window =>
             {
                 var fhost = window.Payload.SelectMany(flow => 
@@ -133,21 +157,37 @@ namespace Ethanol.ContextBuilder.Builders
             });
         }
 
+        /// <summary>
+        /// Invoked when the observable source has completed producing data.
+        /// </summary>
         public void OnCompleted()
         {
             _ingressObservable.OnCompleted();
         }
 
+        /// <summary>
+        /// Invoked when an error has occurred within the observable source.
+        /// </summary>
+        /// <param name="error">The exception that caused the error.</param>
         public void OnError(Exception error)
         {
             _ingressObservable.OnError(error);
         }
 
+        /// <summary>
+        /// Invoked when the observable source produces a new data item.
+        /// </summary>
+        /// <param name="value">The new data item.</param>
         public void OnNext(IpFlow value)
         {
             _ingressObservable.OnNext(value);
         }
 
+        /// <summary>
+        /// Subscribes an observer to the egress observable of the builder to receive aggregated IP host contexts.
+        /// </summary>
+        /// <param name="observer">The observer to subscribe.</param>
+        /// <returns>A disposable object representing the subscription.</returns>
         public IDisposable Subscribe(IObserver<ObservableEvent<IpHostContext>> observer)
         {
             return _egressObservable.Subscribe(observer);

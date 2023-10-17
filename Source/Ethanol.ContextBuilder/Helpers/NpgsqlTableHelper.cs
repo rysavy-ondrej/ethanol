@@ -5,7 +5,7 @@ namespace Ethanol.ContextBuilder.Helpers
     /// <summary>
     /// Provides utility methods for performing operations on PostgreSQL tables using the Npgsql database connector.
     /// </summary>
-    public static class NpgsqlTableHelper
+    internal static class NpgsqlTableHelper
     {
         /// <summary>
         /// Checks if a specified table exists within the connected PostgreSQL database.

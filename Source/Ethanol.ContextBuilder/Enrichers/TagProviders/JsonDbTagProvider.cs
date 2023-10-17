@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Ethanol.ContextBuilder.Enrichers
+namespace Ethanol.ContextBuilder.Enrichers.TagProviders
 {
     /// <summary>
     /// Provides tag data retrieval capabilities from a JSON-based database.
@@ -65,7 +65,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <returns>A new instance of the <see cref="JsonDbTagProvider"/>.</returns>
         internal static ITagDataProvider<TagObject> Create(EnricherConfiguration.JsonConfiguration json)
         {
-            return JsonDbTagProvider.LoadFromJson(json.Filename, json.Collection);
+            return LoadFromJson(json.Filename, json.Collection);
         }
 
         /// <summary>

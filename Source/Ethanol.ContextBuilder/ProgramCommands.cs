@@ -1,6 +1,9 @@
 ﻿using Ethanol.ContextBuilder.Builders;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Enrichers.TagObjects;
+using Ethanol.ContextBuilder.Enrichers.TagProviders;
+using Ethanol.ContextBuilder.Enrichers.TagSources;
 using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins;
@@ -140,24 +143,24 @@ namespace Ethanol.ContextBuilder
                 logger.LogInformation($"{removedRows} rows deleted.");
                 logger.LogInformation($"Tag table: {tableName}");
                 logger.LogInformation($"Loading applications from '{appsFile}'...");
-                var applications = CsvNetifySource.LoadApplicationsFromFile(appsFile);
+                var applications = CsvNetifyTagSource.LoadApplicationsFromFile(appsFile);
                 logger.LogInformation($"Loaded {applications.Count} applications.");
 
                 logger.LogInformation($"Loading ips from '{ipsFile}'...");
-                var addresses = CsvNetifySource.LoadAddressesFromFile(ipsFile);
+                var addresses = CsvNetifyTagSource.LoadAddressesFromFile(ipsFile);
                 var addressTags = ConvertToTag(applications, addresses);
                 var addressesInserted = PostgresTagProvider.BulkInsert(conn, tableName, addressTags);
                 logger.LogInformation($"Inserted {addressesInserted} addresses.");
 
                 logger.LogInformation($"Loading domains from '{domainsFile}'...");
-                var domains = CsvNetifySource.LoadDomainsFromFile(domainsFile);
+                var domains = CsvNetifyTagSource.LoadDomainsFromFile(domainsFile);
                 var domainTags = ConvertToTag(applications, domains);
                 var domainsInserted = PostgresTagProvider.BulkInsert(conn, tableName, domainTags);
                 logger.LogInformation($"Inserted {domainsInserted} domains.");
             }
         }
 
-        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyIpsRecord> addresses)
+        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifyTagSource.NetifyAppRecord> applications, IEnumerable<CsvNetifyTagSource.NetifyIpsRecord> addresses)
         {
             return addresses.Select(item =>
             {
@@ -171,11 +174,11 @@ namespace Ethanol.ContextBuilder
                     StartTime = DateTime.MinValue, 
                     EndTime = DateTime.MaxValue  
                 };
-                record.Details = CsvNetifySource.ConvertToTag(app);
+                record.Details = CsvNetifyTagSource.ConvertToTag(app);
                 return record;
             });
         }
-        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifySource.NetifyAppRecord> applications, IEnumerable<CsvNetifySource.NetifyDomainRecord> domains)
+        private static IEnumerable<TagObject> ConvertToTag(IDictionary<int, CsvNetifyTagSource.NetifyAppRecord> applications, IEnumerable<CsvNetifyTagSource.NetifyDomainRecord> domains)
         {
             return domains.Select(item =>
             {
@@ -189,7 +192,7 @@ namespace Ethanol.ContextBuilder
                     StartTime = DateTime.MinValue,
                     EndTime = DateTime.MaxValue
                 };
-                record.Details = CsvNetifySource.ConvertToTag(app);
+                record.Details = CsvNetifyTagSource.ConvertToTag(app);
                 return record;
             });
         }

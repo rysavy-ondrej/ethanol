@@ -1,4 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Helpers;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -12,7 +13,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Ethanol.ContextBuilder.Enrichers
+namespace Ethanol.ContextBuilder.Enrichers.TagProviders
 {
     /// <summary>
     /// Provides a concrete implementation of <see cref="ITagDataProvider{T}"/> for PostgreSQL databases.
@@ -41,7 +42,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             {
                 var connection = new NpgsqlConnection(connectionString);
                 connection.Open();
-                if (connection.State != System.Data.ConnectionState.Open)
+                if (connection.State != ConnectionState.Open)
                 {
                     throw new InvalidOperationException($"Cannot open connection to the database: connectionString={connectionString}.");
                 }
@@ -130,6 +131,20 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
         }
 
+        /// <summary>
+        /// Prepares a NpgsqlCommand for retrieving data based on the provided tag key and time range.
+        /// </summary>
+        /// <param name="tagKey">The key associated with the tag for which data is to be retrieved.</param>
+        /// <param name="start">The start time of the desired data retrieval range.</param>
+        /// <param name="end">The end time of the desired data retrieval range.</param>
+        /// <returns>A NpgsqlCommand object with the appropriate SQL query set as its CommandText property.</returns>
+        /// <remarks>
+        /// The generated SQL query will fetch all records from a specified table where the key matches the provided tagKey and
+        /// the validity period overlaps with the provided time range. The validity period is represented using PostgreSQL's range type.
+        /// <para/>
+        /// Example SQL format: 
+        /// SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)'
+        /// </remarks>
         private NpgsqlCommand PrepareCommand(string tagKey, DateTime start, DateTime end)
         {
             var startString = start.ToString("o", CultureInfo.InvariantCulture);
@@ -141,7 +156,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
 
         /// <summary>
-        /// Creates a new table for storing <see cref="FlowTag"/> records in the database if it does not alrady exist.
+        /// Creates a new table for storing <see cref="TcpFlowTag"/> records in the database if it does not alrady exist.
         /// </summary>
         /// <param name="tableName">The name of the table to create.</param>
         /// <returns>True if the table exsists or was created.</returns>
@@ -153,6 +168,17 @@ namespace Ethanol.ContextBuilder.Enrichers
             return true;
         }
 
+        /// <summary>
+        /// Inserts a bulk of TagObject records into a PostgreSQL database table using binary import.
+        /// </summary>
+        /// <param name="connection">The active NpgsqlConnection to the PostgreSQL database.</param>
+        /// <param name="tableName">The name of the table to which the records should be inserted.</param>
+        /// <param name="records">An enumerable of TagObject records to be inserted.</param>
+        /// <returns>The number of records inserted.</returns>
+        /// <remarks>
+        /// This method uses the Npgsql binary import functionality to optimize the insertion of large volumes of data.
+        /// Each record field is truncated as needed to fit the database table's column constraints.
+        /// </remarks>
         public static int BulkInsert(NpgsqlConnection connection, string tableName, IEnumerable<TagObject> records)
         {
 
@@ -164,12 +190,12 @@ namespace Ethanol.ContextBuilder.Enrichers
                 {
                     recordCount++;
                     writer.StartRow();
-                    writer.Write(Truncate(record.Type, ColumnTypeLength), NpgsqlTypes.NpgsqlDbType.Text);
-                    writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlTypes.NpgsqlDbType.Text);
-                    writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlTypes.NpgsqlDbType.Text);
-                    writer.Write(record.Reliability, NpgsqlTypes.NpgsqlDbType.Real);
-                    writer.Write(new NpgsqlTypes.NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlTypes.NpgsqlDbType.TimestampRange);
-                    writer.Write(record.Details, NpgsqlTypes.NpgsqlDbType.Json);
+                    writer.Write(Truncate(record.Type, ColumnTypeLength), NpgsqlDbType.Text);
+                    writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlDbType.Text);
+                    writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
+                    writer.Write(record.Reliability, NpgsqlDbType.Real);
+                    writer.Write(new NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlDbType.TimestampRange);
+                    writer.Write(record.Details, NpgsqlDbType.Json);
                 }
 
                 writer.Complete();

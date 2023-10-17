@@ -1,5 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using System;
@@ -74,7 +74,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
             var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
 
-            var processResolver = new Resolver<string, FlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(FlowTag)).Select<TagObject,FlowTag>(x=>x.GetDetailsAs<FlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+            var processResolver = new Resolver<string, TcpFlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject,TcpFlowTag>(x=>x.GetDetailsAs<TcpFlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
             string ResolveDomain(IPAddress x)
             {

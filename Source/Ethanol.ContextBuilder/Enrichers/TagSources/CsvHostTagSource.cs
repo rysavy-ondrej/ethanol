@@ -1,18 +1,23 @@
-﻿using System;
+﻿using CsvHelper.Configuration.Attributes;
+using Ethanol.ContextBuilder.Context;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using CsvHelper.Configuration.Attributes;
-using Ethanol.ContextBuilder.Context;
-using Microsoft.Extensions.Logging;
-using static Ethanol.ContextBuilder.Enrichers.CsvNetifySource;
 
-namespace Ethanol.ContextBuilder.Enrichers
+namespace Ethanol.ContextBuilder.Enrichers.TagSources
 {
+    /// <summary>
+    /// Provides functionality to load host tags from a CSV file.
+    /// </summary>
     class CsvHostTagSource
     {
         static ILogger _logger = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// Represents a single record in the host tags CSV file.
+        /// </summary>
         internal record CsvHostTagRecord(
             [Index(0)] string KeyType,
             [Index(1)] string KeyValue,
@@ -24,23 +29,33 @@ namespace Ethanol.ContextBuilder.Enrichers
             [Index(7)] string Data
         );
 
+        /// <summary>
+        /// Loads host tags from the specified CSV file.
+        /// </summary>
+        /// <param name="filename">The name of the CSV file containing host tags.</param>
+        /// <returns>An enumerable of <see cref="TagObject"/> instances representing the host tags loaded from the file.</returns>
         public static IEnumerable<TagObject> LoadFromFile(string filename)
         {
             using var reader = new StreamReader(File.OpenRead(filename));
             var rows = ParseCsv(reader).Select(row => ConvertToTag(row));
-            foreach(var row in rows)
+            foreach (var row in rows)
             {
                 yield return row;
             }
         }
 
+        /// <summary>
+        /// Converts a <see cref="CsvHostTagRecord"/> instance to a <see cref="TagObject"/> instance.
+        /// </summary>
+        /// <param name="row">The <see cref="CsvHostTagRecord"/> instance to convert.</param>
+        /// <returns>A <see cref="TagObject"/> representation of the provided host tag.</returns>
         private static TagObject ConvertToTag(CsvHostTagRecord row)
         {
             var record = new TagObject
             {
-                Key = row.KeyValue?.Trim('"') ?? String.Empty,
+                Key = row.KeyValue?.Trim('"') ?? string.Empty,
                 Type = row.Source,
-                StartTime = row.StartTime, 
+                StartTime = row.StartTime,
                 EndTime = row.EndTime,
                 Reliability = row.Reliability,
                 Value = row.Data
@@ -50,11 +65,11 @@ namespace Ethanol.ContextBuilder.Enrichers
         }
 
         /// <summary>
-        /// Parses the input data using custom CSV parser. The custom parser is needed as source CSV is not properly quoted.
+        /// Parses the input data using a custom CSV parser. The custom parser is utilized because the source CSV might not be properly quoted.
         /// </summary>
-        /// <param name="reader">The source reader.</param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="reader">The source reader providing the CSV content.</param>
+        /// <returns>An enumerable of <see cref="CsvHostTagRecord"/> instances parsed from the reader.</returns>
+        /// <exception cref="Exception">Thrown when the parsing encounters unexpected errors.</exception>
         static IEnumerable<CsvHostTagRecord> ParseCsv(TextReader reader)
         {
             string line;
@@ -66,7 +81,7 @@ namespace Ethanol.ContextBuilder.Enrichers
                 if (parts.Length != 8)
                 {
                     _logger.LogWarning($"Invalid line: {line}");
-                   continue;
+                    continue;
                 }
 
                 var record = new CsvHostTagRecord(

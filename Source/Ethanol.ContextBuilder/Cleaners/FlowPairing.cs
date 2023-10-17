@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using System;
@@ -10,16 +9,28 @@ using System.Reactive.Subjects;
 namespace Ethanol.ContextBuilder.Cleaners
 {
     /// <summary>
-    /// Pair single flows to biflows. 
-    /// <para/> 
-    /// Use the timeout option to control how long to wait to reverse flow before the single flow is published.
+    /// Represents a mechanism for pairing individual IP flows into bidirectional flows.
+    /// This class identifies matching request and response flows based on their flow keys and
+    /// pairs them together, producing a unified bidirectional flow.
     /// </summary>
+    /// <remarks>
+    /// Individual IP flows that come into the system may represent either a request or a response.
+    /// The FlowPairing class attempts to find the matching counterpart for each flow and 
+    /// pairs them together. If a matching flow is not found within a specified timeout,
+    /// the single flow is emitted as-is.
+    /// </remarks>
     public class FlowPairing : IObservableTransformer<IpFlow, IpFlow>, IPipelineNode
     {
         private readonly Subject<IpFlow> _flowSubject;
         private readonly TimeSpan _flowTimeout;
         private readonly Cache<FlowKey, IpFlow> _flowDictionary;
         DateTime _currentTime = DateTime.MinValue;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FlowPairing"/> class, specifying the timeout
+        /// for how long to wait for a matching flow.
+        /// </summary>
+        /// <param name="flowTimeout">The timeout duration for pairing.</param>
 
         public FlowPairing(TimeSpan flowTimeout)
         {
@@ -28,8 +39,14 @@ namespace Ethanol.ContextBuilder.Cleaners
             _flowDictionary = new Cache<FlowKey, IpFlow>();
         }
 
+        /// <summary>
+        /// Gets the node type of this transformer within the pipeline.
+        /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
+        /// <summary>
+        /// Publishes the remaining single flows upon completion of the input stream.
+        /// </summary>
         public void OnCompleted()
         {
             foreach (var flow in _flowDictionary.CleanupExpiredItems(DateTime.MaxValue))
@@ -39,12 +56,20 @@ namespace Ethanol.ContextBuilder.Cleaners
             _flowSubject.OnCompleted();
         }
 
+        /// <summary>
+        /// Propagates an error through the flow pairing observable.
+        /// </summary>
+        /// <param name="error">The exception to propagate.</param>
         public void OnError(Exception error)
         {
             _flowSubject.OnError(error);
         }
 
-
+        /// <summary>
+        /// Processes a new IP flow, attempting to pair it with a matching flow from the cache.
+        /// If no match is found within the specified timeout, the flow is emitted as-is.
+        /// </summary>
+        /// <param name="flow">The new IP flow to process.</param>
         public void OnNext(IpFlow flow)
         {
             var reverseFlow = _flowDictionary.GetAndRemove(flow.FlowKey.GetReverseFlowKey());
@@ -88,12 +113,17 @@ namespace Ethanol.ContextBuilder.Cleaners
             };
         }
 
+        /// <summary>
+        /// Subscribes an observer to the flow pairing observable, allowing it to receive paired bidirectional flows.
+        /// </summary>
+        /// <param name="observer">The observer to subscribe.</param>
+        /// <returns>A disposable object representing the subscription.</returns>
         public IDisposable Subscribe(IObserver<IpFlow> observer)
         {
             return _flowSubject.Subscribe(observer);
         }
 
-        public class Cache<TKey, TValue> where TValue : class
+        class Cache<TKey, TValue> where TValue : class
         {
             private readonly SortedDictionary<DateTime, List<TKey>> _timeline = new SortedDictionary<DateTime, List<TKey>>();
             private readonly IDictionary<TKey, CacheItem<TValue>> _cache = new Dictionary<TKey, CacheItem<TValue>>();
@@ -164,135 +194,6 @@ namespace Ethanol.ContextBuilder.Cleaners
                     ExpiresAt = expiresAt;
                 }
             }
-        }
-    }
-
-    public record FlowPair<TFlow>(TFlow ReqFlow, TFlow ResFlow) where TFlow : IpFlow;
-    static class FlowPairMapper
-    {
-        static IMapper _mapper = new MapperConfiguration(cfg =>
-        {
-            cfg.CreateMap<FlowPair<IpFlow>, IpFlow>()
-                .ForMember(d => d.FlowType, o => o.MapFrom(s => FlowType.BidirectionFlow))
-                .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.ReqFlow.SentOctets))
-                .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => s.ReqFlow.DestinationAddress))
-                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.ReqFlow.DestinationPort))
-                .ForMember(d => d.SentPackets, o => o.MapFrom(s => s.ReqFlow.SentPackets))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.ReqFlow.Protocol))
-                .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => s.ReqFlow.ApplicationTag))
-                .ForMember(d => d.SourceAddress, o => o.MapFrom(s => s.ReqFlow.SourceAddress))
-                .ForMember(d => d.SourcePort, o => o.MapFrom(s => s.ReqFlow.SourcePort))
-                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.ReqFlow.TimeStart))
-                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.ReqFlow.TimeDuration))
-                .ForMember(d => d.RecvPackets, o => o.MapFrom(s => s.ResFlow.SentPackets))
-                .ForMember(d => d.RecvOctets, o => o.MapFrom(s => s.ResFlow.SentOctets));
-
-            cfg.CreateMap<FlowPair<DnsFlow>, DnsFlow>()
-                .ForMember(d => d.FlowType, o => o.MapFrom(s => FlowType.BidirectionFlow))
-                .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.ReqFlow.SentOctets))
-                .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => s.ReqFlow.DestinationAddress))
-                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.ReqFlow.DestinationPort))
-                .ForMember(d => d.SentPackets, o => o.MapFrom(s => s.ReqFlow.SentPackets))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.ReqFlow.Protocol))
-                .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => s.ReqFlow.ApplicationTag))
-                .ForMember(d => d.SourceAddress, o => o.MapFrom(s => s.ReqFlow.SourceAddress))
-                .ForMember(d => d.SourcePort, o => o.MapFrom(s => s.ReqFlow.SourcePort))
-                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.ReqFlow.TimeStart))
-                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.ReqFlow.TimeDuration))
-                .ForMember(d => d.RecvPackets, o => o.MapFrom(s => s.ResFlow.SentPackets))
-                .ForMember(d => d.RecvOctets, o => o.MapFrom(s => s.ResFlow.SentOctets))
-
-                .ForMember(d => d.Identifier, o => o.MapFrom(s => s.ResFlow.Identifier))
-                .ForMember(d => d.QuestionCount, o => o.MapFrom(s => s.ResFlow.QuestionCount))
-                .ForMember(d => d.AnswerCount, o => o.MapFrom(s => s.ResFlow.AnswerCount))
-                .ForMember(d => d.AuthorityCount, o => o.MapFrom(s => s.ResFlow.AuthorityCount))
-                .ForMember(d => d.AdditionalCount, o => o.MapFrom(s => s.ResFlow.AdditionalCount))
-                .ForMember(d => d.ResponseType, o => o.MapFrom(s => s.ResFlow.ResponseType))
-                .ForMember(d => d.ResponseClass, o => o.MapFrom(s => s.ResFlow.ResponseClass))
-                .ForMember(d => d.ResponseTTL, o => o.MapFrom(s => s.ResFlow.ResponseTTL))
-                .ForMember(d => d.ResponseName, o => o.MapFrom(s => s.ResFlow.ResponseName))
-                .ForMember(d => d.ResponseCode, o => o.MapFrom(s => s.ResFlow.ResponseCode))
-                .ForMember(d => d.ResponseData, o => o.MapFrom(s => s.ResFlow.ResponseData))
-                .ForMember(d => d.QuestionType, o => o.MapFrom(s => s.ReqFlow.QuestionType))
-                .ForMember(d => d.QuestionClass, o => o.MapFrom(s => s.ReqFlow.QuestionClass))
-                .ForMember(d => d.QuestionName, o => o.MapFrom(s => s.ReqFlow.QuestionName))
-                .ForMember(d => d.Flags, o => o.MapFrom(s => s.ReqFlow.Flags))
-                .ForMember(d => d.Opcode, o => o.MapFrom(s => s.ReqFlow.Opcode))
-                .ForMember(d => d.QueryResponseFlag, o => o.MapFrom(s => s.ReqFlow.QueryResponseFlag));
-
-            cfg.CreateMap<FlowPair<HttpFlow>, HttpFlow>()
-                .ForMember(d => d.FlowType, o => o.MapFrom(s => FlowType.BidirectionFlow))
-                .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.ReqFlow.SentOctets))
-                .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => s.ReqFlow.DestinationAddress))
-                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.ReqFlow.DestinationPort))
-                .ForMember(d => d.SentPackets, o => o.MapFrom(s => s.ReqFlow.SentPackets))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.ReqFlow.Protocol))
-                .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => s.ReqFlow.ApplicationTag))
-                .ForMember(d => d.SourceAddress, o => o.MapFrom(s => s.ReqFlow.SourceAddress))
-                .ForMember(d => d.SourcePort, o => o.MapFrom(s => s.ReqFlow.SourcePort))
-                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.ReqFlow.TimeStart))
-                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.ReqFlow.TimeDuration))
-                .ForMember(d => d.RecvPackets, o => o.MapFrom(s => s.ResFlow.SentPackets))
-                .ForMember(d => d.RecvOctets, o => o.MapFrom(s => s.ResFlow.SentOctets))
-
-                .ForMember(d => d.Hostname, o => o.MapFrom(s => s.ReqFlow.Hostname))
-                .ForMember(d => d.Method, o => o.MapFrom(s => s.ReqFlow.Method))
-                .ForMember(d => d.ResultCode, o => o.MapFrom(s => s.ResFlow.ResultCode))
-                .ForMember(d => d.Url, o => o.MapFrom(s => s.ReqFlow.Url))
-                .ForMember(d => d.OperatingSystem, o => o.MapFrom(s => s.ReqFlow.OperatingSystem))
-                .ForMember(d => d.ApplicationInformation, o => o.MapFrom(s => s.ReqFlow.ApplicationInformation));
-            
-            cfg.CreateMap<FlowPair<TlsFlow>, TlsFlow>()
-                .ForMember(d => d.FlowType, o => o.MapFrom(s => FlowType.BidirectionFlow))
-                .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.ReqFlow.SentOctets))
-                .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => s.ReqFlow.DestinationAddress))
-                .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.ReqFlow.DestinationPort))
-                .ForMember(d => d.SentPackets, o => o.MapFrom(s => s.ReqFlow.SentPackets))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.ReqFlow.Protocol))
-                .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => s.ReqFlow.ApplicationTag))
-                .ForMember(d => d.SourceAddress, o => o.MapFrom(s => s.ReqFlow.SourceAddress))
-                .ForMember(d => d.SourcePort, o => o.MapFrom(s => s.ReqFlow.SourcePort))
-                .ForMember(d => d.TimeStart, o => o.MapFrom(s => s.ReqFlow.TimeStart))
-                .ForMember(d => d.TimeDuration, o => o.MapFrom(s => s.ReqFlow.TimeDuration))
-                .ForMember(d => d.RecvPackets, o => o.MapFrom(s => s.ResFlow.SentPackets))
-                .ForMember(d => d.RecvOctets, o => o.MapFrom(s => s.ResFlow.SentOctets))
-
-                .ForMember(h => h.IssuerCommonName, o => o.MapFrom(s => s.ResFlow.IssuerCommonName))
-                .ForMember(h => h.SubjectCommonName, o => o.MapFrom(s => s.ResFlow.SubjectCommonName))
-                .ForMember(h => h.SubjectOrganisationName, o => o.MapFrom(s => s.ResFlow.SubjectOrganisationName))
-                .ForMember(h => h.CertificateValidityFrom, o => o.MapFrom(s => s.ResFlow.CertificateValidityFrom))
-                .ForMember(h => h.CertificateValidityTo, o => o.MapFrom(s => s.ResFlow.CertificateValidityTo))
-                .ForMember(h => h.SignatureAlgorithm, o => o.MapFrom(s => s.ResFlow.SignatureAlgorithm))
-                .ForMember(h => h.PublicKeyAlgorithm, o => o.MapFrom(s => s.ResFlow.PublicKeyAlgorithm))
-                .ForMember(h => h.PublicKeyLength, o => o.MapFrom(s => s.ResFlow.PublicKeyLength))
-                .ForMember(h => h.ClientVersion, o => o.MapFrom(s => s.ReqFlow.ClientVersion))
-                .ForMember(h => h.CipherSuites, o => o.MapFrom(s => s.ReqFlow.CipherSuites))
-                .ForMember(h => h.ClientRandomID, o => o.MapFrom(s => s.ReqFlow.ClientRandomID))
-                .ForMember(h => h.ClientSessionID, o => o.MapFrom(s => s.ReqFlow.ClientSessionID))
-                .ForMember(h => h.ExtensionTypes, o => o.MapFrom(s => s.ReqFlow.ExtensionTypes))
-                .ForMember(h => h.ExtensionLengths, o => o.MapFrom(s => s.ReqFlow.ExtensionLengths))
-                .ForMember(h => h.EllipticCurves, o => o.MapFrom(s => s.ReqFlow.EllipticCurves))
-                .ForMember(h => h.EcPointFormats, o => o.MapFrom(s => s.ReqFlow.EcPointFormats))
-                .ForMember(h => h.ClientKeyLength, o => o.MapFrom(s => s.ReqFlow.ClientKeyLength))
-                .ForMember(h => h.JA3Fingerprint, o => o.MapFrom(s => s.ReqFlow.JA3Fingerprint))
-                .ForMember(h => h.ContentType, o => o.MapFrom(s => s.ResFlow.ContentType))
-                .ForMember(h => h.HandshakeType, o => o.MapFrom(s => s.ResFlow.HandshakeType))
-                .ForMember(h => h.SetupTime, o => o.MapFrom(s => s.ResFlow.SetupTime))
-                .ForMember(h => h.ServerVersion, o => o.MapFrom(s => s.ResFlow.ServerVersion))
-                .ForMember(h => h.ServerRandomID, o => o.MapFrom(s => s.ResFlow.ServerRandomID))
-                .ForMember(h => h.ServerSessionID, o => o.MapFrom(s => s.ResFlow.ServerSessionID))
-                .ForMember(h => h.ServerCipherSuite, o => o.MapFrom(s => s.ResFlow.ServerCipherSuite))
-                .ForMember(h => h.ApplicationLayerProtocolNegotiation, o => o.MapFrom(s => s.ReqFlow.ApplicationLayerProtocolNegotiation));
-        }).CreateMapper();
-
-        /// <summary>
-        /// Maps the flow pair to single bidirectional flow.
-        /// </summary>
-        /// <param name="flowPair">The flow pair.</param>
-        /// <returns>A bidirectional pair of flows.</returns>
-        public static T Map<T>(FlowPair<T> flowPair) where T : IpFlow
-        {
-            return (T)_mapper.Map(flowPair, flowPair.GetType(), flowPair.ReqFlow.GetType());
         }
     }
 }

@@ -9,14 +9,17 @@ namespace Ethanol.ContextBuilder.Context
     /// </summary>
     /// <remarks>
     /// Each TagObject comprises:
-    /// - Type: The category or classification of the tag.
-    /// - Key: A unique identifier that specifies what the tag pertains to.
-    /// - Value: The actual data or information associated with the key.
+    /// <list type="bullet">
+    /// <item> Type: The category or classification of the tag.</item>
+    /// <item> Key: A unique identifier that specifies what the tag pertains to.</item>
+    /// <item> Value: The actual data or information associated with the key.</item>
+    /// </list>
     /// 
     /// Furthermore, to ensure data integrity and relevancy:
-    /// - Reliability: Each tag carries a reliability score, giving an indication of the confidence or accuracy of the data.
-    /// - Validity Range: Tags have start and end times, demarcating the time period during which the information is considered relevant or accurate.
-    /// 
+    /// <list type="bullet">
+    /// <item> Reliability: Each tag carries a reliability score, giving an indication of the confidence or accuracy of the data.</item>
+    /// <item> Validity Range: Tags have start and end times, demarcating the time period during which the information is considered relevant or accurate.</item>
+    /// </list>
     /// To cater for diverse data needs, tags can also encapsulate additional granular details, enhancing the richness of the context information provided.
     /// </remarks>
     public class TagObject

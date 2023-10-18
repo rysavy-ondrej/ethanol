@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Cleaners
 {
@@ -24,7 +25,8 @@ namespace Ethanol.ContextBuilder.Cleaners
         private readonly Subject<IpFlow> _flowSubject;
         private readonly TimeSpan _flowTimeout;
         private readonly Cache<FlowKey, IpFlow> _flowDictionary;
-        DateTime _currentTime = DateTime.MinValue;
+        private DateTime _currentTime = DateTime.MinValue;
+        private TaskCompletionSource _tcs = new TaskCompletionSource();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FlowPairing"/> class, specifying the timeout
@@ -44,6 +46,8 @@ namespace Ethanol.ContextBuilder.Cleaners
         /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
+        public Task Completed => _tcs.Task;
+
         /// <summary>
         /// Publishes the remaining single flows upon completion of the input stream.
         /// </summary>
@@ -54,6 +58,7 @@ namespace Ethanol.ContextBuilder.Cleaners
                 _flowSubject.OnNext(flow);
             }
             _flowSubject.OnCompleted();
+            _tcs.SetResult();
         }
 
         /// <summary>

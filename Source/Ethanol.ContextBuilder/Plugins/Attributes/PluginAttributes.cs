@@ -3,16 +3,20 @@
 namespace Ethanol.ContextBuilder.Plugins.Attributes
 {
     /// <summary>
-    /// The type of plugin object.
-    /// </summary>
-    public enum PluginCategory { Reader, Writer, Builder, Enricher }
-
-    /// <summary>
-    /// A class attribute providing meta infomrmation on the plugin implementation.
+    /// Represents a custom attribute that provides metadata about a plugin implementation. This metadata can be used
+    /// for various purposes such as reflection-based plugin loading, documentation generation, and more.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class PluginAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PluginAttribute"/> class with specified metadata.
+        /// </summary>
+        /// <param name="pluginType">The category of the plugin (e.g., Reader, Writer, Builder, Enricher).</param>
+        /// <param name="Name">The name of the plugin.</param>
+        /// <param name="Description">A brief description explaining the purpose or functionality of the plugin.</param>
+        /// <param name="DocUrl">An optional URL pointing to the documentation or further information about the plugin. Defaults to null.</param>
+
         public PluginAttribute(PluginCategory pluginType, string Name, string Description, string DocUrl = null)
         {
             this.Category = pluginType;
@@ -22,66 +26,23 @@ namespace Ethanol.ContextBuilder.Plugins.Attributes
         }
 
         /// <summary>
-        /// Plugin type.
+        /// Gets the category of the plugin.
         /// </summary>
         public PluginCategory Category { get; }
+
         /// <summary>
-        /// Plugin name. The name is used for searching among the avilable plugins.
+        /// Gets the name of the plugin.
         /// </summary>
         public string Name { get; }
+
         /// <summary>
-        /// The description protividing basic information on the plugin.
+        /// Gets a description of the plugin.
         /// </summary>
         public string Description { get; }
+
         /// <summary>
-        /// URL of detailed documentation of the plugin.
+        /// Gets the URL pointing to the documentation or further details about the plugin. May be null if not provided.
         /// </summary>
         public string DocUrl { get; }
-    }
-
-    /// <summary>
-    /// Used to annotate the Create method for instantiating the plugin. The method should be static and
-    /// accept a single argument representing the plugin configuration.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class PluginCreateAttribute : Attribute
-    {
-
-    }
-
-    /// <summary>
-    /// Detemines whether the configuratino parameter is required or it is optional.
-    /// </summary>
-    public enum PluginParameterFlag { Required, Optional }
-    /// <summary>
-    /// Annotates the property in plugin's configuration object.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class PluginParameterAttribute : Attribute
-    {
-        /// <summary>
-        /// Creates a new attribute for plugin parameter.
-        /// </summary>
-        /// <param name="Name">The name of the parameter.</param>
-        /// <param name="Flag">The flag of the parameter.</param>
-        /// <param name="Description">The short description of the parameter.</param>
-        public PluginParameterAttribute(string Name, PluginParameterFlag Flag, string Description)
-        {
-            this.Name = Name;
-            this.Flag = Flag;
-            this.Description = Description;
-        }
-        /// <summary>
-        /// The name of the paremeter in the configuration.
-        /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// Flag specifying additional properties of the parameter.
-        /// </summary>
-        public PluginParameterFlag Flag { get; }
-        /// <summary>
-        /// The short description of the parameter.
-        /// </summary>
-        public string Description { get; }
     }
 }

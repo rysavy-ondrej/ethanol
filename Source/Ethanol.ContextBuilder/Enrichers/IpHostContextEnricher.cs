@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -14,9 +15,17 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// Enriches the context of IP hosts by applying additional data from provided data sources.
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
-    { 
+    {
+        /// Represents a subject that can both observe items of type <see cref="ObservableEvent<RawHostContext>"/> 
+        /// as well as produce them. This is often used to represent both the source and terminator of an observable sequence.
         private readonly Subject<ObservableEvent<RawHostContext>> _subject;
+
+        /// Provides a mechanism for querying tag data. It can be used to retrieve or fetch tags associated with certain data or context.
         private readonly ITagDataProvider<TagObject> _tagQueryable;
+
+        /// Represents a mechanism for signaling the completion of some asynchronous operation. 
+        /// This provides a way to manually control the lifetime of a Task, signaling its completion.
+        private TaskCompletionSource _tcs = new TaskCompletionSource();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
@@ -33,12 +42,15 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
+        public Task Completed => _tcs.Task;
+
         /// <summary>
         /// Signals that the enrichment process has completed.
         /// </summary>
         public void OnCompleted()
         {
             _subject.OnCompleted();
+            _tcs.SetResult();
         }
         /// <summary>
         /// Notifies observers that an exception has occurred.

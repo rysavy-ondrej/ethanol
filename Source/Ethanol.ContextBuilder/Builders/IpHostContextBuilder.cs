@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
@@ -55,9 +56,13 @@ namespace Ethanol.ContextBuilder.Builders
         /// </summary>
         public object SubscribedTo { get; private set; }
 
+        public Task Completed => _tcs.Task;
+
         private Subject<IpFlow> _ingressObservable;
 
         private Subject<ObservableEvent<IpHostContext>> _egressObservable;
+
+        private TaskCompletionSource _tcs = new TaskCompletionSource();
 
         /// <summary>
         /// Represents the configuration options for the IpHostContextBuilder, including window size and hop duration.
@@ -163,6 +168,7 @@ namespace Ethanol.ContextBuilder.Builders
         public void OnCompleted()
         {
             _ingressObservable.OnCompleted();
+            _tcs.SetResult();
         }
 
         /// <summary>

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
-
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
@@ -32,10 +32,17 @@ namespace Ethanol.ContextBuilder.Polishers
         // For the production version, consider more performant implementation.
         private Subject<ObservableEvent<IpTargetHostContext>> _subject;
 
+        /// Represents a mechanism for retrieving an already computed result or 
+        /// for signaling the completion of some asynchronous operation. 
+        private TaskCompletionSource _tcs = new TaskCompletionSource();
+
+
         /// <summary>
         /// Gets the type of pipeline node represented by this instance, which is always Transformer.
         /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
+
+        public Task Completed => _tcs.Task;
 
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
@@ -51,6 +58,7 @@ namespace Ethanol.ContextBuilder.Polishers
         public void OnCompleted()
         {
             _subject.OnCompleted();
+            _tcs.SetResult();
         }
 
         /// <summary>

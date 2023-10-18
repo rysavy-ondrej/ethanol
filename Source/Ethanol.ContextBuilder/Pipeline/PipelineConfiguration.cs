@@ -1,9 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
-using Ethanol.ContextBuilder.Serialization;
-using Microsoft.Extensions.Logging;
 using System;
-using System.IO;
-using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Pipeline
@@ -11,89 +7,42 @@ namespace Ethanol.ContextBuilder.Pipeline
     /// <summary>
     /// Represents the configuration settings for creating the processing pipeline.
     /// <para/>
-    /// Used, for instance, with <see cref="EthanolEnvironmentPipelines.CreateIpHostContextBuilderPipeline"/> method.
+    /// This configuration defines various parameters to shape the behavior and characteristics of the data processing pipeline.
+    /// These settings are particularly utilized when invoking the <see cref="EthanolEnvironmentPipelines.CreateIpHostContextBuilderPipeline"/> method 
+    /// to configure aspects like windowing, data enrichment, target host filtering, and more.
     /// </summary>
     public record PipelineConfiguration
     {
+        /// <summary>
+        /// Gets or sets the time interval for the analysis window. This defines the duration over which data is accumulated and analyzed in one go.
+        /// </summary>
         [YamlMember(Alias = "window-size", Description = "The time interval of the analysis window.")]
         public TimeSpan WindowSize { get; set; }
 
-        [YamlMember(Alias = "window-hop", Description = "The hop interval of the window. ")]
+        /// <summary>
+        /// Gets or sets the time interval after which a new window is created. This determines how frequently new windows of data are initiated.
+        /// </summary>
+        [YamlMember(Alias = "window-hop", Description = "The hop interval of the window.")]
         public TimeSpan WindowHop { get; set; }
 
+        /// <summary>
+        /// Gets or sets the IP address prefix that defines the range of target context hosts. This allows for focusing on specific hosts or a range of hosts within a network.
+        /// </summary>
         [YamlMember(Alias = "target-prefix", Description = "IP address prefix of target context host.")]
         public IPAddressPrefix TargetHostPrefix { get; set; }
 
+        /// <summary>
+        /// Gets or sets the delay interval between the builder and enricher in the data processing pipeline. 
+        /// This delay can be essential for online processing scenarios, especially when awaiting data availability for the enricher.
+        /// </summary>
         [YamlMember(Alias = "enricher-delay", Description = "Specifies the delay for data between builder and enricher. For online processing that includes flow tag enricher we need to wait until the data is available to enricher.")]
         public TimeSpan EnricherDelay { get; set; } = TimeSpan.Zero;
 
+        /// <summary>
+        /// Gets or sets the configuration settings for the uniform context enricher. This enricher ensures a consistent data context across the pipeline.
+        /// </summary>
         [YamlMember(Alias = "tag-enricher", Description = "The configuration for the uniform context enricher.")]
-        public EnricherConfiguration TagEnricherConfiguration { get; set; }        
+        public EnricherConfiguration TagEnricherConfiguration { get; set; }
     }
 
-
-    /// <summary>
-    /// Provides methods for serializing and deserializing pipeline configurations to and from YAML format.
-    /// </summary>
-    public static class PipelineConfigurationSerializer
-    {
-        static ILogger __logger = LogManager.GetCurrentClassLogger();
-        static IDeserializer deserializer = new DeserializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
-        static ISerializer serializer = new SerializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
-
-        /// <summary>
-        /// Creates a new <see cref="PipelineConfiguration"/> object from the specified YAML string.
-        /// </summary>
-        /// <param name="text">The YAML string to deserialize.</param>
-        /// <returns>A new <see cref="PipelineConfiguration"/> object representing the deserialized YAML data.</returns>
-        public static PipelineConfiguration CreateFrom(string text)
-        {            
-            var config = deserializer.Deserialize<PipelineConfiguration>(text);
-            return config;
-        }
-
-        /// <summary>
-        /// Loads a <see cref="PipelineConfiguration"/> object from the specified YAML file.
-        /// </summary>
-        /// <param name="path">The path to the YAML file to load.</param>
-        /// <returns>A new <see cref="PipelineConfiguration"/> object representing the deserialized YAML data.</returns>
-        public static PipelineConfiguration LoadFromFile(string path, bool resolveEnvironmentVariables = true)
-        {
-            var configurationString = System.IO.File.ReadAllText(path);
-            if (resolveEnvironmentVariables)
-            {
-                configurationString = ResolveEnvironmentVariables(configurationString);
-            }
-            __logger.LogInformation($"Loading pipeline configuration: {configurationString}");
-            var config = deserializer.Deserialize<PipelineConfiguration>(configurationString);
-            return config;
-        }
-
-        /// <summary>
-        /// Replaces every reference to an environment variables, e.g., ${VARIABLE}, by its content or empty string if the variable is not set.
-        /// </summary>
-        private static string ResolveEnvironmentVariables(string input)
-        {
-            Regex regex = new Regex(@"\$\{([\w_]+)\}");
-            string output = regex.Replace(input, match =>
-            {
-                string variableName = match.Groups[1].Value;
-                string variableValue = Environment.GetEnvironmentVariable(variableName);
-                return variableValue ?? String.Empty;
-            });
-            
-            return output;
-        }
-
-        /// <summary>
-        /// Serializes the specified <see cref="PipelineConfiguration"/> object to YAML format and saves it to the specified file.
-        /// </summary>
-        /// <param name="configuration">The <see cref="PipelineConfiguration"/> object to serialize.</param>
-        /// <param name="path">The path to the file to save the YAML data to.</param>
-        public static void SaveToFile(PipelineConfiguration configuration, string path)
-        {
-            var configurationString = serializer.Serialize(configuration);
-            File.AppendAllText(path, configurationString);
-        }
-    }
 }

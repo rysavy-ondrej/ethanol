@@ -1,15 +1,17 @@
-# Ethanol
+# Ethanol: Context-Based Flow Artifact Analysis
 
-An experimental environment for context-based flow artifact analysis. 
-The system can be used to analyse the data source, e.g., NetFlow collection that provides an input data. 
-For the selected object, its context is created and then analyzed. Using this approach it is possible to either provide 
-a rich information for each object or to perfom advanced security threats identification or network troubleshooting. 
+Ethanol is an experimental platform engineered to research context-based flow artifact analysis. At its core, Ethanol delves into data sources, like NetFlow collections, to ingest and evaluate input data. For every chosen object within this data, Ethanol intricately builds its context and then subjects it to rigorous analysis. This methodology doesn't merely stop at generating enriched information about each object. It also broadens the horizons by enabling the identification of sophisticated security threats and facilitating advanced network troubleshooting.
 
-It implements the following tools:
 
-* [ContexBuilder](Source/Ethanol.ContextBuilder/Readme.md) - building a context for the specified object using the set of predefined queries.
-* [ApplicationSonar](Source/Ethanol.ApplicationSonar/Readme.md) - detects the communicating applications with the computed context.
-* [MalwareSonar](Source/Ethanol.MalwareSonar/Readme.md) - performing various analysis by custom analytical procedures that can combine rules, ML models and other methods.
+## Core Features and Tools
+
+Ethanol brings a suite of specialized tools designed for diverse functionalities:
+
+* [ContexBuilder](Source/Ethanol.ContextBuilder/Readme.md) is a tool designed specifically for processing and analyzing IPFIX records presented in JSON format. For every distinct IP endpoint identified, the tool computes its context. This context provides a systematic record of connections either initiated or accepted by hosts, along with specific details on TLS, DNS, and HTTP activities extracted from IPFIX data. An essential feature of ContextBuilder is its ability to augment these contexts with data from various external sources, ensuring a consistent format for integrating supplementary information. The end product of its processing is a comprehensive JSON output that represents this enhanced context. 
+
+* [ApplicationSonar](Source/Ethanol.ApplicationSonar/Readme.md) is a specialized tool developed to further analyze the context JSON produced by ContextBuilder. Leveraging the details provided in the context, ApplicationSonar aims to pinpoint both internet services and local processes associated with the enumerated connections. It delves into the intricacies of the context information to identify communication patterns, offering a refined view of the network activity. ApplicationSonar serves as asset for network administrators and security professionals, allowing them to present a comprehensive communication profile for specific endpoints and users.
+
+* [MalwareSonar](Source/Ethanol.MalwareSonar/Readme.md) stands out as a unique tool tailored to harness the power of context-driven information for malware detection rather than using traditional methods like ML-based algorithms or signature models. Taking the generated context as its input, MalwareSonar seeks out indicative patterns of communication that might suggest malware activity. MalwareSonar translates identified Indicators of Compromise (IoC) of the malware samples analyzed in controlled Sandbox environment into discernible patterns within the context, effectively flagging potential malware activities. As such, MalwareSonar presents a novel approach to malware detection from network communication, leveraging the richness of context information to pinpoint suspicious communication behaviors that mirror known malware traits.
 
 ## Environment and Packages
 
@@ -24,24 +26,10 @@ The documentation is available for [Context Builder 1.0.](Docs/ContextBuilder/Re
 The easiest way is to use pre-built Docker Compose to set up an application environment consisting of  Ethanol for flow processing and context building, Fluent-Bit as a stream data router, and PostgreSql for context and host tag data storage.
 In addition, the socat tool is used within the infrastructure to glue together the pipeline running on distributed nodes.
 
-See [instructions](Publish/Docker/Readme.md) for the step-by-step guidelines on how to use.
+For a detailed walkthrough, refer to the step-by-step [guidelines](Publish/Docker/Readme.md) .
 
 ## Acknowledgments
 
 This project was developed in the frame of research initiative [Context-based Encrypted Traffic Analysis Using Flow Data](https://www.fit.vut.cz/research/project/1445/.en).
 
 The project uses [Pine Cone](https://icons8.com/icon/MrEybNsoqQoH/pine-cone") and [Center of Gravity](https://icons8.com/icon/JnSQSAhuEi7B/center-of-gravity) icons by [Icons8](https://icons8.com).
-
-
-### References
-
-* [Temporal Database Concepts](https://www.cs.uct.ac.za/mit_notes/database/htmls/chp18.html)
-* [Trill Blog](https://cloudblogs.microsoft.com/opensource/2019/03/28/trill-101-how-to-add-temporal-queries-to-your-applications/)
-
-### Suitable datasets
-
-* [LITNET 2020 Dataset](https://dataset.litnet.lt/index.php)
-
-## License
-
-TBD

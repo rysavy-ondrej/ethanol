@@ -22,18 +22,10 @@
     <PackageReference Include="JsonFlatFileDataStore" Version="2.4.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Npgsql.Json.NET" Version="7.0.2" />
-    <PackageReference Include="NRules" Version="0.9.3" />
-    <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
-    <PackageReference Include="Trill" Version="2021.7.22.1" />
     <PackageReference Include="YamlDotNet" Version="13.0.1" />
     <PackageReference Include="Npgsql" Version="7.0.2" />
     <PackageReference Include="ZLogger" Version="1.7.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Ethanol.Core\Ethanol.Core.csproj" />
-    <ProjectReference Include="..\Ethanol.Streaming\Ethanol.Streaming.csproj" />
   </ItemGroup>
 
 </Project>

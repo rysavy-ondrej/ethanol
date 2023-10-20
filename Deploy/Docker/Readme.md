@@ -1,22 +1,49 @@
-# Docker-based deployment
+# Docker-based Deployment for Ethanol Application
 
-The docker-based deployment consists of three containers:
+The Ethanol application leverages Docker to streamline its deployment, ensuring scalability and ease of management. This guide provides an overview of the application's deployment structure.
 
-* Fluent-Bit
-* PostgreSQL
-* Ethanol.ContextBuilder
+### Containers
 
-Fluent-Bit and PostgreSQL are publicly accessible:
+* fluentbit-service: This container contains Fluent-Bit and is responsible for data ingestion.
+* postgres-service: The PostgreSQL database where the application's data resides.
+* ethanol-service: This container processes the incoming data and helps in building the context using implemented Ethanol.ContextBuilder application.
 
-* tcp/1600 is an input entry point accepting Flowmon's JSON data. These records are then forwarded to the ethanol application for processing.
-* tcp/1605 is an entry point for communicating with PostgreSQL. It can be used to populate the enrichment table `enrichment_data` used by ethanol for reading
-some extra information for hosts and access the table with a computed context called `host_context`.
+### Open access points
 
-The application works by reading the input data from Flowmon and processing them into context-based information.
-The resulting data is then stored in PostgreSQL table `host_context`.
+* fluentbit-service tcp/1600: Accepts Flowmon's JSON data. Once ingested, the records are directed to the Ethanol application for subsequent processing.
 
+* postgres-service tcp/1605: Utilized for direct communication with the PostgreSQL database. This port allows you to:
+  
+  1. Populate the enrichment_data table, which the Ethanol application reads to gather supplementary information about hosts.
+  2. Access the host_context table where the computed context information is stored.
+
+### Volume Mappings
+
+__fluentbit-service__ 
+
+* ./log:/var/log: This maps the local log folder from the host machine to the /var/log directory inside the fluentbit-service container. This means that logs written to /var/log inside the container will actually be stored on the host machine inside the log directory.
+
+* ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf: This maps a local configuration file, fluent-bit.conf, to its respective configuration path inside the Fluent Bit container. This allows you to customize the behavior of Fluent Bit using your local configuration.
+
+__postgres-service__
+
+* ./data:/var/lib/postgresql/data: This maps the local data folder to the PostgreSQL data directory inside the postgres-service container. This ensures that the database files and any changes to them persist across container restarts.
+
+* ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql: This maps a local SQL file, ethanol-db-init.sql, to the initialization scripts directory in the PostgreSQL container. This script will be executed when the container starts up for the first time. It contains comands to prepare the ethanol data abse and create required tables.
+
+__ethanol-service__
+
+* ./netify:/var/netify: This maps the local netify folder to the /var/netify directory inside the ethanol-service container. This can be used to insert and update the Netify dataset.
+
+### Processing pipeline
+
+1. Data Ingestion: The application starts by reading the incoming data from Flowmon through Fluent-Bit's input endpoint.
+2. Data Processing: The Ethanol application processes this raw data to extract context-specific information.
+3. Storage: The refined and processed data is then stored in the host_context table inside the PostgreSQL container.
 
 ![Docker Architecture](EthanolDockerArchitecture.png)
+
+### Data Storage Scheme
 
 The PostgreSQL database is created with two tables:
 
@@ -96,6 +123,40 @@ __Cleaning environment:__ This command will stop and remove all the containers c
 docker-compose down --volumes --remove-orphans
 ```
 
+Certainly! Let's structure the deployment section to be more user-friendly and streamlined.
+
+---
+
+## Deployment Guide for Ethanol Application
+
+Follow these steps to seamlessly deploy the Ethanol application using Docker:
+
+1.__Set Up Your Working Directory:__ Navigate to the `Publish/Docker` directory in your project folder.
+
+2.__Building the Application:__ Utilize Docker Compose to build the application from source:
+
+```bash
+docker-compose build
+```
+
+3.__Launching the Application:__ Execute the following command to initialize and run the services as described in your Docker Compose file:
+
+```bash
+docker-compose up
+```
+
+4.__Terminating the Application:__ If you wish to halt the running services, use the following command (ensure you're in the directory where you executed the `docker-compose up` command):
+
+```bash
+docker-compose down
+```
+
+5.__Environment Cleanup:__ To comprehensively stop and erase all containers initiated by `docker-compose up` and to discard the containers, networks, and volumes related to your services, deploy the command below:
+
+```bash
+docker-compose down --volumes --remove-orphans
+```
+
 ## Usage
 
 The deployed infrastructure is designed to efficiently process flow data and generate host-based context, providing valuable insights into network activity.
@@ -129,23 +190,32 @@ Note that `-q 0` option is required to end the connection after sending all data
 
 ### Consume the context
 
-The compute host context is stored in Postgres. It is possible to query the content of the table as follows:
+The Ethanol application processes data and computes host contexts, storing the results in the host_context table within a PostgreSQL database. 
+You can easily query this table to retrieve the stored data by following the steps below:
 
-1. Open a terminal or command prompt and connect to the PostgreSQL server. You can use the following command:
+__Prerequisites:__ Ensure you have the PostgreSQL command-line tool, psql, installed on your machine.
+
+__Establish Connection:__ Open a terminal or command prompt on your machine. Use the following command to connect to the PostgreSQL server:
 
 ```bash
 psql -U postgres -W postgres -h IP-OF-DOCKER-HOST:1605 -d ethanol
 ```
 
-2. Once you're connected to the PostgreSQL server, you can use the following SQL command to query the hostctx table:
+Replace IP-OF-DOCKER-HOST with the actual IP address of the host machine where your Docker containers are running.
+
+__Query the host_context Table:__ With an active connection to the PostgreSQL server:At the psql prompt, type the following SQL command to retrieve all the records from the host_context table:
 
 ```sql
 SELECT * FROM host_context;
 ```
 
+Review the returned data to understand the host context information stored by the Ethanol application.
+
 ## Enrichment Data
 
-Enrichment data provides tags that can be associated with hosts or flows. The `enrichment_data` table unifies the representation of various data, providing specific information in the `details` column. 
+The `enrichment_data` table is used to store and provide additional tags and attributes that enhances the informational value of hosts or flows, allowing for richer analysis.
+One of the primary utilities of the `enrichment_data` table is to associate specific tags with hosts or flows. These tags can signify various attributes or characteristics.
+Diverse data sources may represent information differently. The enrichment_data table brings a unified representation, ensuring consistency across different types of data.
 
 The examples of different data are shown in the following table:
 
@@ -156,6 +226,25 @@ The examples of different data are shown in the following table:
 | NetifyTag | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Description":"Netflix is an online video streaming service that provides movies, TV shows, documentaries and other video formats.","Url":"https://www.netflix.com","Category":"Streaming Media"} |
 | NetifyTag | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Description":"At Microsoft our mission and values are to help people and businesses throughout the world realize their full potential.","Url":"https://www.microsoft.com","Category":"Business"} |
 
-As you can see, the table stores different types of tags. The tag key can be an IP address, domain name, flow key, or other key-like value.
+The enrichment_data table is versatile, storing diverse tag types, each identified uniquely by a key. This key could be represented in various formats, including but not limited to:
 
+* IP Addresses
+* Domain Names
+* Flow Keys
+* Other unique identifier values
 
+## Integrating Netify content with enrichment_data
+
+To insert Netify content into the enrichment_data table, the following command can be executed within the ethanol-service container:
+
+```bash
+/app/Ethanol.ContextBuilder Insert-Netify --connection-string "Server=${POSTGRES_IP};Port=${POSTGRES_PORT};Database=ethanol;User Id=postgres;Password=postgres;" --table-name enrichment_data --apps-file /var/netify/applications.csv --ips-file /var/netify/ips.csv --domains-file /var/netify/domains.csv
+```
+
+__Connection String:__
+
+POSTGRES_IP: This variable fetches the IP address of the PostgreSQL container.
+
+POSTGRES_PORT: Specifies the port on which the PostgreSQL database is active and listening.
+
+__Data Source:__ The command reads data from the /var/netify directory. This directory is essentially a mapped location containing the Netify data in distinct CSV files.

@@ -1,5 +1,4 @@
-﻿using Microsoft.StreamProcessing;
-using System.Linq;
+﻿using System.Linq;
 using System.Reactive.Linq;
 
 namespace Ethanol.ContextBuilder.Math

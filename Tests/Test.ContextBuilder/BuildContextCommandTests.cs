@@ -1,6 +1,4 @@
 using Ethanol.ContextBuilder;
-using Microsoft.StreamProcessing;
-using NUnit.Framework.Internal;
 
 namespace Test.ContextBuilder
 {

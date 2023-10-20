@@ -1,5 +1,4 @@
-﻿using Microsoft.StreamProcessing;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 

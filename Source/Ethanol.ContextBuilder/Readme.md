@@ -4,7 +4,7 @@ ContextBuilder is a tool designed specifically for processing and analyzing IPFI
 
 ## Getting Started
 
-This section will guide you through the process of compaling, installing and running the tool on various platforms: Windows, Linux, and macOS X.
+This section provides guidelines for compiling, installing, and running the tool on various platforms: Windows, Linux, and MacOS X.
 
 ### Prerequisites
 

@@ -220,34 +220,33 @@ The following command uses the FlowmonJson module without file argument which me
 
 __Tcp I/O__
 
+This command sets up the tool to listen for incoming FlowmonJson formatted data over TCP on port 1600, process it according to the parameters in the config-postgres.yaml file, and then output the results as JSON to the console.
 
+```bash
+./Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:1600} -c config-postgres.yaml -w JsonWriter
+```
 
 __Direct SQL output__
 
+This command configures the Ethanol.ContextBuilder to capture FlowmonJson formatted data from TCP port 1600, process this data according to the rules in config-postgres.yaml, and store the results in the host_context table of a PostgreSQL database located on localhost.
 
+```bash
+./Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:1600} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=5432,database=ethanol,user=postgress,password=postgress,tableName=host_context}
+```
 
 ## Context Builder Functionality
 
 TODO: describe the way the context is compute in detail.
 
+## Credits
 
-## Contributing
-Larger projects often have sections on contributing to their project, in which contribution instructions are outlined. Sometimes, this is a separate file. If you have specific contribution preferences, explain them so that other developers know how to best contribute to your work. To learn more about how to help others contribute, check out the guide for setting guidelines for repository contributors.
+Ethanol is a collaborative project made possible by the following contributors:
 
-### Setup
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+- **Authors:**
+  - Ondrej Rysavy, Brno University of Technology
+  - Martin Holkovic, Flowmon Networks
 
-### Running the tests
-Explain how to run the automated tests for this system. CI/CD Details, ...
+This project was developed as part of the research initiative titled [Context-based Encrypted Traffic Analysis Using Flow Data](https://www.fit.vut.cz/research/project/1445/.en). This initiative aims to leverage flow data to enhance the analysis of encrypted network traffic, thereby improving the ability to identify and mitigate security threats in encrypted communications.
 
-### Logging
-How is logging configured and what is the location of the log files
-
-### Versioning
-We use SemVer for versioning. For the versions available, see the tags on this repository.
-
-### Credits
-Include a section for credits in order to highlight and link to the authors of your project.
-
-### License
-Finally, include a section for the license of your project. For more information on choosing a license, check out GitHub’s licensing guide!
+## License
+TBD

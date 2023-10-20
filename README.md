@@ -17,10 +17,6 @@ Ethanol brings a suite of specialized tools designed for diverse functionalities
 
 Tho run the tool .NET SDK or .NET runtime version 7.0 is required.
 
-## Documentation
-
-The documentation is available for [Context Builder 1.0.](Docs/ContextBuilder/Readme.md)
-
 ## Usage
 
 The easiest way is to use pre-built Docker Compose to set up an application environment consisting of  Ethanol for flow processing and context building, Fluent-Bit as a stream data router, and PostgreSql for context and host tag data storage.

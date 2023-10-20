@@ -187,14 +187,15 @@ Here's how to use the command and its options:
 
 #### Options:
 
-- **-r, --input-reader** `<String>`: Specifies the reader module used for processing the input stream. 
-
+- **-r, --input-reader** `<String>`: Specifies the reader module to use to process the input stream. The expected parameter is a string representing a reader name and its possible arguments.
 
 - **-c, --configuration-file** `<String>`: Designates the configuration file that dictates the settings for the processing phase. This file contains various parameters that influence how the data is processed and the context is built.
 
 
 - **-w, --output-writer** `<String>`: Indicates the writer module employed for generating the output. Once the context for flows is constructed, this module is responsible for formatting and exporting the results.
+The expected parameter is a string representing a writer name and its possible arguments.
 
+The common syntax for reader/writer is `module:{arg1=val1,...,argn=valn}`. See examples bellow.
 
 For successful execution, ensure all three required parameters are provided.
 
@@ -207,8 +208,8 @@ The following command is invoking the tool to build a context for network flows.
 ./Ethanol.ContextBuilder Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=context.json}
 ```
 
-Note that parameter `{file=flows.json}` indicates that the input will be read from a file named `flows.json` using the FlowmonJson reader module.
-Similarly, parameter means the constructed context will be written to a file named `context.json` using the JsonWriter module.
+Note that parameter `-r FlowmonJson:{file=flows.json}` indicates that the input will be read from a file named `flows.json` using the FlowmonJson reader module.
+Similarly, parameter `-w JsonWriter:{file=context.json}` means the constructed context will be written to a file named `context.json` using the JsonWriter module.
 
 __Std I/O pipeline__
 
@@ -234,9 +235,42 @@ This command configures the Ethanol.ContextBuilder to capture FlowmonJson format
 ./Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:1600} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=5432,database=ethanol,user=postgress,password=postgress,tableName=host_context}
 ```
 
-## Context Builder Functionality
+## Context Builder: Deep Dive into Functionality
 
-TODO: describe the way the context is compute in detail.
+The Context Builder serves as a tool designed to curate a rich contextual representation of network activities, specifically IPFIX flow records. Let's delve into its functionality to understand its workflow:
+
+1. **Data Ingestion**: 
+   The Context Builder begins its process by ingesting input data in the form of JSON objects. Each of these JSON objects represents a distinct IPFIX flow record, encapsulating all the vital details of that flow.
+
+2. **Deserialization**: 
+   Depending on the nature of the flow, the JSON object is systematically deserialized into appropriate objects. For instance, standard flows translate into 'IpFlow' objects, whereas flows related to the Domain Name System (DNS) become 'DnsFlow' objects. This approach ensures that no crucial IPFIX information gets overlooked.
+
+3. **Temporal Grouping**: 
+   To offer a structured analysis, the flows are organized using a time window mechanism that operates on a hopping principle. Both the window size and the hop duration are configurable, providing flexibility in how the data is temporally segmented.
+
+4. **Spatial Grouping**: 
+   Within these designated time windows, flows are further categorized based on their source and destination IP addresses. By doing so, the Context Builder can pinpoint individual endpoint hosts and collate the relevant flows for them, representing both outgoing (initiated) and incoming (accepted) connections.
+
+5. **Context Construction**: 
+   Upon identifying each host, a unique context is constructed for it. The foundation of this context is the host's IP address, which serves as a primary identifier. This is accompanied by a list of all connections associated with that host.
+
+6. **Enrichment Process**: 
+   The base context undergoes an augmentation phase, where it is enhanced using data fetched from the enrichment table. This table is a reservoir of multifaceted data types. Examples include lists of internet applications provided by Netify, inferred host-based tags, and more. This enrichment adds layers of depth to the primary context.
+
+7. **Context Refinement**:
+   The enriched host-based context is then streamlined to derive a more concise output structure. This resultant structure comprises the following elements:
+   - **Host Key**: The unique identifier of the host (typically its IP address).
+   - **Initiated Connections**: Connections initiated by the host.
+   - **Accepted Connections**: Connections accepted by the host.
+   - **Tags**: Relevant tags associated with the host.
+   - **HTTP Requests**: List of HTTP requests made by the host.
+   - **DNS Resolutions**: Details of domain names resolved by the host.
+   - **TLS Information**: Selective data derived from the TLS handshake.
+
+8. **Output Relay**: 
+   Finally, these structured rich context data are dispatched to the tool's output. They can be further processed and analysed by subsequent tools in the analytical pipeline.
+
+In essence, the Context Builder plays a pivotal role in transforming raw flow records into a contextually-rich, structured format, ready for deeper insights and interpretations.
 
 ## Credits
 

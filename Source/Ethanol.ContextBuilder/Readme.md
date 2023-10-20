@@ -153,8 +153,6 @@ tag-enricher:
 
 In this example, the window size and hop are set to 5 minutes, and the target network prefix is "192.168.111.0/24". The tag enrichment source specified is a PostgreSQL database with the provided details.
 
-For a comprehensive breakdown of all the available options in the configuration file, please consult detailed guide on [configuration file](Configuration-file.md). 
-
 ## Usage
 
 The Ethanol.ContextBuilder tool offers a suite of commands designed to facilitate context creation, manage flow and host tags, and interface with various data modules. To use the tool, you need to run the Ethanol.ContextBuilder.exe executable followed by the desired command.
@@ -221,6 +219,7 @@ The following command uses the FlowmonJson module without file argument which me
 ```
 
 __Tcp I/O__
+
 
 
 __Direct SQL output__

@@ -122,7 +122,7 @@ namespace Ethanol.ContextBuilder.Plugins
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"ERROR: Cannot parse input arguments {configString}!");
+                    throw new Exception($"ERROR: Cannot parse input arguments {configString}: {e.Message}");
                 }
             }
         }

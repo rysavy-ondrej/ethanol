@@ -17,9 +17,8 @@ namespace Ethanol.ContextBuilder.Readers
     /// <typeparam name="TRecord">The type of recrods to read.</typeparam>
     public abstract class BaseFlowReader<TRecord> : IFlowReader<TRecord>
     {
-        private CancellationTokenSource _cts;
-        private Subject<TRecord> _subject;
-        private Task _readingTask;
+        private Subject<TRecord> _subject = new Subject<TRecord>();
+        private Task _readingTask = Task.CompletedTask;
 
         /// <summary>
         /// Gets the node type of this reader, which is always a producer in the pipeline.
@@ -31,8 +30,6 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         protected BaseFlowReader()
         {
-            _subject = new Subject<TRecord>();
-            _cts = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -74,36 +71,25 @@ namespace Ethanol.ContextBuilder.Readers
         /// <remarks>
         /// Callers can await this task to be notified when the entire reading process is complete.
         /// </remarks>
-        public Task StartReading()
+        public void StartReading(CancellationToken ct)
         {
-            _readingTask = Task.Factory.StartNew(ReaderProcedure, _cts.Token);
-            return _readingTask;
+            _readingTask = Task.Factory.StartNew(() =>
+            {
+                Open();
+                while (!ct.IsCancellationRequested && TryGetNextRecord(ct, out var record))
+                {
+                    _subject.OnNext(record);
+                }
+                _subject.OnCompleted();
+                Close();
+            }
+            , ct);
         }
         /// <summary>
         /// Gets a task that represents the completion of the reading process. Awaiting this task will 
         /// wait until all reading operations are complete.
         /// </summary>
         public Task Completed => _readingTask;
-
-        /// <summary>
-        /// Orchestrates the reading process from the data source. It starts by opening the data source,
-        /// then continuously reads records until no more are available or the operation is cancelled, 
-        /// and finally closes the data source.
-        /// </summary>
-        /// <remarks>
-        /// This method is designed to be executed as a task, providing a structured procedure for reading data.
-        /// </remarks>
-        private void ReaderProcedure()
-        {
-            var ct = _cts.Token;
-            Open();
-            while (!ct.IsCancellationRequested && TryGetNextRecord(ct, out var record))
-            {
-                _subject.OnNext(record);
-            }
-            _subject.OnCompleted();
-            Close();
-        }
 
         /// <summary>
         /// Subscribes an observer to the subject that notifies them with new records as they are read.

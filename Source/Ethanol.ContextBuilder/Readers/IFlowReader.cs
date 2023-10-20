@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ethanol.ContextBuilder.Pipeline;
+using Microsoft.Extensions.Primitives;
 
 namespace Ethanol.ContextBuilder.Readers
 {
@@ -14,7 +16,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// Initiates the reading process asynchronously. Once started, the reader will produce records that can be observed.
         /// </summary>
         /// <returns>A task representing the asynchronous read operation.</returns>
-        Task StartReading();
+        void StartReading(CancellationToken ct);
     }
 
 }

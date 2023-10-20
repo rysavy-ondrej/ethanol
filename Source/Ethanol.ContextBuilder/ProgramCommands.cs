@@ -78,6 +78,7 @@ namespace Ethanol.ContextBuilder
 
             var cts = new CancellationTokenSource();
             var t = MyTimer(cts.Token);
+            reader.StartReading(cts.Token);
 
             await pipeline.Completed.ContinueWith(t => cts.Cancel());
 

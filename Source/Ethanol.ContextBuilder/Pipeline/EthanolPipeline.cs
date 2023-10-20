@@ -25,6 +25,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// Gets a task that represents the asynchronous completion of all nodes in the pipeline.
         /// </summary>
         public Task Completed => Task.WhenAll(nodes.Select(x => x.Completed).ToArray());
+
     }
 
 }

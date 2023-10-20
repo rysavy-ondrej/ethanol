@@ -12,15 +12,7 @@ namespace Ethanol.ContextBuilder.Writers
     public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode
     {
         bool _isopen = false;
-        TaskCompletionSource _taskCompletionSource;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ContextWriter{TRecord}"/> class.
-        /// </summary>
-        protected ContextWriter()
-        {
-            _taskCompletionSource = new TaskCompletionSource();
-        }
+        TaskCompletionSource _taskCompletionSource = new TaskCompletionSource();
 
         /// <inheritdoc/>
         public void OnCompleted()

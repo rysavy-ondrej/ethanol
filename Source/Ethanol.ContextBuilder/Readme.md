@@ -126,12 +126,12 @@ tag-enricher:
 - **tag-enricher**: This section houses details for tag enrichment. The enrichment details can be sourced from various systems, and each system has its subsection.
 
 - **postgres**: Contains settings related to postrgres enrichment source:
-      - **server**: The server's address or hostname.
-      - **port**: The listening port number of the server.
-      - **database**: The name of the database for connection.
-      - **user**: Username for database authentication.
-      - **password**: Password for the provided username.
-      - **tableName**: Designates the name of the database table containing enrichment data.
+  - **server**: The server's address or hostname.
+  - **port**: The listening port number of the server.
+  - **database**: The name of the database for connection.
+  - **user**: Username for database authentication.
+  - **password**: Password for the provided username.
+  - **tableName**: Designates the name of the database table containing enrichment data.
 
 ### Example Configuration:
 
@@ -153,87 +153,83 @@ tag-enricher:
 
 In this example, the window size and hop are set to 5 minutes, and the target network prefix is "192.168.111.0/24". The tag enrichment source specified is a PostgreSQL database with the provided details.
 
+For a comprehensive breakdown of all the available options in the configuration file, please consult detailed guide on [configuration file](Configuration-file.md). 
+
 ## Usage
 
-The tool provides several commands:
+The Ethanol.ContextBuilder tool offers a suite of commands designed to facilitate context creation, manage flow and host tags, and interface with various data modules. To use the tool, you need to run the Ethanol.ContextBuilder.exe executable followed by the desired command.
 
-```
-Usage: Ethanol.ContextBuilder <Command>
+Here's a brief overview of the available commands:
 
-Commands:
-  Build-Context    Builds the context for flows.
-  List-Modules     Provides information on available modules.
-  help             Display help.
-  version          Display version.
-```
+- __Build-Context:__ Generates the context for flows, enabling a deeper analysis of network data.
 
-Context is build with `Build-Context` command:
+- __Insert-FlowTags:__ Allows for the insertion of flow tags from a given JSON file into an SQL table. This can be useful for categorizing and understanding the nature of specific flows.
 
-```
-> Ethanol.ContextBuilder.exe Build-Context --help
-Usage: Ethanol.ContextBuilder Build-Context [options...]
+- __Insert-HostTags:__ Inserts host-related tags from a JSON file into an SQL table, facilitating a richer understanding of the hosts in your network environment.
 
-Builds the context for flows.
+- __Insert-Netify:__ An efficient command to update Netify tags in an SQL table. It first removes existing tags and then inserts new ones using data from the provided CSV files.
 
-Options:
-  -r, --input-reader <String>          The reader module for processing input stream. (Required)
-  -c, --configuration-file <String>    The configuration file used to configure the processing. (Required)
-  -w, --output-writer <String>         The writer module for producing the output. (Required)
-```
+- __List-Modules:__ Offers a list of available modules within the tool. This is useful for understanding the different functionalities and extensions present.
 
-To use the tool, three modules need to be specified:
+- __help:__ If you ever need assistance on a specific command or just a general overview, this command will display helpful information.
 
-* Reader necessary to process correctly the input files or stream.
-* Builder performing the main task - building the context according to the given parameters.
-* Writer used to produce the output in the required format and target.
+- __version:__ Use this to quickly check the version of the Ethanol.ContextBuilder tool you're running.
 
-The list of available modules is obtained by the following command:
+### Build-Context Command
 
-```
-> Ethanol.ContextBuilder.exe List-Modules
-READERS:
-  NfdumpCsv    Reads CSV file produced by nfdump.
-BUILDERS:
-  FlowContext    Builds the context for TLS flows in the source IPFIX stream.
-  HostContext    Builds the context for IP hosts identified in the source IPFIX stream.
-  IpHostContext    Builds the context for IP hosts identified in the source IPFIX observable.
-ENRICHERS:
-  IpHostContextEnricher    Enriches the context for IP hosts from the provided data.
-  VoidContextEnricher    Does not enrich the context. Used to fill the space in the processing pipeline.
-WRITERS:
-  JsonWriter    Writes NDJSON formatted file for computed context.
-  YamlWriter    Writes YAML formatted file for computed context.
+The `Build-Context` command is designed to construct a context for network flows. By creating this context, users can derive a deeper understanding of their network data, identify patterns, and facilitate more informed network-related decisions.
+
+Here's how to use the command and its options:
+
+#### Syntax:
+
+```bash
+./Ethanol.ContextBuilder Build-Context -r <input-reader> -c <configuration-file> -w <output-writer>
 ```
 
-The builder is configured by providing a [configuration file](Configuration-file.md).
+#### Options:
+
+- **-r, --input-reader** `<String>`: Specifies the reader module used for processing the input stream. 
 
 
-## Building Host Context
+- **-c, --configuration-file** `<String>`: Designates the configuration file that dictates the settings for the processing phase. This file contains various parameters that influence how the data is processed and the context is built.
 
-To building host context use the following command:
 
+- **-w, --output-writer** `<String>`: Indicates the writer module employed for generating the output. Once the context for flows is constructed, this module is responsible for formatting and exporting the results.
+
+
+For successful execution, ensure all three required parameters are provided.
+
+#### Examples:
+
+__Json files I/O__
+The following command is invoking the tool to build a context for network flows. It reads input from the webuser.flows.json file using the FlowmonJson reader module, uses the configuration settings from config-postgres.yaml, and then writes the constructed context to the webuser.ctx.json file using the JsonWriter module.
+
+```bash
+./Ethanol.ContextBuilder Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=context.json}
 ```
-> Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config.yaml -w JsonWriter:{file=webuser.ctx.json}
+
+Note that parameter `{file=flows.json}` indicates that the input will be read from a file named `flows.json` using the FlowmonJson reader module.
+Similarly, parameter means the constructed context will be written to a file named `context.json` using the JsonWriter module.
+
+__Std I/O pipeline__
+
+The following command uses the FlowmonJson module without file argument which means that the module reads input data from the standard input. After processing, the resulting context is output in JSON format directly to the standard output, using the JsonWriter module as no file argument specified. Given the use of standard input and output, this command is versatile and can be used in conjunction with other tools in a pipeline to feed data in or route the resulting output elsewhere.
+
+```bash
+./Ethanol.ContextBuilder Build-Context -r FlowmonJson -c config-postgres.yaml -w JsonWriter
 ```
 
-where the content of configuration file `config.yaml` is:
+__Tcp I/O__
 
-```yaml
-window-size: 00:05:00
-window-hop: 00:05:00
-target-prefix: 192.168.111.0/24
-flow-tag-enricher:
-    jsonfile:
-        filename: webuser.tcp.json
-        collection: flows
-netify-tag-enricher:
-    jsonfile:
-        filename: netify.json
-        collection: apps,ips
-host-tag-enricher:
-    csvfile:
-        filename: webuser.smartads.csv
-```
+
+__Direct SQL output__
+
+
+
+## Context Builder Functionality
+
+TODO: describe the way the context is compute in detail.
 
 
 ## Contributing

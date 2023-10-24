@@ -1,0 +1,55 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+#r "D:\GitHub\ethanol\Source\Ethanol.MalwareSonar\bin\Debug\net7.0\Ethanol.MalwareSonar.dll"
+
+using System.Text.Json;
+using System;
+using System.IO;
+using System.Linq;
+using Ethanol.MalwareSonar.Fuzzy;
+
+public static class IPAddressGenerator
+{
+    private static readonly Random random = new Random();
+
+    public static string GenerateRandomIPv4Address()
+    {
+        byte[] octets = new byte[4];
+        random.NextBytes(octets);
+        return String.Join(".", octets);
+    }
+}
+
+record IpFloatFeature(string Address, double Value);
+
+var teslaReports = Directory.GetFiles(@"E:\Ethanol\Triage\02\reports\malware\agenttesla");
+
+var teslaIps = teslaReports.Select(f => JsonSerializer.Deserialize<Ethanol.MalwareSonar.MalwareReport.Report>(File.ReadAllText(f))).SelectMany(t => t.Targets.SelectMany(t=>t.Iocs.Ips));
+
+var teslaVector = teslaIps.Select(adr => new IpFloatFeature(adr, IPToFloat(adr))).ToArray();
+
+var malwareTeslaFuzzySet = new FuzzySet("Tesla", new HistogramRadiusBasedMembership<IpFloatFeature>(teslaVector, x => x. Value, 0.25));
+
+var sum = 0.0;
+Console.WriteLine("IoCs addresses:");
+foreach(var addr in teslaVector.Distinct())
+{
+    var mr = malwareTeslaFuzzySet.GetMembership(addr.Value);
+    sum+=mr;
+    Console.WriteLine($"{addr} membership is {mr}.");
+}
+Console.WriteLine($"Total density: {sum}");
+
+var sumOther = 0.0;
+Console.WriteLine("Random addresses:");
+foreach(var addr in Enumerable.Range(1,50).Select(_=> IPAddressGenerator.GenerateRandomIPv4Address()))
+{
+    var mr = malwareTeslaFuzzySet.GetMembership(IPToFloat(addr));
+    sumOther += mr; 
+    Console.WriteLine($"{addr} membership is {mr}.");
+}
+Console.WriteLine($"Total density: {sumOther}");

@@ -1,0 +1,385 @@
+{
+    "version": "0.2.3",
+    "sample": {
+      "id": "230321-rve5psda4z",
+      "score": 10,
+      "target": "dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.zip",
+      "size": 722579,
+      "md5": "6007684ce57eebe82a7f62ae8ed09293",
+      "sha1": "7f4cfb832d73d2b78ba6bde03f09f89ad0b363b7",
+      "sha256": "7ee32ad828ca82132e20b31ecc0eea984600a7bbd714de86789de0d0e28f1853",
+      "sha512": "1cdc171b16a8ed3ad8caaa6f9f43341dc25c22befd480e2fea7df135b4a5591875c9506859313c34b17aad38cb8d794c545b8acf992f38b89414d669b49a98a0",
+      "ssdeep": "12288:sA/2303rm0yOl89i7L0aa6nQexDVwjF21iRRVgfH2IUumGanJJp4/Az5S:h/2303q0hl3L5tnQexDVwsL2umGap4kS",
+      "created": "2023-03-21T14:30:35Z",
+      "completed": "2023-03-21T14:33:14Z"
+    },
+    "tasks": [
+      {
+        "sample": "230321-rve5psda4z",
+        "kind": "behavioral",
+        "name": "behavioral1",
+        "status": "reported",
+        "tags": [
+          "family:agenttesla",
+          "collection",
+          "keylogger",
+          "persistence",
+          "spyware",
+          "stealer",
+          "trojan"
+        ],
+        "score": 10,
+        "target": "dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "backend": "sbx4m16",
+        "resource": "win7-20230220-en",
+        "pick": "static1/unpack001/dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "os": "windows7-x64",
+        "timeout": 150,
+        "sigs": 13
+      },
+      {
+        "sample": "230321-rve5psda4z",
+        "kind": "behavioral",
+        "name": "behavioral2",
+        "status": "reported",
+        "tags": [
+          "family:agenttesla",
+          "collection",
+          "keylogger",
+          "persistence",
+          "spyware",
+          "stealer",
+          "trojan"
+        ],
+        "score": 10,
+        "target": "dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "backend": "sbx4m11",
+        "resource": "win10v2004-20230220-en",
+        "pick": "static1/unpack001/dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "os": "windows10-2004-x64",
+        "timeout": 150,
+        "sigs": 13
+      },
+      {
+        "sample": "230321-rve5psda4z",
+        "kind": "static",
+        "name": "static1",
+        "status": "reported",
+        "score": 1
+      }
+    ],
+    "analysis": {
+      "score": 10,
+      "family": [
+        "agenttesla"
+      ],
+      "tags": [
+        "family:agenttesla",
+        "collection",
+        "keylogger",
+        "persistence",
+        "spyware",
+        "stealer",
+        "trojan"
+      ]
+    },
+    "targets": [
+      {
+        "tasks": [
+          "behavioral1",
+          "behavioral2"
+        ],
+        "score": 10,
+        "target": "dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "pick": "unpack001/dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0.exe",
+        "size": 931840,
+        "md5": "6d62ef994bf72f5ca8fbc72b6ef798af",
+        "sha1": "1aec7583b7404e79b321ee6844ab6e76d5e2af4d",
+        "sha256": "dcb42fb2487eeee3ad0a36b6dd2b6ff674cb4f130db4ebffbfc6e933e18123c0",
+        "sha512": "fceef00caa777c57f6a3c1f99a7f30f69dbe2559616360b1f401a0558ce920c96772fe06001eaabe754dc4bc8874ba27405ff453d45bfd07ec3c3f4626ff15bb",
+        "ssdeep": "12288:8OE9GqODR8Kbjf32BaKk3GZRpoqYmZ70fwnRXTIF3kX9kyp/3KrlWGy627OJ:8p90N21RZRpoqY8ueHp/38WG",
+        "tags": [
+          "family:agenttesla",
+          "collection",
+          "keylogger",
+          "persistence",
+          "spyware",
+          "stealer",
+          "trojan"
+        ],
+        "family": [
+          "agenttesla"
+        ],
+        "signatures": [
+          {
+            "label": "agenttesla",
+            "name": "AgentTesla",
+            "score": 10,
+            "tags": [
+              "keylogger",
+              "trojan",
+              "stealer",
+              "spyware",
+              "family:agenttesla"
+            ],
+            "desc": "Agent Tesla is a remote access tool (RAT) written in visual basic."
+          },
+          {
+            "label": "ftp_client_data_harvesting",
+            "name": "Reads data files stored by FTP clients",
+            "score": 7,
+            "ttp": [
+              "T1005",
+              "T1081"
+            ],
+            "tags": [
+              "spyware",
+              "stealer"
+            ],
+            "desc": "Tries to access configuration files associated with programs like FileZilla."
+          },
+          {
+            "label": "email_user_data_harvesting",
+            "name": "Reads user/profile data of local email clients",
+            "score": 7,
+            "ttp": [
+              "T1005",
+              "T1081"
+            ],
+            "tags": [
+              "spyware",
+              "stealer"
+            ],
+            "desc": "Email clients store some user data on disk where infostealers will often target it."
+          },
+          {
+            "label": "browser_user_data_harvesting",
+            "name": "Reads user/profile data of web browsers",
+            "score": 7,
+            "ttp": [
+              "T1005",
+              "T1081"
+            ],
+            "tags": [
+              "spyware",
+              "stealer"
+            ],
+            "desc": "Infostealers often target stored browser data, which can include saved credentials etc."
+          },
+          {
+            "label": "access_outlook_profiles",
+            "name": "Accesses Microsoft Outlook profiles",
+            "score": 6,
+            "ttp": [
+              "T1114"
+            ],
+            "tags": [
+              "collection"
+            ]
+          },
+          {
+            "label": "creates_runkey_registry",
+            "name": "Adds Run key to start application",
+            "score": 6,
+            "ttp": [
+              "T1060",
+              "T1112"
+            ],
+            "tags": [
+              "persistence"
+            ]
+          },
+          {
+            "label": "external_ip_lookup",
+            "name": "Looks up external IP address via web service",
+            "score": 6,
+            "desc": "Uses a legitimate IP lookup service to find the infected system's external IP."
+          },
+          {
+            "name": "Suspicious use of SetThreadContext",
+            "score": 5
+          },
+          {
+            "name": "Suspicious behavior: EnumeratesProcesses"
+          },
+          {
+            "name": "Suspicious use of AdjustPrivilegeToken"
+          },
+          {
+            "name": "Suspicious use of WriteProcessMemory"
+          },
+          {
+            "label": "outlook_office_path",
+            "name": "outlook_office_path"
+          },
+          {
+            "label": "outlook_win_path",
+            "name": "outlook_win_path"
+          }
+        ],
+        "iocs": {
+          "urls": [
+            "https://api.ipify.org/"
+          ],
+          "domains": [
+            "api.ipify.org",
+            "95.221.229.192.in-addr.arpa",
+            "210.81.184.52.in-addr.arpa",
+            "209.205.72.20.in-addr.arpa",
+            "131.17.126.40.in-addr.arpa",
+            "76.38.195.152.in-addr.arpa",
+            "97.17.167.52.in-addr.arpa",
+            "44.8.109.52.in-addr.arpa",
+            "206.23.85.13.in-addr.arpa",
+            "13.86.106.20.in-addr.arpa",
+            "254.137.241.8.in-addr.arpa",
+            "155.227.185.64.in-addr.arpa",
+            "55.154.139.52.in-addr.arpa",
+            "202.74.101.95.in-addr.arpa"
+          ],
+          "ips": [
+            "8.8.8.8",
+            "104.237.62.211",
+            "20.50.73.9",
+            "209.197.3.8",
+            "173.223.113.164",
+            "13.107.4.50",
+            "64.185.227.155",
+            "173.223.113.131",
+            "204.79.197.203"
+          ]
+        }
+      }
+    ],
+    "signatures": [
+      {
+        "label": "agenttesla",
+        "name": "AgentTesla",
+        "score": 10,
+        "tags": [
+          "keylogger",
+          "trojan",
+          "stealer",
+          "spyware",
+          "family:agenttesla"
+        ],
+        "desc": "Agent Tesla is a remote access tool (RAT) written in visual basic."
+      },
+      {
+        "label": "ftp_client_data_harvesting",
+        "name": "Reads data files stored by FTP clients",
+        "score": 7,
+        "ttp": [
+          "T1005",
+          "T1081"
+        ],
+        "tags": [
+          "spyware",
+          "stealer"
+        ],
+        "desc": "Tries to access configuration files associated with programs like FileZilla."
+      },
+      {
+        "label": "email_user_data_harvesting",
+        "name": "Reads user/profile data of local email clients",
+        "score": 7,
+        "ttp": [
+          "T1005",
+          "T1081"
+        ],
+        "tags": [
+          "spyware",
+          "stealer"
+        ],
+        "desc": "Email clients store some user data on disk where infostealers will often target it."
+      },
+      {
+        "label": "browser_user_data_harvesting",
+        "name": "Reads user/profile data of web browsers",
+        "score": 7,
+        "ttp": [
+          "T1005",
+          "T1081"
+        ],
+        "tags": [
+          "spyware",
+          "stealer"
+        ],
+        "desc": "Infostealers often target stored browser data, which can include saved credentials etc."
+      },
+      {
+        "label": "access_outlook_profiles",
+        "name": "Accesses Microsoft Outlook profiles",
+        "score": 6,
+        "ttp": [
+          "T1114"
+        ],
+        "tags": [
+          "collection"
+        ]
+      },
+      {
+        "label": "creates_runkey_registry",
+        "name": "Adds Run key to start application",
+        "score": 6,
+        "ttp": [
+          "T1060",
+          "T1112"
+        ],
+        "tags": [
+          "persistence"
+        ]
+      },
+      {
+        "label": "external_ip_lookup",
+        "name": "Looks up external IP address via web service",
+        "score": 6,
+        "desc": "Uses a legitimate IP lookup service to find the infected system's external IP."
+      },
+      {
+        "name": "Suspicious use of SetThreadContext",
+        "score": 5
+      },
+      {
+        "name": "Suspicious behavior: EnumeratesProcesses"
+      },
+      {
+        "name": "Suspicious use of AdjustPrivilegeToken"
+      },
+      {
+        "name": "Suspicious use of WriteProcessMemory"
+      },
+      {
+        "label": "outlook_office_path",
+        "name": "outlook_office_path"
+      },
+      {
+        "label": "outlook_win_path",
+        "name": "outlook_win_path"
+      }
+    ],
+    "extracted": [
+      {
+        "tasks": [
+          "behavioral1",
+          "behavioral2"
+        ],
+        "dumped_file": "memory/520-63-0x0000000000400000-0x0000000000430000-memory.dmp",
+        "resource": "behavioral1/memory/520-63-0x0000000000400000-0x0000000000430000-memory.dmp",
+        "config": {
+          "family": "agenttesla",
+          "rule": "AgentTeslaV4",
+          "credentials": [
+            {
+              "protocol": "smtp",
+              "host": "server320.web-hosting.com",
+              "port": 587,
+              "username": "admin@igls.cc",
+              "password": "lagos@123",
+              "email_to": "nel@igls.cc"
+            }
+          ]
+        }
+      }
+    ]
+  }

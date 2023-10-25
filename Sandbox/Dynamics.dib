@@ -9,18 +9,6 @@ using System.Dynamic;
 record Tag1 (string s, int i);
 
 
-dynamic d = new Tag1("cde",2);
+dynamic d = new ExpandoObject();
 
-Console.WriteLine(d.GetType());
-
-var r =new Tag1("abc",1);
-
-var json1 = JsonSerializer.Serialize(r);
-var f = JsonSerializer.Deserialize<ExpandoObject>(json1);
-
-var json2  = JsonSerializer.Serialize(f);
-
-
-var w = JsonSerializer.Deserialize<ExpandoObject>(json2);
-
-w.Display();
+d.

@@ -3,6 +3,8 @@ using System.Net;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
+
+    public record InternetServiceTag(string Name, float Reliability);
     /// <summary>
     /// Represents an attribute within a context, containing its name, key, value, and a measure of its reliability.
     /// </summary>
@@ -29,7 +31,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// <param name="OctetsSent">The number of octets sent over the connection.</param>
     /// <param name="PacketsRecv">The number of packets received over the connection.</param>
     /// <param name="OctetsRecv">The number of octets received over the connection.</param>
-    public record IpConnectionInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, int Flows, int PacketsSent, int OctetsSent, int PacketsRecv, int OctetsRecv);
+    public record IpConnectionInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, InternetServiceTag[] InternetServices, int Flows, int PacketsSent, long OctetsSent, int PacketsRecv, long OctetsRecv);
 
     /// <summary>
     /// Represents information about a web request, including details about the remote host, port, and URL.
@@ -40,7 +42,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// <param name="ApplicationProcessName">The name of the application or process that made the request.</param>
     /// <param name="Method">The HTTP method used in the request (e.g. GET, POST, etc.).</param>
     /// <param name="Url">The URL of the requested resource.</param>
-    public record WebRequestInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, string Method, string Url);
+    public record WebRequestInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, InternetServiceTag[] InternetServices, string Method, string Url);
 
     /// <summary>
     /// Represents information about a resolved domain, including details about the DNS server, query string, and response data.
@@ -64,7 +66,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// <param name="IssuerName">The name of the certificate issuer.</param>
     /// <param name="SubjectName">The name of the certificate subject.</param>
     /// <param name="OrganisationName">The name of the certificate organisation.</param>
-    public record TlsHandshakeInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, string ApplicationProtocol, string ServerNameIndication, string JA3Fingerprint, string IssuerName, string SubjectName, string OrganisationName, string CipherSuites, string EllipticCurves);
+    public record TlsHandshakeInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, InternetServiceTag[] InternetServices, string ApplicationProtocol, string ServerNameIndication, string JA3Fingerprint, string IssuerName, string SubjectName, string OrganisationName, string CipherSuites, string EllipticCurves);
 
     /// <summary>
     /// Represents a simplified IP host context.
@@ -79,7 +81,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// An array of other attributes associated with the context.
         /// </summary>
-        TagObject[] Tags,
+        dynamic Tags,
 
         /// <summary>
         /// An array of IP connection information for connections initiated by the host.

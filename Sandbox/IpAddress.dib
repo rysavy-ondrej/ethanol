@@ -16,3 +16,16 @@ dict[y] += 2;
 dict[z] += 3;
 dict.Display();
 (x == y).Display();
+
+
+var prefixLength = 12;
+
+double Convert(IPAddress ip, int prefix)
+{
+    byte[] octets = ip.GetAddressBytes();
+    uint mask = prefix >= 32 ? 1 : 0xFFFFFFFF >> prefix;
+    var addr =  (uint)(octets[0] << 24) | (uint)(octets[1] << 16) | (uint)(octets[2] << 8) | octets[3];
+    return (double)addr / mask;
+}
+
+Convert(x,30).Display();

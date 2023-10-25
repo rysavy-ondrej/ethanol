@@ -1,5 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using JsonFlatFileDataStore;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,6 +77,35 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         private static ITagDataProvider<TagObject> LoadFromJson(string filename, string collection)
         {
             return new JsonDbTagProvider(filename, collection);
+        }
+
+        /// <summary>
+        /// Retrieves a collection of <see cref="TagObject"/> that matches the specified tag key, tag type, 
+        /// and falls within the given time range.
+        /// </summary>
+        /// <param name="tagKey">The key or identifier of the tag to be retrieved.</param>
+        /// <param name="tagType">The type of the tag to be retrieved.</param>
+        /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
+        /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
+        /// <returns>A collection of <see cref="TagObject"/> that matches the provided criteria.</returns>
+        public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
+        {
+            return _queryable.Where(x => x.Key.ToString() == tagKey && x.Type == tagType && x.StartTime <= start && x.EndTime >= end);
+        }
+
+        /// <summary>
+        /// Asynchronously retrieves a collection of <see cref="TagObject"/> that matches the specified key, tag type,
+        /// and falls within the given time range.
+        /// </summary>
+        /// <param name="key">The key or identifier of the tag to be retrieved.</param>
+        /// <param name="tagType">The type of the tag to be retrieved.</param>
+        /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
+        /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
+        /// <returns>A task that represents the asynchronous operation. The value of the TResult parameter contains 
+        /// a collection of <see cref="TagObject"/> that matches the given criteria.</returns>
+        public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
+        {
+            return Task.FromResult(Get(key, tagType, start, end));
         }
     }
 

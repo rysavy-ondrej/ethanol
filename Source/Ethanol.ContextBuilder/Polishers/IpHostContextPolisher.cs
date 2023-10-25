@@ -2,10 +2,13 @@
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
@@ -28,6 +31,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// </remarks>
     public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<RawHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
     {
+        static ILogger _logger = LogManager.GetCurrentClassLogger();
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<ObservableEvent<IpTargetHostContext>> _subject;
@@ -76,60 +80,120 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <param name="value">The input observable event containing a rich IP host context.</param>
         public void OnNext(ObservableEvent<RawHostContext> value)
         {
-            var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
-                .Select(x=>new ResolvedDomainInfo(x.DestinationAddress.ToString(), x.QuestionName, x.ResponseData, x.ResponseCode))
-                .ToArray();
-
-            var domainResolver = new Resolver<string,ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
-
-            var processResolver = new Resolver<string, TcpFlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject,TcpFlowTag>(x=>x.GetDetailsAs<TcpFlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
-
-            string ResolveDomain(IPAddress x)
+            try
             {
-                return domainResolver.Resolve(x.ToString(), x => x.QueryString);
+                var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
+                    .Select(x => new ResolvedDomainInfo(x.DestinationAddress.ToString(), x.QuestionName, x.ResponseData, x.ResponseCode))
+                    .ToArray();
+
+                var domainResolver = new Resolver<string, ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
+
+                var processResolver = new Resolver<string, TcpFlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag>(x => x.GetDetailsAs<TcpFlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+
+                var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(value.Payload.Tags.Where(x => x.Type == nameof(NetifyTag)).GroupBy(g => g.Key, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value, (float)x.Reliability)).ToArray())), t => t.Item1);
+
+                string ResolveDomain(IPAddress x)
+                {
+                    return domainResolver.Resolve(x.ToString(), x => x.QueryString);
+                }
+                string ResolveProcessName(FlowKey flowKey)
+                {
+                    return processResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
+                }
+                InternetServiceTag[] ResolveServices(IPAddress destinationAddress)
+                {
+                    return serviceResolver.Resolve(destinationAddress.ToString()).Item2;
+                }
+
+                var tags = ComputeCompactTags(value.Payload.Tags);
+
+                var upflows = value.Payload.Flows.Where(x => x.SourceAddress.Equals(value.Payload.HostAddress)).ToList();
+
+                var downflows = value.Payload.Flows.Where(x => x.DestinationAddress.Equals(value.Payload.HostAddress)).ToList();
+
+                var initiatedConnections = GetInitiatedConnections(upflows, ResolveDomain, ResolveProcessName, ResolveServices).ToArray();
+
+                var acceptedConnections = GetAcceptedConnections(downflows, ResolveDomain, ResolveProcessName).ToArray();
+
+                var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress), x.Method, x.Hostname + x.Url)).ToArray();
+
+                var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
+
+                var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, tags, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
+
+                _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
             }
-            string ResolveProcessName(FlowKey flowKey)
+            catch(Exception e)
             {
-                return processResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
+                _logger.LogError(e, "Error in context polishing.", value);
+                _subject.OnError(e);
             }
-
-            var tags = value.Payload.Tags;
-
-            var upflows = value.Payload.Flows.Where(x => x.SourceAddress.Equals(value.Payload.HostAddress)).ToList();
-            
-            var downflows = value.Payload.Flows.Where(x => x.DestinationAddress.Equals(value.Payload.HostAddress)).ToList();
-
-            var initiatedConnections = GetInitiatedConnections(upflows, ResolveDomain, ResolveProcessName).ToArray();
-
-            var acceptedConnections = GetAcceptedConnections(downflows, ResolveDomain, ResolveProcessName).ToArray();
-
-            var webUrls = upflows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.Method, x.Hostname + x.Url)).ToArray();
-            
-            var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !String.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
-            
-            var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, tags, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
-            
-            _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
         }
- 
+
+        public record ActivityAll(int flows, long bytes);
+        private dynamic ComputeCompactTags(TagObject[] tags)
+        {
+            var result = new Dictionary<string, object>();
+            foreach(var tag in tags)
+            {
+                var tagType = tag.Type;
+
+                if (tagType == "activity_flows")
+                {
+                    tagType = "activity_all";
+                    if (!result.ContainsKey(tagType))
+                    {
+                        result[tagType] = new ActivityAll(0, 0);
+                    }
+
+                    var value = (ActivityAll)result[tagType];
+                    var newValue1 = Convert.ToInt32(float.Parse(tag.Value.ToString()));
+                    result[tagType] = new ActivityAll(value.flows+newValue1, value.bytes);
+                }
+                else if (tagType == "activity_bytes")
+                {
+                    tagType = "activity_all";
+                    if (!result.ContainsKey(tagType))
+                    {
+                        result[tagType] = new ActivityAll(0, 0);
+                    }
+
+                    var value = (ActivityAll)result[tagType];
+                    var newValue2 = Convert.ToInt64(float.Parse(tag.Value.ToString()));
+                    result[tagType] = new ActivityAll(value.flows, value.bytes+newValue2);
+                }
+
+            }
+            return result;
+        }
+        
+
         /// <summary>
         /// Returns an enumerable collection of initiated IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
         /// </summary>
         /// <param name="flows">The collection of IP flows to use as a source for the initiated connections.</param>
         /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
         /// <returns>An enumerable collection of initiated IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain, Func<FlowKey, string> resolveProcessName)
+        private IEnumerable<IpConnectionInfo> GetInitiatedConnections(IEnumerable<IpFlow> flows, Func<IPAddress,string> resolveDomain, Func<FlowKey, string> resolveProcessName, Func<IPAddress, InternetServiceTag[]> resolveServices)
         {
             // Perform processing on the input flows
-            var con =  flows.Select(f =>
-                        new IpConnectionInfo(f.DestinationAddress.ToString(), resolveDomain(f.DestinationAddress), f.DestinationPort, resolveProcessName(f.FlowKey), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+            var connections =  flows.Select(f =>
+                        new IpConnectionInfo(f.DestinationAddress.ToString(), resolveDomain(f.DestinationAddress), f.DestinationPort, resolveProcessName(f.FlowKey), resolveServices(f.DestinationAddress), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
             // Return the resulting collection of initiated connections
-            return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
+            return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
                             var first = val.FirstOrDefault();
-                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.ApplicationProcessName, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
-                                val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                            if (first != default)
+                            {
+                                return new IpConnectionInfo(key.RemoteHostAddress, first.RemoteHostName, key.RemotePort, first.ApplicationProcessName, first.InternetServices,
+                                    val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                                    val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("This should not happen!");
+                            }
                         }
                     );
         }
@@ -141,14 +205,23 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <returns>An enumerable collection of accepted IP connections.</returns>
         private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain, Func<FlowKey, string> resolveProcessName)
         {
-            var con = flows.Select(f =>
-                        new IpConnectionInfo(f.SourceAddress.ToString(), resolveDomain(f.SourceAddress), f.SourcePort, resolveProcessName(f.FlowKey), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
-            return con.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
+            var connections = flows.Select(f =>
+                        new IpConnectionInfo(f.SourceAddress.ToString(), resolveDomain(f.SourceAddress), f.SourcePort, resolveProcessName(f.FlowKey), Array.Empty<InternetServiceTag>(), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
+            return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
+                            
                             var first = val.FirstOrDefault();
-                            return new IpConnectionInfo(key.RemoteHostAddress, first?.RemoteHostName, key.RemotePort, first?.ApplicationProcessName, val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
-                                val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                            if (first != default)
+                            {
+                                return new IpConnectionInfo(key.RemoteHostAddress, first.RemoteHostName, key.RemotePort, first.ApplicationProcessName, first.InternetServices,
+                                    val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                                    val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                            }
+                            else
+                            {   
+                                throw new InvalidOperationException("This should not happen!");
+                            }
                         }
                     );
         }

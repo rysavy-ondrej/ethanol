@@ -1,7 +1,9 @@
 ﻿using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +18,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
     {
+        static ILogger _logger = LogManager.GetCurrentClassLogger();
         /// Represents a subject that can both observe items of type <see cref="ObservableEvent<RawHostContext>"/> 
         /// as well as produce them. This is often used to represent both the source and terminator of an observable sequence.
         private readonly Subject<ObservableEvent<RawHostContext>> _subject;
@@ -64,8 +67,16 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         public void OnNext(ObservableEvent<IpHostContext> value)
         {
-            var tags = GetTags(value);
-            _subject.OnNext(new ObservableEvent<RawHostContext>(new RawHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() },  value.StartTime, value.EndTime));
+            try
+            {
+                var tags = GetTags(value);
+                _subject.OnNext(new ObservableEvent<RawHostContext>(new RawHostContext { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() }, value.StartTime, value.EndTime));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in context enrichment.", value);
+                _subject.OnError(ex);
+            }
         }
 
         /// <summary>
@@ -80,7 +91,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Distinct();
             if (_tagQueryable != null)
             {
-                return  GetLocalTags(host, start, end).Concat(GetRemoteTags(remoteHosts, start, end)).Concat(GetFlowTags(flows, start, end));
+                return  GetLocalTags(host, start, end).Concat(GetRemoteTags(remoteHosts, start, end));
             }
             return Array.Empty<TagObject>();
         }
@@ -109,7 +120,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </returns>
         private IEnumerable<TagObject> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTime start, DateTime end)
         {                
-            return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), start, end) ?? Enumerable.Empty<TagObject>());
+            return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), nameof(NetifyTag), start, end) ?? Enumerable.Empty<TagObject>());
         }
 
         /// <summary>

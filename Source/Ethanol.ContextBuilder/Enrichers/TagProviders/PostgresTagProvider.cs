@@ -84,23 +84,29 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             try
             {
                 NpgsqlCommand cmd = PrepareCommand(key, start, end);
-                var reader = await cmd.ExecuteReaderAsync();
-                var rowList = new List<TagObject>();
-                while (await reader.ReadAsync())
-                {
-                    var row = ReadRow(reader);
-                    rowList.Add(row);
-                }
-                await reader.CloseAsync();
-                _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
-                return rowList;
+                return await ReadObjectsAsync(cmd);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, null);
+                _logger.LogError(e, "Error executing SQL command");
                 return Array.Empty<TagObject>();
             }
         }
+
+        private static async Task<IList<TagObject>> ReadObjectsAsync(NpgsqlCommand cmd)
+        {
+            using var reader = await cmd.ExecuteReaderAsync();
+            var rowList = new List<TagObject>();
+            while (await reader.ReadAsync())
+            {
+                var row = ReadRow(reader);
+                rowList.Add(row);
+            }
+            await reader.CloseAsync();
+            _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
+            return rowList;
+        }
+
         /// <summary>
         /// Retrieves a collection of HostTag objects from the database for the specified host and time range.
         /// </summary>
@@ -112,8 +118,20 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         {
             try
             {
-                NpgsqlCommand cmd = PrepareCommand(tagKey, start, end);
-                var reader = cmd.ExecuteReader();
+                using var cmd = PrepareCommand(tagKey, start, end);
+                return ReadObjects(cmd);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error executing SQL command");
+                return new List<TagObject>();
+            }
+        }
+
+        private IList<TagObject> ReadObjects(NpgsqlCommand cmd)
+        {
+
+                using var reader = cmd.ExecuteReader();
                 var rowList = new List<TagObject>();
                 while (reader.Read())
                 {
@@ -123,12 +141,18 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
                 reader.Close();
                 _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, null);
-                return Array.Empty<TagObject>();
-            }
+
+        }
+
+        public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
+        {
+            using var cmd = PrepareCommand(tagKey, tagType, start, end);
+            return ReadObjects(cmd);
+        }
+
+        public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -154,7 +178,15 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             cmd.CommandText = $"SELECT * FROM {_tableName} WHERE key ='{tagKey}' AND validity && '[{startString},{endString})'";
             return cmd;
         }
-
+        private NpgsqlCommand PrepareCommand(string tagKey, string tagType, DateTime start, DateTime end)
+        {
+            var startString = start.ToString("o", CultureInfo.InvariantCulture);
+            var endString = end.ToString("o", CultureInfo.InvariantCulture);
+            var cmd = _connection.CreateCommand();
+            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND key ='{tagKey}' AND validity && '[{startString},{endString})'";
+            return cmd;
+        }
         /// <summary>
         /// Creates a new table for storing <see cref="TcpFlowTag"/> records in the database if it does not alrady exist.
         /// </summary>

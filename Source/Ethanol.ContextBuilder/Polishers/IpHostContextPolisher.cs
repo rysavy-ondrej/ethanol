@@ -147,10 +147,10 @@ namespace Ethanol.ContextBuilder.Polishers
                     }
 
                     var value = (ActivityAll)result[tagType];
-                    var newValue1 = Convert.ToInt32(float.Parse(tag.Value.ToString()));
+                    var newValue1 = Convert.ToInt32(float.TryParse(tag.Value.ToString(), out var p) ? p : 0f);
                     result[tagType] = new ActivityAll(value.flows+newValue1, value.bytes);
                 }
-                else if (tagType == "activity_bytes")
+                if (tagType == "activity_bytes")
                 {
                     tagType = "activity_all";
                     if (!result.ContainsKey(tagType))
@@ -159,8 +159,28 @@ namespace Ethanol.ContextBuilder.Polishers
                     }
 
                     var value = (ActivityAll)result[tagType];
-                    var newValue2 = Convert.ToInt64(float.Parse(tag.Value.ToString()));
+                    var newValue2 = Convert.ToInt64(double.TryParse(tag.Value.ToString(), out var p) ? p : 0d);
                     result[tagType] = new ActivityAll(value.flows, value.bytes+newValue2);
+                }
+                if (tagType == "open_ports")
+                {
+                    if (!result.ContainsKey(tagType))
+                    {
+                        result[tagType] = new List<int>();
+                    }
+                    var portList = (List<int>)result[tagType];
+
+                    var ports = tag.Value.ToString().Trim('[',']','{','}').Split(',');
+
+                    foreach (var portString in ports)
+                    {
+                        int port = int.TryParse(portString.Trim(), out var p) ? p : 0;
+                        
+                        if (!portList.Contains(port))
+                        {
+                            portList.Add(port);
+                        }
+                    }
                 }
 
             }

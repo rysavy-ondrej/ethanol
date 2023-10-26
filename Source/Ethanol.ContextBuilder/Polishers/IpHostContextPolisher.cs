@@ -147,13 +147,13 @@ namespace Ethanol.ContextBuilder.Polishers
             }
             long SafeIntFromFloatString(string s)
             {
-                return Convert.ToInt64(double.TryParse(s ?? String.Empty, out var p) ? p : 0f);
+                return Convert.ToInt64(double.TryParse(s.Trim('"') ?? string.Empty, out var p) ? p : 0f);
             }
             Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
             {
                 var mapping = enumerable
                     .Select(d => (key: d.Value, val: d.GetDetailsAs<DependencyMapping>()))
-                    .Select(m => (ip: m.key, port: m.val.port ?? String.Empty, packets: Convert.ToInt64(double.TryParse(m.val.num_packets.ToString(), out double p) ? p : 0d)))
+                    .Select(m => (ip: m.key, port: m.val.port ?? string.Empty, packets: (long)m.val.num_packets))
                     .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port, x => x.packets)))
                     .ToDictionary(x => x.ip, x => x.ports);
                 return mapping;
@@ -174,7 +174,7 @@ namespace Ethanol.ContextBuilder.Polishers
                 result["tags_by_services"] = tags.WhereType("tags_by_services").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
                 result["hostml_label"] = tags.WhereType("hostml_label").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
                 result["in_flow_tags"] = tags.WhereType("in_flow_tags").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();               
-                result["tls_os_version"] = tags.WhereType("in_flow_tags").Select(t => CleanAndRejoinString(t.Value,'/')).Distinct().ToList();
+                result["tls_os_version"] = tags.WhereType("tls_os_version").Select(t => CleanAndRejoinString(t.Value,'/')).Distinct().ToList();
                 result["activity_all"] = GetActivityInformation("activity_flows", "activity_bytes");
                 result["activity_global"] = GetActivityInformation("activity_flows_global", "activity_bytes_global");
             }

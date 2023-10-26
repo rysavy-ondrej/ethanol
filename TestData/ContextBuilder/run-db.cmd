@@ -1,0 +1,6 @@
+docker run --name ethanol-postgres -e POSTGRES_DB=ethanol -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 1605:5432 -d postgres
+
+timeout /t 10
+
+psql -U postgres -d ethanol -p 1605 -f db_init/create-tables.sql
+psql -U postgres -d ethanol -p 1605 -f insert-data.sql

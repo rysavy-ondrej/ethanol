@@ -10,7 +10,7 @@ This document outlines the steps to test the context builder using representativ
      a new PostgreSQL container.  
 
      ```bash
-     docker run --name ethanol-postgres -e POSTGRES_DB=ethanol -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 1605:5432 -v db_data:/var/lib/postgresql/data -v db_init:/docker-entrypoint-initdb.d -d postgres
+     docker run --name ethanol-postgres -e POSTGRES_DB=ethanol -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 1605:5432 -d postgres
      ```
 
 2. **Installing PostgreSQL Command Line Interface (CLI)**:
@@ -35,6 +35,8 @@ This document outlines the steps to test the context builder using representativ
    - Copy the enrichment data from the provided CSV files into your PostgreSQL database:
 
      ```sql
+     psql -U postgres -d ethanol -p 1605
+     
      \COPY enrichment_data FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
      \COPY enrichment_data FROM netify.csv WITH DELIMITER ',' CSV HEADER;
      ```

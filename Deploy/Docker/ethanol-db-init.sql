@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS _host_context (
 );
 
 CREATE TABLE IF NOT EXISTS host_context (    
+    id SERIAL PRIMARY KEY, 
     key VARCHAR(255) NOT NULL,
     tags JSON,
     initiatedconnections JSON,

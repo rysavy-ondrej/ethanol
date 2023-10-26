@@ -84,7 +84,8 @@ namespace Ethanol.ContextBuilder.Context
             else
             {
                 var json = JsonSerializer.Serialize(Details);
-                return JsonSerializer.Deserialize<T>(json);
+                var value = JsonSerializer.Deserialize<T>(json);
+                return (T)value;
             }
         }
     }

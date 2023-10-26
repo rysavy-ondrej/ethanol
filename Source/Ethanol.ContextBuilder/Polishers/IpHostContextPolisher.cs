@@ -133,7 +133,7 @@ namespace Ethanol.ContextBuilder.Polishers
         }
 
         private record ActivityAll(int flows, long bytes);
-        private record DependencyMapping(string src, string port, string num_packets);
+        private record DependencyMapping(string src, string port, int num_packets);
 
         private Dictionary<string,object> ComputeCompactTags(TagObject[] tags)
         {
@@ -152,7 +152,7 @@ namespace Ethanol.ContextBuilder.Polishers
             Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
             {
                 var mapping = enumerable
-                    .Select(d => (key: d.Value, val: (DependencyMapping)JsonSerializer.Deserialize<DependencyMapping>(json: d.Details.ToString())))
+                    .Select(d => (key: d.Value, val: d.GetDetailsAs<DependencyMapping>()))
                     .Select(m => (ip: m.key, port: m.val.port ?? String.Empty, packets: Convert.ToInt64(double.TryParse(m.val.num_packets.ToString(), out double p) ? p : 0d)))
                     .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port, x => x.packets)))
                     .ToDictionary(x => x.ip, x => x.ports);

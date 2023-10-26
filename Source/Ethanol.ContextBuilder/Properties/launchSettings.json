@@ -4,32 +4,6 @@
       "commandName": "Project",
       "commandLineArgs": "List-Modules"
     },
-    "flowexp->json": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowexp.short.json} -c config.yaml -w JsonWriter:{file=contex.flowexp.short.json}",
-      "workingDirectory": "..\\..\\TestData\\basic"
-    },
-    "flowexp->yaml": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=test.flowexp.short.json} -c config.yaml -w YamlWriter:{file=context.flowexp.short.yaml}",
-      "workingDirectory": "..\\..\\TestData\\basic",
-      "remoteDebugEnabled": true
-    },
-    "nfdump->yaml": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w YamlWriter:{file=context.nfdump.short.yaml}",
-      "workingDirectory": "..\\..\\TestData\\basic"
-    },
-    "nfdump->json": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r NfdumpCsv:{file=test.nfdump.short.csv} -c config.yaml -w JsonWriter:{file=context.nfdump.short.json}",
-      "workingDirectory": "..\\..\\TestData\\basic"
-    },
-    "fluent": {
-      "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flow.ndjson} -c config.yaml -w JsonWriter:{file=context.ndjson}",
-      "workingDirectory": "..\\..\\TestData\\fluent"
-    },
     "Insert-Netify": {
       "commandName": "Project",
       "commandLineArgs": "Insert-Netify --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name enrichment_data --apps-file applications.csv --ips-file ips.csv --domains-file domains.csv",
@@ -47,18 +21,18 @@
     },
     "webuser-postgres-yaml": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w YamlWriter:{file=webuser.ctx.yaml}",
-      "workingDirectory": "E:\\Ethanol\\webuser2"
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w YamlWriter:{file=ctx.yaml}",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     },
     "webuser-postgres-json": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w JsonWriter:{file=webuser.ctx.json}",
-      "workingDirectory": "E:\\Ethanol\\webuser2"
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     },
     "webuser-postgres-postgres": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=webuser.flows.json} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=host_context}",
-      "workingDirectory": "E:\\Ethanol\\webuser2"
+      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=host_context}",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     }
   }
 }

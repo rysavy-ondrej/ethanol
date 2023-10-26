@@ -10,7 +10,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Subjects;
+using System.Text.Json;
 using System.Threading.Tasks;
+using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
@@ -130,63 +132,58 @@ namespace Ethanol.ContextBuilder.Polishers
             }
         }
 
-        public record ActivityAll(int flows, long bytes);
-        private dynamic ComputeCompactTags(TagObject[] tags)
+        private record ActivityAll(int flows, long bytes);
+        private record DependencyMapping(string src, string port, string num_packets);
+
+        private Dictionary<string,object> ComputeCompactTags(TagObject[] tags)
         {
-            var result = new Dictionary<string, object>();
-            foreach(var tag in tags)
+            string[] CleanAndSplitString(string s)
             {
-                var tagType = tag.Type;
+                return (s ?? String.Empty).Split(',').Select(p => p.Trim('[', ']', '{', '}', ' ', '"')).ToArray();
+            }
+            string CleanAndRejoinString(string s, char sep)
+            {
+                return String.Join(sep, CleanAndSplitString(s));
+            }
+            long SafeIntFromFloatString(string s)
+            {
+                return Convert.ToInt64(double.TryParse(s ?? String.Empty, out var p) ? p : 0f);
+            }
+            Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
+            {
+                var mapping = enumerable
+                    .Select(d => (key: d.Value, val: (DependencyMapping)JsonSerializer.Deserialize<DependencyMapping>(json: d.Details.ToString())))
+                    .Select(m => (ip: m.key, port: m.val.port ?? String.Empty, packets: Convert.ToInt64(double.TryParse(m.val.num_packets.ToString(), out double p) ? p : 0d)))
+                    .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port, x => x.packets)))
+                    .ToDictionary(x => x.ip, x => x.ports);
+                return mapping;
+            }
+            ActivityAll GetActivityInformation(string flows, string bytes)
+            {
+                var activityFlows = tags.WhereType(flows).Select(t => (int)SafeIntFromFloatString(t.Value));
+                var activityBytes = tags.WhereType(bytes).Select(t => SafeIntFromFloatString(t.Value));
+                return new ActivityAll(activityFlows.Sum(), activityBytes.Sum());
+            }
 
-                if (tagType == "activity_flows")
-                {
-                    tagType = "activity_all";
-                    if (!result.ContainsKey(tagType))
-                    {
-                        result[tagType] = new ActivityAll(0, 0);
-                    }
-
-                    var value = (ActivityAll)result[tagType];
-                    var newValue1 = Convert.ToInt32(float.TryParse(tag.Value.ToString(), out var p) ? p : 0f);
-                    result[tagType] = new ActivityAll(value.flows+newValue1, value.bytes);
-                }
-                if (tagType == "activity_bytes")
-                {
-                    tagType = "activity_all";
-                    if (!result.ContainsKey(tagType))
-                    {
-                        result[tagType] = new ActivityAll(0, 0);
-                    }
-
-                    var value = (ActivityAll)result[tagType];
-                    var newValue2 = Convert.ToInt64(double.TryParse(tag.Value.ToString(), out var p) ? p : 0d);
-                    result[tagType] = new ActivityAll(value.flows, value.bytes+newValue2);
-                }
-                if (tagType == "open_ports")
-                {
-                    if (!result.ContainsKey(tagType))
-                    {
-                        result[tagType] = new List<int>();
-                    }
-                    var portList = (List<int>)result[tagType];
-
-                    var ports = tag.Value.ToString().Trim('[',']','{','}').Split(',');
-
-                    foreach (var portString in ports)
-                    {
-                        int port = int.TryParse(portString.Trim(), out var p) ? p : 0;
-                        
-                        if (!portList.Contains(port))
-                        {
-                            portList.Add(port);
-                        }
-                    }
-                }
-
+            var result = new Dictionary<string, object>();
+            try
+            {
+                result["ip_dependency_client"] = GetDependencyMapping(tags.WhereType("ip_dependency_client"));
+                result["ip_dependency_server"] = GetDependencyMapping(tags.WhereType("ip_dependency_server"));
+                result["open_ports"] = tags.WhereType("open_ports").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
+                result["tags_by_services"] = tags.WhereType("tags_by_services").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
+                result["hostml_label"] = tags.WhereType("hostml_label").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
+                result["in_flow_tags"] = tags.WhereType("in_flow_tags").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();               
+                result["tls_os_version"] = tags.WhereType("in_flow_tags").Select(t => CleanAndRejoinString(t.Value,'/')).Distinct().ToList();
+                result["activity_all"] = GetActivityInformation("activity_flows", "activity_bytes");
+                result["activity_global"] = GetActivityInformation("activity_flows_global", "activity_bytes_global");
+            }
+            catch(Exception e)
+            {
+                _logger.LogError(e, "Cannot compact tags {0}.", tags);
             }
             return result;
         }
-        
 
         /// <summary>
         /// Returns an enumerable collection of initiated IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.

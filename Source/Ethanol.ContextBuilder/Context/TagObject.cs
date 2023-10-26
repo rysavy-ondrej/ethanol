@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Text.Json;
 
 namespace Ethanol.ContextBuilder.Context
@@ -87,4 +88,5 @@ namespace Ethanol.ContextBuilder.Context
             }
         }
     }
+
 }

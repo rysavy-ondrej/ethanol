@@ -1,36 +1,43 @@
-## ContextBuilder Test Data
+## ContextBuilder Test Data Documentation
 
-To test context builder with the representative sample of data proceed as follows:
+### Overview
+This document outlines the steps to test the context builder using representative sample data with PostgreSQL.
 
-1. Create a local or docker-based PostgreSQL database
+### Steps
 
-2. Install PostreSQL CLI:
+1. **Setting Up the Database Environment**:
+   - If you haven't already, set up a local PostgreSQL instance or use Docker to create a PostgreSQL container.
 
-```
-choco install psql
-```
+2. **Installing PostgreSQL Command Line Interface (CLI)**:
+   - If not already installed, get the PostgreSQL CLI for easy database interaction:
+     ```bash
+     choco install psql
+     ```
 
-3. Connect to the database using PostgreSQL client:
+3. **Database Connection**:
+   - Connect to your PostgreSQL database using the PostgreSQL client. If you're running the database locally or in a Docker container with a port mapped to 1605, you can use:
+     ```bash
+     psql -U postgres -d ethanol -p 1605
+     ```
 
-```
-psql -U USERNAME -d DATABASE -h HOSTNAME -p PORT
-```
+   - Note: Make sure the user `postgres` has access to the database named `ethanol`.
 
-For example:
-```
-psql -U postgres -d ethanol -p 1605
-```
+4. **Data Import**:
+   - Copy the enrichment data from the provided CSV files into your PostgreSQL database:
+     ```sql
+     \COPY enrichment_data FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
+     \COPY enrichment_data FROM netify.csv WITH DELIMITER ',' CSV HEADER;
+     ```
 
-4. Copy the enrichment data from CSV files to the database:
+   - Ensure your current directory in the terminal points to where the CSV files are located.
 
-```
-\COPY your_table_name FROM '/path/to/your/csvfile.csv' WITH DELIMITER ',' CSV HEADER;
-```
+5. **Running ContextBuilder**:
+   - Execute the following command to run ContextBuilder on the given input samples:
+     ```bash
+     ..\Source\Ethanol.ContextBuilder\bin\Debug\net7.0\Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}
+     ```
 
-3. Execute the following command that runs ContextBuilder on the input samples:
+   - This command will use the data from the PostgreSQL database, process it, and generate a context in the `ctx.json` output file.
 
-```cmd
-..\Source\Ethanol.ContextBuilder\bin\Debug\net7.0\Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}
-```
-
-It creates `ctx.json` output with computed context.
+### Result
+After following the steps, you should have a `ctx.json` file in your directory. This file contains the computed context based on the input samples and the enrichment data from the PostgreSQL database. Review this file to ensure the context builder has worked as expected.

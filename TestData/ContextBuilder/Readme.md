@@ -6,7 +6,12 @@ This document outlines the steps to test the context builder using representativ
 ### Steps
 
 1. **Setting Up the Database Environment**:
-   - If you haven't already, set up a local PostgreSQL instance or use Docker to create a PostgreSQL container.
+   - If you haven't already, set up a local PostgreSQL instance or use Docker to create a PostgreSQL container. You can use provided `dockerfile` to create 
+     a new PostgreSQL container.  
+
+     ```bash
+     docker run --name ethanol-postgres -e POSTGRES_DB=ethanol -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 1605:5432 -v db_data:/var/lib/postgresql/data -v db_init:/docker-entrypoint-initdb.d -d postgres
+     ```
 
 2. **Installing PostgreSQL Command Line Interface (CLI)**:
    - If not already installed, get the PostgreSQL CLI for easy database interaction:
@@ -16,13 +21,15 @@ This document outlines the steps to test the context builder using representativ
      ```
 
 3. **Database Connection**:
-   - Connect to your PostgreSQL database using the PostgreSQL client. If you're running the database locally or in a Docker container with a port mapped to 1605, you can use:
+   - Connect to your PostgreSQL database using the PostgreSQL client and create tables. If you're running the database locally or in a Docker container with a port mapped to 1605, you can use:
 
      ```bash
-     psql -U postgres -d ethanol -p 1605
+     psql -U postgres -d ethanol -p 1605 -f db_init/create-tables.sql
      ```
 
    - Note: Make sure the user `postgres` has access to the database named `ethanol`.
+
+
 
 4. **Data Import**:
    - Copy the enrichment data from the provided CSV files into your PostgreSQL database:

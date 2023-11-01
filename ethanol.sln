@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.ApplicationSonar", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.DataObjects", "Source\Ethanol.DataObjects\Ethanol.DataObjects.csproj", "{0767694F-0EBB-4B19-A91B-6952C295BDFB}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.ContextProvider", "Source\Ethanol.ContextProvider\Ethanol.ContextProvider.csproj", "{0A3345D6-41CA-4B52-82BE-204C7F0C3063}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0767694F-0EBB-4B19-A91B-6952C295BDFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A3345D6-41CA-4B52-82BE-204C7F0C3063}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A3345D6-41CA-4B52-82BE-204C7F0C3063}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A3345D6-41CA-4B52-82BE-204C7F0C3063}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A3345D6-41CA-4B52-82BE-204C7F0C3063}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +70,7 @@ Global
 		{D0783BC6-9034-46AD-8D12-CA8484E11A44} = {55939A1F-7666-4507-A837-5088B1DB5016}
 		{AF563079-1AFB-4912-A15F-D4C016810B67} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
 		{0767694F-0EBB-4B19-A91B-6952C295BDFB} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
+		{0A3345D6-41CA-4B52-82BE-204C7F0C3063} = {4EE8534A-4A56-4D44-9F81-35D50054BAA6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1A6FA446-B8AD-4956-969B-866E8E57D8D6}

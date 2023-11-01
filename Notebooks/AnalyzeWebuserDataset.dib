@@ -36,9 +36,6 @@ using Microsoft.Data.Analysis;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 
-using Plotly.NET;
-using Plotly.NET.Interactive;
-
 using CsvHelper;
 
 using System;
@@ -414,4 +411,16 @@ tlsTagged.WriteToCsv("app-tagged.csv");
 
 #!markdown
 
-## Plot the results
+## Plot Results of Application Classification
+
+To visualize the results of the application classification, follow the steps below using the SandDance extension. SandDance is a data visualization tool that enables you to view data in various graphical forms.
+
+1. **Installation**: Make sure you have the SandDance extension installed on your system. If you haven't installed it yet, you can find it in the extensions marketplace of Visual Studio Code (https://marketplace.visualstudio.com/items?itemName=msrvida.vscode-sanddance)
+
+
+2. **Open with SandDance**:
+    - Right-click on the `app-tagged.csv` file. This will open a context menu.
+    - From the context menu, select `View in SandDance`. This will open the file in the SandDance visualization interface.
+
+3. **Select Visualization Type**:
+    - Once your data is loaded, you will see various visualization options on the SandDance interface. Choose a visualization that best represents your data. For classification results, scatter plots or bar charts might be appropriate.

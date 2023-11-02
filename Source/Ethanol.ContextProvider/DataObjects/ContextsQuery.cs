@@ -18,6 +18,10 @@ public record ContextsQuery
     /// </summary>
     public string? HostKey { get; set; }
 
+    /// <summary>
+    /// Generates WHERE expression from the properties of the current object.
+    /// </summary>
+    /// <returns>Expression usable in WHERE clauses of the SQL expression.</returns>
     internal string GetWhereExpression()
     {
         var start = Start.GetValueOrDefault(DateTime.MinValue);

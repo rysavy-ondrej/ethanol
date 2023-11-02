@@ -200,9 +200,9 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
 
-            var tagKeysExpr = String.Join(" OR ", tagKeys.Select(x => $"key='{x}'").ToArray());
+            var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
 
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND ({tagKeysExpr})";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
             return cmd;
         }
         /// <summary>

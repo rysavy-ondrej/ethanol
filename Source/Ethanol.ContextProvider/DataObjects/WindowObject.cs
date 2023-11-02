@@ -4,17 +4,6 @@
 public record WindowObject
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the time window.
-    /// </summary>
-    /// <remarks>
-    /// The WindowId serves as a unique identifier for distinct time windows, facilitating data aggregation or segmentation based on these windows.
-    /// <para/>
-    /// It is derived by taking the Tick representation of the <see cref="Start"/> timestamp and dividing it by the predefined time span duration (expressed in ticks). 
-    /// The resulting quotient uniquely identifies the time window.
-    /// </remarks>
-    public long WindowId { get; set; }
-
-    /// <summary>
     /// Gets or sets the starting timestamp of the time window.
     /// </summary>
     /// <remarks>

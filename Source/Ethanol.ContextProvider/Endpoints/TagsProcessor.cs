@@ -4,19 +4,49 @@ using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Npgsql;
 using System.Data;
 
+/// <summary>
+/// Processor for handling operations related to tags. The class is designed to read tags relevant 
+/// for host context from the database. Its primary purpose is to compute aggregated tag information 
+/// for efficient data representation and further analysis. It leverages tag data stored in a database 
+/// table, ensuring accurate and up-to-date tag processing.
+/// </summary>
 class TagsProcessor
 {
+    /// <summary>
+    /// Logger instance for logging messages.
+    /// </summary>
     static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
+
+    /// <summary>
+    /// The provider for fetching tag data from PostgreSQL.
+    /// </summary>
     private readonly PostgresTagProvider _provider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TagsProcessor"/> class.
+    /// </summary>
+    /// <param name="connection">The Npgsql connection instance.</param>
+    /// <param name="tablename">The name of the table to work with.</param>
 
     public TagsProcessor(NpgsqlConnection connection, string tablename)
     {
         _provider = new PostgresTagProvider(connection, tablename);
     }
-
+    /// <summary>
+    /// Represents aggregated activity data.
+    /// </summary>
     private record ActivityAll(int flows, long bytes);
+
+    /// <summary>
+    /// Represents a mapping of a dependency.
+    /// </summary>
     private record DependencyMapping(string src, string port, int num_packets);
 
+    /// <summary>
+    /// Computes compact tag representations for the given set of tags.
+    /// </summary>
+    /// <param name="tags">Array of <see cref="TagObject"/> to be processed.</param>
+    /// <returns>A dictionary with compacted tag representations.</returns>
     public Dictionary<string, object> ComputeCompactTags(TagObject[] tags)
     {
         string[] CleanAndSplitString(string s)
@@ -67,6 +97,13 @@ class TagsProcessor
         return result;
     }
 
+    /// <summary>
+    /// Reads tag objects for the specified key within a given time range.
+    /// </summary>
+    /// <param name="key">The key to filter tags.</param>
+    /// <param name="start">The start of the date-time range.</param>
+    /// <param name="end">The end of the date-time range.</param>
+    /// <returns>An array of <see cref="TagObject"/> matching the criteria.</returns>
     public TagObject[] ReadTagObjects(string key, DateTime start, DateTime end)
     {
         var tags = _provider.Get(key, start, end);

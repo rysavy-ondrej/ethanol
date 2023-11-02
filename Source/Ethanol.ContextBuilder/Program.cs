@@ -17,7 +17,11 @@ namespace Ethanol.ContextBuilder
         /// <param name="args">Command line arguments.</param>
         public static void Main(string[] args)
         {
+            // >>>>>>>>>
+            // CONFIGURE
+            // >>>>>>>>>
             var builder = ConsoleApp.CreateBuilder(args);
+
             builder.ConfigureServices((ctx, services) =>
             {
                 services.AddLogging(logging =>
@@ -36,12 +40,19 @@ namespace Ethanol.ContextBuilder
                 });
             });
 
+            // >>>>>>
+            // BUILD
+            // >>>>>>
             var app = builder.Build();
-            // get configured loggerfactory.
+
             var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
             LogManager.SetLoggerFactory(loggerFactory, "Global");
 
             app.AddCommands<ProgramCommands>();
+
+            // >>>
+            // RUN
+            // >>>
             try
             {
                 app.Run();

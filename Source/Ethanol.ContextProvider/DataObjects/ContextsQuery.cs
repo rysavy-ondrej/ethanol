@@ -4,20 +4,27 @@
 public record ContextsQuery
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the time window.
+    /// Gets or sets the start date and time of the query time window. If not set, there's no lower bound to the query time window.
     /// </summary>
-    /// <remarks>
-    /// The WindowId defines the specific window of time for which the host-context data is to be retrieved.
-    /// </remarks>
-    public string? WindowId { get; set; }
+    public DateTime? Start { get; set; }
 
     /// <summary>
-    /// Gets or sets the IP address to filter specific host-context data.
+    /// Gets or sets the end date and time of the query time window. If not set, there's no upper bound to the query time window.
     /// </summary>
-    /// <remarks>
-    /// The IP property allows for the retrieval of host-context data specific to the provided IP address.
-    /// <para/>
-    /// If not IP address is provided than all host-context within the given window will be retrieved.
-    /// </remarks>
-    public string? IP { get; set; }
+    public DateTime? End { get; set; }
+
+    /// <summary>
+    /// Gets or sets the IP prefix used for filtering the context data. If not set, context data for all IP addresses will be retrieved.
+    /// </summary>
+    public string? HostKey { get; set; }
+
+    internal string GetWhereExpression()
+    {
+        var start = Start.GetValueOrDefault(DateTime.MinValue);
+        var end = End.GetValueOrDefault(DateTime.MaxValue);
+        var exprs = new[]{  $"validity && '[{start},{end})'",
+                             HostKey != null ? $"key = '{HostKey}'" : "true" };
+        return String.Join(" AND ", exprs);
+    }
 }
+

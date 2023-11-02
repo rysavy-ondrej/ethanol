@@ -1,6 +1,7 @@
 ﻿using FastEndpoints;
 using System.Threading.Tasks;
 using System.Threading;
+using Npgsql;
 
 /// <summary>
 /// Provides an endpoint to retrieve information about the last available time window.
@@ -11,6 +12,14 @@ using System.Threading;
 [HttpGet("/api/v1/host-context/windows/last")]
 public class LastWindowEndpoint : EndpointWithoutRequest<WindowObject>
 {
+    private readonly NpgsqlConnection _connection;
+
+    public LastWindowEndpoint(Npgsql.NpgsqlConnection connection)
+    {
+        this._connection = connection;
+    }
+
+    
     /// <summary>
     /// Handles incoming requests and responds with the details of the last available time window.
     /// </summary>
@@ -18,6 +27,7 @@ public class LastWindowEndpoint : EndpointWithoutRequest<WindowObject>
     /// <returns>Asynchronous task signalizing the status of the operation.</returns>
     public override async Task HandleAsync(CancellationToken ct)
     {
-       await SendAsync(new WindowObject { WindowId = 1, Start = DateTime.Now, End= DateTime.Now });
+        
+        await SendAsync(new WindowObject { WindowId = 1, Start = DateTime.Now, End= DateTime.Now });
     }
 }

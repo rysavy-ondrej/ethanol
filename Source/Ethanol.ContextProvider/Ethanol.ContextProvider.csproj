@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="FastEndpoints" Version="5.19.0" />
+    <PackageReference Include="Npgsql.DependencyInjection" Version="7.0.6" />
+    <PackageReference Include="ZLogger" Version="1.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj" />
   </ItemGroup>
 
 </Project>

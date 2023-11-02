@@ -91,7 +91,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Distinct();
             if (_tagQueryable != null)
             {
-                return  GetLocalTags(host, start, end).Concat(GetRemoteTags(remoteHosts, start, end));
+                return  GetRemoteTags(remoteHosts, start, end);
             }
             return Array.Empty<TagObject>();
         }
@@ -120,7 +120,8 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </returns>
         private IEnumerable<TagObject> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTime start, DateTime end)
         {                
-            return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), nameof(NetifyTag), start, end) ?? Enumerable.Empty<TagObject>());
+            //return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), nameof(NetifyTag), start, end) ?? Enumerable.Empty<TagObject>());
+            return _tagQueryable.GetMany(remoteHosts.Select(x=>x.ToString()), nameof(NetifyTag), start, end) ?? Enumerable.Empty<TagObject>();
         }
 
         /// <summary>

@@ -66,7 +66,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         /// </summary>
         /// <param name="connectionString"></param>
         /// <param name="tableName">The name of the table to read records from.</param>
-        PostgresTagProvider(NpgsqlConnection connection, string tableName)
+        public PostgresTagProvider(NpgsqlConnection connection, string tableName)
         {
             _connection = connection;
             _tableName = tableName;
@@ -155,6 +155,12 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             throw new NotImplementedException();
         }
 
+        public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
+        {
+            using var cmd = PrepareCommand(keys, tagType, start, end);
+            return ReadObjects(cmd);
+        }
+
         /// <summary>
         /// Prepares a NpgsqlCommand for retrieving data based on the provided tag key and time range.
         /// </summary>
@@ -184,7 +190,19 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             var endString = end.ToString("o", CultureInfo.InvariantCulture);
             var cmd = _connection.CreateCommand();
             // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND key ='{tagKey}' AND validity && '[{startString},{endString})'";
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key ='{tagKey}'";
+            return cmd;
+        }
+        private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)
+        {
+            var startString = start.ToString("o", CultureInfo.InvariantCulture);
+            var endString = end.ToString("o", CultureInfo.InvariantCulture);
+            var cmd = _connection.CreateCommand();
+            // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+
+            var tagKeysExpr = String.Join(" OR ", tagKeys.Select(x => $"key='{x}'").ToArray());
+
+            cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND ({tagKeysExpr})";
             return cmd;
         }
         /// <summary>

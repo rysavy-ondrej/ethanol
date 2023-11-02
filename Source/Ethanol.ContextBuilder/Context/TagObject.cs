@@ -75,7 +75,7 @@ namespace Ethanol.ContextBuilder.Context
         /// it returns the details directly. Otherwise, it serializes the Details into JSON 
         /// and then deserializes it into the specified type.
         /// </remarks>
-        internal T GetDetailsAs<T>()
+        public T GetDetailsAs<T>()
         {
             if (typeof(T) == Details.GetType())
             {

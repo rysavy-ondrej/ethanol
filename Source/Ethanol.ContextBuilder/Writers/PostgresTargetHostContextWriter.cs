@@ -93,10 +93,9 @@ namespace Ethanol.ContextBuilder.Writers
             using (var cmd = new NpgsqlCommand())
             {
                 cmd.Connection = _connection;
-                cmd.CommandText = $"INSERT INTO {_tableName} (key, tags, initiatedconnections, acceptedconnections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @tags, @initiatedconnections, @acceptedconnections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
+                cmd.CommandText = $"INSERT INTO {_tableName} (key, initiatedconnections, acceptedconnections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @initiatedconnections, @acceptedconnections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
 
                 cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Payload.HostAddress.ToString());
-                cmd.Parameters.AddWithValue("tags", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.Tags);
                 cmd.Parameters.AddWithValue("initiatedconnections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.InitiatedConnections);
                 cmd.Parameters.AddWithValue("acceptedconnections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.AcceptedConnections);
                 cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.ResolvedDomains);

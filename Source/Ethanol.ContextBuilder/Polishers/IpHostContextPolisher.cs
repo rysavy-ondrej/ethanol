@@ -5,14 +5,10 @@ using Ethanol.ContextBuilder.Pipeline;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Reactive.Subjects;
-using System.Text.Json;
 using System.Threading.Tasks;
-using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
@@ -107,8 +103,6 @@ namespace Ethanol.ContextBuilder.Polishers
                     return serviceResolver.Resolve(destinationAddress.ToString()).Item2;
                 }
 
-                var tags = ComputeCompactTags(value.Payload.Tags);
-
                 var upflows = value.Payload.Flows.Where(x => x.SourceAddress.Equals(value.Payload.HostAddress)).ToList();
 
                 var downflows = value.Payload.Flows.Where(x => x.DestinationAddress.Equals(value.Payload.HostAddress)).ToList();
@@ -121,7 +115,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var handshakes = upflows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
 
-                var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, tags, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
+                var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, initiatedConnections, acceptedConnections, domains, webUrls, handshakes);
 
                 _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
             }
@@ -130,59 +124,6 @@ namespace Ethanol.ContextBuilder.Polishers
                 _logger.LogError(e, "Error in context polishing.", value);
                 _subject.OnError(e);
             }
-        }
-
-        private record ActivityAll(int flows, long bytes);
-        private record DependencyMapping(string src, string port, int num_packets);
-
-        private Dictionary<string,object> ComputeCompactTags(TagObject[] tags)
-        {
-            string[] CleanAndSplitString(string s)
-            {
-                return (s ?? String.Empty).Split(',').Select(p => p.Trim('[', ']', '{', '}', ' ', '"')).ToArray();
-            }
-            string CleanAndRejoinString(string s, char sep)
-            {
-                return String.Join(sep, CleanAndSplitString(s));
-            }
-            long SafeIntFromFloatString(string s)
-            {
-                return Convert.ToInt64(double.TryParse(s.Trim('"') ?? string.Empty, out var p) ? p : 0f);
-            }
-            Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
-            {
-                var mapping = enumerable
-                    .Select(d => (key: d.Value, val: d.GetDetailsAs<DependencyMapping>()))
-                    .Select(m => (ip: m.key, port: m.val.port ?? string.Empty, packets: (long)m.val.num_packets))
-                    .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port, x => x.packets)))
-                    .ToDictionary(x => x.ip, x => x.ports);
-                return mapping;
-            }
-            ActivityAll GetActivityInformation(string flows, string bytes)
-            {
-                var activityFlows = tags.WhereType(flows).Select(t => (int)SafeIntFromFloatString(t.Value));
-                var activityBytes = tags.WhereType(bytes).Select(t => SafeIntFromFloatString(t.Value));
-                return new ActivityAll(activityFlows.Sum(), activityBytes.Sum());
-            }
-
-            var result = new Dictionary<string, object>();
-            try
-            {
-                result["ip_dependency_client"] = GetDependencyMapping(tags.WhereType("ip_dependency_client"));
-                result["ip_dependency_server"] = GetDependencyMapping(tags.WhereType("ip_dependency_server"));
-                result["open_ports"] = tags.WhereType("open_ports").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
-                result["tags_by_services"] = tags.WhereType("tags_by_services").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
-                result["hostml_label"] = tags.WhereType("hostml_label").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();
-                result["in_flow_tags"] = tags.WhereType("in_flow_tags").SelectMany(t => CleanAndSplitString(t.Value)).Distinct().ToList();               
-                result["tls_os_version"] = tags.WhereType("tls_os_version").Select(t => CleanAndRejoinString(t.Value,'/')).Distinct().ToList();
-                result["activity_all"] = GetActivityInformation("activity_flows", "activity_bytes");
-                result["activity_global"] = GetActivityInformation("activity_flows_global", "activity_bytes_global");
-            }
-            catch(Exception e)
-            {
-                _logger.LogError(e, "Cannot compact tags {0}.", tags);
-            }
-            return result;
         }
 
         /// <summary>

@@ -107,6 +107,11 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         {
             return Task.FromResult(Get(key, tagType, start, end));
         }
+
+        public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }

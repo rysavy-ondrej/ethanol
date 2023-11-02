@@ -1,3 +1,4 @@
+using ConfigurationSubstitution;
 using ConsoleAppFramework;
 using Cysharp.Text;
 using Ethanol.ContextBuilder;
@@ -29,10 +30,16 @@ namespace Ethanol.ContextProvider
             builder.Services.AddFastEndpoints();
 
             builder.Configuration.AddJsonFile(configurationFile, optional: false, reloadOnChange: true);
-            builder.Services.Configure<EthanolConfiguration>(builder.Configuration.GetSection("EthanolConfiguration"));
+            builder.Configuration.EnableSubstitutions("${", "}", UnresolvedVariableBehaviour.IgnorePattern);
 
-            builder.Services.AddNpgsqlDataSource(builder.Configuration.GetConnectionString("Default"));
+            var ethanolConfiguration = new EthanolConfiguration();
+            builder.Configuration.Bind(nameof(EthanolConfiguration), ethanolConfiguration);
 
+            builder.Services.Configure<EthanolConfiguration>(builder.Configuration.GetSection(nameof(EthanolConfiguration)));
+
+            builder.Services.AddNpgsqlDataSource(ethanolConfiguration.GetConnectionString());
+
+            builder.WebHost.UseUrls(builder.Configuration.GetValue<string>("ApplicationUrl"));
 
             builder.Services.AddLogging(logging =>
                 {
@@ -46,7 +53,6 @@ namespace Ethanol.ContextProvider
 #else
         logging.SetMinimumLevel(LogLevel.Information);
 #endif
-
                 });
 
 

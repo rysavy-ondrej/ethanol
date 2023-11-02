@@ -259,6 +259,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         static (string, string)[] SqlColumns =>
             new (string, string)[]
             {
+            ("id","SERIAL PRIMARY KEY"),
             ("type", $"VARCHAR({ColumnTypeLength}) NOT NULL"),
             ("key", $"VARCHAR({ColumnKeyLength}) NOT NULL"),
             ("value", $"VARCHAR({ColumnValueLength})"),

@@ -6,6 +6,7 @@ GRANT ALL PRIVILEGES ON DATABASE ethanol TO postgres;
 -- their IP/MAC addresses with extra information depending on the tag type.
 -------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS enrichment_data (
+    id SERIAL PRIMARY KEY, 
     type VARCHAR(32) NOT NULL,
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
 );
 
 CREATE INDEX IF NOT EXISTS enrichment_data_key_idx ON enrichment_data (key);
+CREATE INDEX IF NOT EXISTS enrichment_data_type_idx ON enrichment_data (type);
 
 -------------------------------------------------------------------------------
 -- Host context table contains resulted context computed by 

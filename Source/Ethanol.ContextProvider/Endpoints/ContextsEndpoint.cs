@@ -38,10 +38,13 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <returns>Asynchronous task signalizing the completion of the operation.</returns>
         public override async Task HandleAsync(ContextsQuery query, CancellationToken ct)
         {
+            __logger.LogInformation($"Endpoint '{nameof(ContextsEndpoint)}' received requests '{query}'.");
             try
             {
                 var rowList = new List<HostContext>();
                 using var connection = _datasource.OpenConnection();
+                __logger.LogInformation($"Using connection: `{connection.ConnectionString}` to access database.");
+
                 using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = $"SELECT * FROM \"{_configuration.HostContextTable}\" WHERE {query.GetWhereExpression()}";

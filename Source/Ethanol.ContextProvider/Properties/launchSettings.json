@@ -1,30 +1,27 @@
-﻿{
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:59325",
-      "sslPort": 44312
-    }
-  },
+{
   "profiles": {
     "http": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:5107",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5107"
     },
     "https": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:7274;http://localhost:5107",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "POSTGRES_IP": "localhost",
+        "POSTGRES_PORT": "1605",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "postgres",
+        "POSTGRES_DB": "ethanol"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7274;http://localhost:5107"
     },
     "IIS Express": {
       "commandName": "IISExpress",
@@ -32,6 +29,14 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:59325",
+      "sslPort": 44312
     }
   }
 }

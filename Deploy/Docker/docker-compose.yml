@@ -11,7 +11,7 @@ services:
     environment:
       FLUENT_UID: 0
       POSTGRES_IP: postgres-service
-      ETHANOL_IP: ethanol-service
+      ETHANOL_IP: ethanol-run-service
       ETHANOL_PORT: 5180
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -37,9 +37,10 @@ services:
       timeout: 5s
       retries: 5
 
-  ethanol-service:
+  ethanol-run-service:
     build: 
       context: ../../
+    command: ["/app/run-ethanol-builder.sh"]
     environment:
       POSTGRES_IP: postgres-service
       POSTGRES_PORT: 5432
@@ -51,6 +52,27 @@ services:
       ETHANOL_PORT: 5180
     volumes:
       - ./netify:/var/netify
+    depends_on:
+      postgres-service:
+        condition: service_healthy
+      fluentbit-service:
+        condition: service_started
+
+  ethanol-api-service:
+    build: 
+      context: ../../
+    command: ["/app/run-ethanol-provider.sh"]
+    ports:
+      - 1610:5190
+    environment:
+      POSTGRES_IP: postgres-service
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ethanol
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      FLUENTBIT_IP: fluentbit-service
+      FLUENTBIT_PORT: 5175
+      ETHANOL_PORT: 5180
     depends_on:
       postgres-service:
         condition: service_healthy

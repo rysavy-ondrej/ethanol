@@ -27,20 +27,30 @@ WORKDIR /src
 COPY ./Source/ .
 
 # Compile and publish:
-RUN dotnet publish -c Release -o /bin -r linux-x64 --self-contained true /p:PublishReadyToRun=true /p:PublishSingleFile=true Ethanol.ContextBuilder/
+RUN dotnet publish -c Release -o /bin/builder -r linux-x64 --self-contained true /p:PublishReadyToRun=true /p:PublishSingleFile=true Ethanol.ContextBuilder/
+RUN dotnet publish -c Release -o /bin/provider -r linux-x64 --self-contained true /p:PublishReadyToRun=true /p:PublishSingleFile=true Ethanol.ContextProvider/
 
 # Build the runtime image
 FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 
 # Set the working directory to /app and copy the published output
-WORKDIR /app
-COPY --from=build /bin ./
-# COPY ./Source/Ethanol.ContextBuilder/Configurations ./
+WORKDIR /app/builder/
+COPY --from=build /bin/builder ./
 COPY ./Deploy/Docker/ethanol-config.yml ./
+COPY ./Deploy/Docker/run-ethanol-builder.sh /app
+RUN chmod a+x /app/run-ethanol-builder.sh 
+
+# Set the working directory to /app and copy the published output
+WORKDIR /app/provider
+COPY --from=build /bin/provider ./
+COPY ./Deploy/Docker/run-ethanol-provider.sh /app
+RUN chmod a+x /app/run-ethanol-provider.sh 
 
 # Set the entry point for the container
 # This runs the builder with the following i/o bindings:
 # input: Tcp server listens for incoming JSON formated data with input flows
 # output: PostreSQL table hostcontext is inserted with generated context
+# CMD sh -c './Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}} -c ethanol-config.yml -w PostgresWriter:{server=${POSTGRES_IP},port=${POSTGRES_PORT},database=ethanol,user=${POSTGRES_USER},password=${POSTGRES_PASSWORD},tableName=host_context}'
 
-CMD sh -c './Ethanol.ContextBuilder Build-Context -r FlowmonJson:{tcp=0.0.0.0:${ETHANOL_PORT}} -c ethanol-config.yml -w PostgresWriter:{server=${POSTGRES_IP},port=${POSTGRES_PORT},database=ethanol,user=${POSTGRES_USER},password=${POSTGRES_PASSWORD},tableName=host_context}'
+# Just run shell...
+ENTRYPOINT [ "bash" ]

@@ -2,7 +2,6 @@
 using FastEndpoints;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using System.Data.Common;
 
 namespace Ethanol.ContextProvider.Endpoints
 {

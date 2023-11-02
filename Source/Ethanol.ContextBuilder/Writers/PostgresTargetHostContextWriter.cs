@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
 using System;
+using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -27,6 +28,7 @@ namespace Ethanol.ContextBuilder.Writers
         // Column definitions for the PostgreSQL table
         private static string[] __columns = new string[]
         {
+            "id SERIAL PRIMARY KEY",
             "key VARCHAR(255) NOT NULL",
             "tags JSON",
             "initiatedconnections JSON",

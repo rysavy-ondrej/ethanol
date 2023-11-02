@@ -33,9 +33,9 @@ services:
       - ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ethanol-run-service:
     build: 

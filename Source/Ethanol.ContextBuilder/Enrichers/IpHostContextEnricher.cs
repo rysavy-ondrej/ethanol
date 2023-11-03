@@ -40,7 +40,8 @@ namespace Ethanol.ContextBuilder.Enrichers
         public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable)
         {
             _subject = new Subject<ObservableEvent<RawHostContext>>();
-            _tagQueryable = new CachedTagDataProvider<TagObject>(tagQueryable, cacheSize,cacheExpiration);
+            //_tagQueryable = new CachedTagDataProvider<TagObject>(tagQueryable, cacheSize,cacheExpiration);
+            _tagQueryable = tagQueryable;
         }
 
         /// <summary>

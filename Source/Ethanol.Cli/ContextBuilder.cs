@@ -1,17 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
+using ConfigurationSubstitution;
 namespace Ethanol.Cli
 {
     internal class ContextBuilder : ConsoleAppBase
     {
-        private readonly ILogger _logger;
-        private readonly IConfigurationBuilder configurationBuilder;
+        private readonly ILogger _logger;        
 
-        public ContextBuilder(ILogger<ContextBuilder> logger, IConfigurationBuilder configurationBuilder)
+        public ContextBuilder(ILogger<ContextBuilder> logger)
         {
             this._logger = logger;
-            this.configurationBuilder = configurationBuilder;
         }
 
         [Command("run-builder", "Starts the application.")]
@@ -22,7 +20,12 @@ namespace Ethanol.Cli
         )
         {
             _logger.LogInformation($"Running context builder with configuration file: '{configurationFile}'");
-            var configuration = configurationBuilder.AddJsonFile(configurationFile).Build();
+            var configurationBuilder = new ConfigurationBuilder();
+            var configuration = configurationBuilder.AddJsonFile(configurationFile).AddEnvironmentVariables().EnableSubstitutions("${", "}", UnresolvedVariableBehaviour.IgnorePattern).Build();
+
+            Console.WriteLine($"{configuration.GetValue<string>("window-size")}");
+
+
         }
     }
 }

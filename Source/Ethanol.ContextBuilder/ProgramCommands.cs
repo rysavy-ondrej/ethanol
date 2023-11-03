@@ -70,14 +70,14 @@ namespace Ethanol.ContextBuilder
             var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
             logger.LogInformation($"Created writer: {writer}, {writerRecipe}.");
 
+            var cts = new CancellationTokenSource();
+            var t = MyTimer(cts.Token);
+
             logger.LogInformation($"Setting up the processing pipeline.");
 
             var pipeline = environment.ContextBuilder.CreateIpHostContextBuilderPipeline(configuration, reader, writer, (x) => inputCount+=x, (x) => outputCount+=x);
 
             logger.LogInformation($"Pipeline is ready, start processing input flows.");
-
-            var cts = new CancellationTokenSource();
-            var t = MyTimer(cts.Token);
             
             await pipeline.Start(cts.Token).ContinueWith(t => cts.Cancel());
 

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   fluentbit-service:
-    image: fluent/fluent-bit:1.9
+    image: fluent/fluent-bit:2.1
     ports:
       - 1600:5170
     volumes:
@@ -41,6 +41,8 @@ services:
     build: 
       context: ../../
     command: ["/app/run-ethanol-builder.sh"]
+    ports:
+      - 1601:5180
     environment:
       POSTGRES_IP: postgres-service
       POSTGRES_PORT: 5432

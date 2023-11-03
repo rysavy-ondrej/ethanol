@@ -1,6 +1,5 @@
 window-size: 00:05:00
 window-hop: 00:05:00
-target-prefix: 192.168.111.0/24
 tag-enricher:
     postgres:
         server: localhost

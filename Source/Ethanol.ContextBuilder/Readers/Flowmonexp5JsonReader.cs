@@ -250,7 +250,7 @@ namespace Ethanol.ContextBuilder.Readers
                     }
                     else
                     {
-                        __logger.LogError($"Cannot deserialize input {jsonString.Substring(0,1024)}.");
+                        __logger.LogError($"Invalid input data: Cannot deserialize input {jsonString.Substring(0,64)}.");
                     }
                 }
                 reader.Close();

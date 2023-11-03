@@ -82,6 +82,7 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         protected override void Open()
         {
+            __logger.LogInformation($"Open DB connection '{_connection.ConnectionString}'");
             _connection.Open();
             CreateTableIfNotExists(_connection, _tableName);
         }

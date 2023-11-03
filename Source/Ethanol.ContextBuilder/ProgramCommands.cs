@@ -37,8 +37,8 @@ namespace Ethanol.ContextBuilder
         /// <param name="configurationFile">The configuration file used to configure the processing. This file contains settings and parameters that dictate 
         /// how the input is to be processed.</param>
         /// <param name="outputWriter">The writer module for producing the output. This specifies which writer to use for writing the processed output.</param>
-        [Command("Build-Context", "Builds the context for flows.")]
-        public async Task BuildContextCommand(
+        [Command("run", "Starts the application.")]
+        public async Task RunCommand(
         [Option("r", "The reader module for processing input stream.")]
                 string inputReader,
         [Option("c", "The configuration file used to configure the processing.")]

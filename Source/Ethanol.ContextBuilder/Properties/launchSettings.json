@@ -19,19 +19,24 @@
       "commandLineArgs": "Insert-HostTags --connection-string \"Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;\" --table-name  enrichment_data --input-file webuser.fakesads.csv",
       "workingDirectory": "e:\\Ethanol\\webuser2\\"
     },
-    "webuser-postgres-yaml": {
+    "test-tcp-postgres-postgres": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w YamlWriter:{file=ctx.yaml}",
+      "commandLineArgs": "run -r FlowmonJson:{tcp=0.0.0.0:5180} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=host_context}",
       "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     },
-    "webuser-postgres-json": {
+    "test-file-postgres-postgres": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}",
+      "commandLineArgs": "run -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=host_context}",
       "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     },
-    "webuser-postgres-postgres": {
+    "test-file-postgres-json": {
       "commandName": "Project",
-      "commandLineArgs": "Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w PostgresWriter:{server=localhost,port=1605,database=ethanol,user=postgres,password=postgres,tableName=host_context}",
+      "commandLineArgs": "run -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
+    },
+    "test-file-postgres-yaml": {
+      "commandName": "Project",
+      "commandLineArgs": "run -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w YamlWriter:{file=ctx.yaml}",
       "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder"
     }
   }

@@ -18,6 +18,9 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
     {
+        static long cacheSize = 1024;
+        static TimeSpan cacheExpiration = TimeSpan.FromMinutes(15);
+
         static ILogger _logger = LogManager.GetCurrentClassLogger();
         /// Represents a subject that can both observe items of type <see cref="ObservableEvent<RawHostContext>"/> 
         /// as well as produce them. This is often used to represent both the source and terminator of an observable sequence.
@@ -37,7 +40,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable)
         {
             _subject = new Subject<ObservableEvent<RawHostContext>>();
-            _tagQueryable = tagQueryable;
+            _tagQueryable = new CachedTagDataProvider<TagObject>(tagQueryable, cacheSize,cacheExpiration);
         }
 
         /// <summary>
@@ -91,7 +94,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Distinct();
             if (_tagQueryable != null)
             {
-                return  GetRemoteTags(remoteHosts, start, end);
+                return GetRemoteTags(remoteHosts, start, end);
             }
             return Array.Empty<TagObject>();
         }

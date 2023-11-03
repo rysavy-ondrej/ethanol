@@ -86,7 +86,15 @@ namespace Ethanol.ContextBuilder.Observable
                     ShiftWindow();
                 }
             }
+            // the element is obsolete, its end time is before the current window:
+            if (evt.EndTime.Ticks < GetCurrentWindowInterval().Item1) return;
+
             _currentWindow.OnNext(evt.Payload);
+        }
+
+        (long,long) GetCurrentWindowInterval()
+        {
+            return (_currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan);
         }
 
         // Shifts to the next window.

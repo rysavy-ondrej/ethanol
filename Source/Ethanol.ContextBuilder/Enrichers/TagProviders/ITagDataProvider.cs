@@ -68,8 +68,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A collection of <see cref="TagObject"/> that matches the given criteria.</returns>
-        IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end);
+        IEnumerable<TagDataType> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end);
 
     }
-
 }

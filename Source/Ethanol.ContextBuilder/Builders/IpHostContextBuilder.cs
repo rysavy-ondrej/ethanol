@@ -143,7 +143,7 @@ namespace Ethanol.ContextBuilder.Builders
         private IObservable<ObservableEvent<IObservable<IGroupedObservable<string, IpFlow>>>> BuildHostFlowContext(IObservable<IpFlow> source)
         {
             var flowStream = source.Select(x => 
-                new ObservableEvent<IpFlow>(x, x.TimeStart, x.TimeStart + x.TimeDuration));
+                new ObservableEvent<IpFlow>(x, x.TimeStart, x.TimeStart + x.TimeDuration)).ReorderStream(64);
 
             var windows = flowStream.HoppingWindow(WindowSize);
             return windows.Select(window =>

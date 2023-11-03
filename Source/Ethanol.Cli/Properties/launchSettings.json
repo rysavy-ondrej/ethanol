@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Ethanol.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "run-builder -c default.config",
+      "environmentVariables": {
+        "NODENAME": "supermicro"
+      }
+    }
+  }
+}

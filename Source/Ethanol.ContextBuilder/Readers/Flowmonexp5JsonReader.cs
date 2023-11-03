@@ -116,13 +116,13 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="inputStream">The TextReader stream to read the JSON string from.</param>
         /// <returns>A string representation of the JSON object, or null if the end of the file is reached or the content is whitespace.</returns>
-        public static string ReadJsonString(TextReader inputStream)
+        public static async Task<string> ReadJsonStringAsync(TextReader inputStream)
         {
             var buffer = new StringBuilder();
 
             while (true)
             {
-                var line = inputStream.ReadLine()?.Trim();
+                var line = (await inputStream.ReadLineAsync())?.Trim();
 
                 // End of file?
                 if (line == null) break;
@@ -151,28 +151,27 @@ namespace Ethanol.ContextBuilder.Readers
             }
 
             /// <inheritdoc/>
-            protected override void Open()
+            protected override Task OpenAsync()
             {
-                // nothing to do, reader is always provided as open...
+                return Task.CompletedTask;
             }
 
             /// <inheritdoc/>
-            protected override bool TryGetNextRecord(CancellationToken ct, out IpFlow ipFlow)
+            protected override async Task<IpFlow> ReadAsync(CancellationToken ct)
             {
-                ipFlow = null;
-                var line = ReadJsonString(_reader);
-                if (line == null) return false;
+                var line = await ReadJsonStringAsync(_reader);
+                if (line == null) return null;
                 if (TryDeserialize(line, out var currentEntry))
                 {
-                    ipFlow = currentEntry.ToFlow();
-                    return true;
+                    return currentEntry.ToFlow();
                 }
-                return false;
+                return null;
             }
             /// <inheritdoc/>
-            protected override void Close()
+            protected override Task CloseAsync()
             {
                 _reader.Close();
+                return Task.CompletedTask;
             }
 
             public override string ToString()
@@ -212,9 +211,9 @@ namespace Ethanol.ContextBuilder.Readers
                             var tcs = new TaskCompletionSource<object>();
                             _clientsTasks.Add(tcs.Task);
                             // Start as a background task... 
-                            var _ = Task.Factory.StartNew(() =>
+                            var _ = Task.Factory.StartNew(async () =>
                             {
-                                ReadInputData(client, cancellation);
+                                await ReadInputData(client, cancellation);
                                 _clientsTasks.Remove(tcs.Task);
                                 tcs.SetResult(null);
                             },  cancellation);
@@ -232,14 +231,14 @@ namespace Ethanol.ContextBuilder.Readers
                     
                 }
             }
-            private void ReadInputData(TcpClient client, CancellationToken cancellation)
+            private async Task ReadInputData(TcpClient client, CancellationToken cancellation)
             {
                 // get the stream
                 var stream = client.GetStream();
                 // gets the reader from stream:
                 var reader = new StreamReader(stream);
                 string jsonString;
-                while(!cancellation.IsCancellationRequested &&  (jsonString = ReadJsonString(reader)) != null)
+                while(!cancellation.IsCancellationRequested &&  (jsonString = await ReadJsonStringAsync(reader)) != null)
                 {
                     // read input tcp data and if suceffuly deserialized put the object in the buffer
                     // to be available to TryGetNextRecord method.
@@ -258,27 +257,27 @@ namespace Ethanol.ContextBuilder.Readers
                
             }
 
-            protected override void Open()
+            protected override Task OpenAsync()
             {
                 _listener = new TcpListener(_endpoint);
                 _listener.Start();  
                 _mainLoopTask = RunAsync(_listener, _cancellationTokenSource.Token);
+                return Task.CompletedTask;
             }
 
-            protected override bool TryGetNextRecord(CancellationToken cancellation, out IpFlow record)
+            protected override Task<IpFlow> ReadAsync(CancellationToken cancellation)
             {
                 // Take does not wait in the case the input is completed.
                 // In this case the return valus is null.
-                record = _queue.Take(cancellation);
-                return record != null;
+                return Task.FromResult(_queue.Take(cancellation));
             }
 
-            protected override void Close()
+            protected override Task CloseAsync()
             {
                 _queue.CompleteAdding();
                 var activeTasks = _clientsTasks.Append(_mainLoopTask).ToArray();
                 _cancellationTokenSource.Cancel();
-                Task.WhenAll(activeTasks);
+                return Task.WhenAll(activeTasks);
             }
 
             /// <summary>

@@ -40,7 +40,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// Implementations should ensure that after this method is called, the data source is ready for reading.
         /// This method is called once at the beginning of the reading process.
         /// </remarks>
-        protected abstract void Open();
+        protected abstract Task OpenAsync();
 
         /// <summary>
         /// Attempts to read the next record from the data source.
@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <remarks>
         /// Implementations should ensure that this method is efficient and can be called repeatedly to fetch records in quick succession.
         /// </remarks>
-        protected abstract bool TryGetNextRecord(CancellationToken ct, out TRecord record);
+        protected abstract Task<TRecord> ReadAsync(CancellationToken ct);
 
         /// <summary>
         /// Cleans up resources and finalizes access to the data source. This could involve actions like
@@ -60,7 +60,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <remarks>
         /// This method is called once after all reading operations are complete, even if an error occurs during reading.
         /// </remarks>
-        protected abstract void Close();
+        protected abstract Task CloseAsync();
 
         /// <summary>
         /// Initiates the asynchronous reading process from the data source. This method starts a new task 
@@ -71,19 +71,17 @@ namespace Ethanol.ContextBuilder.Readers
         /// <remarks>
         /// Callers can await this task to be notified when the entire reading process is complete.
         /// </remarks>
-        public void StartReading(CancellationToken ct)
+        public async Task ReadAllAsync(CancellationToken ct)
         {
-            _readingTask = Task.Factory.StartNew(() =>
+            await OpenAsync();
+            while (!ct.IsCancellationRequested)
             {
-                Open();
-                while (!ct.IsCancellationRequested && TryGetNextRecord(ct, out var record))
-                {
-                    _subject.OnNext(record);
-                }
-                _subject.OnCompleted();
-                Close();
+                var record = await ReadAsync(ct);
+                if (record == null) break;
+                _subject.OnNext(record);
             }
-            , ct);
+            _subject.OnCompleted();
+            await CloseAsync();
         }
         /// <summary>
         /// Gets a task that represents the completion of the reading process. Awaiting this task will 

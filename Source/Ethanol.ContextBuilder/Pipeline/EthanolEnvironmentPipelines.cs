@@ -8,6 +8,7 @@ using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using System;
 using System.Reactive.Linq;
+using System.Threading;
 
 namespace Ethanol.ContextBuilder.Pipeline
 {
@@ -63,7 +64,7 @@ namespace Ethanol.ContextBuilder.Pipeline
                 .Subscribe(writer);
 
             // Return a new instance of the Ethanol pipeline, comprising the various components.
-            return new EthanolPipeline(reader, builder, enricher, polisher, writer);
+            return new EthanolPipeline(new IPipelineNode[] { reader, builder, enricher, polisher, writer }, (CancellationToken ct) => reader.ReadAllAsync(ct));
         }
     }
 }

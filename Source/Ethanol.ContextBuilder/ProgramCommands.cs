@@ -78,9 +78,8 @@ namespace Ethanol.ContextBuilder
 
             var cts = new CancellationTokenSource();
             var t = MyTimer(cts.Token);
-            reader.StartReading(cts.Token);
-
-            await pipeline.Completed.ContinueWith(t => cts.Cancel());
+            
+            await pipeline.Start(cts.Token).ContinueWith(t => cts.Cancel());
 
             logger.LogInformation($"Processing of input stream completed.");
             logger.LogInformation($"Processed {inputCount} input flows and wrote {outputCount} context objects.");

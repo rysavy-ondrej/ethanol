@@ -1,6 +1,6 @@
 # Ethanol.ContextBuilder
 
-ContextBuilder is a tool designed specifically for processing and analyzing IPFIX records presented in JSON format. For every distinct IP endpoint identified, the tool computes its context. This context provides a systematic record of connections either initiated or accepted by hosts, along with specific details on TLS, DNS, and HTTP activities extracted from IPFIX data. An essential feature of ContextBuilder is its ability to augment these contexts with data from various external sources, ensuring a consistent format for integrating supplementary information. The end product of its processing is a comprehensive JSON output that represents this enhanced context. 
+ContextBuilder is a tool designed specifically for processing and analyzing IPFIX records presented in JSON format. For every distinct IP endpoint identified, the tool computes its context. This context provides a systematic record of connections initiated or accepted by hosts, along with specific details on TLS, DNS, and HTTP activities extracted from IPFIX data. An essential feature of ContextBuilder is its ability to augment these contexts with data from various external sources, ensuring a consistent format for integrating supplementary information. The end product of its processing is a comprehensive JSON output that represents this enhanced context. 
 
 ## Getting Started
 
@@ -18,9 +18,9 @@ __NuGet Packages:__ When you build the application, the necessary packages will 
 
 - ConsoleAppFramework: A micro-framework for creating console-based applications. It simplifies tasks like argument parsing and provides a more structured approach to building command-line tools.
 
-- CsvHelper: A library that aids in reading and writing CSV data. It ensures seamless CSV data manipulation, supporting both reading from and writing to CSV files.
+- CsvHelper: A library that aids in reading and writing CSV data. It ensures seamless CSV data manipulation, supporting reading from and writing to CSV files.
 
-- JsonFlatFileDataStore: A simple library that allows you to store and retrieve .NET objects into and from JSON formatted flat files. It can be useful for applications that require lightweight persistence without the overhead of a full database system.
+- JsonFlatFileDataStore: A simple library that allows you to store and retrieve .NET objects into and from JSON-formatted flat files. It can be useful for applications that require lightweight persistence without the overhead of a full database system.
 
 - Npgsql: The .NET data provider for PostgreSQL. It allows any application built on .NET to connect to a PostgreSQL database and perform CRUD operations.
 
@@ -59,7 +59,7 @@ After compilation, the binary executable and associated files can be found in th
 
 ### Running the Application
 
-The application can be execute via [ethanol command line interface](..\Ethanol.Cli\Readme.md).
+The application can be executed via [ethanol command line interface](../Ethanol.Cli/Readme.md).
 
 
 ## Context Builder: Deep Dive into Functionality
@@ -73,7 +73,7 @@ The Context Builder serves as a tool designed to curate a rich contextual repres
    Depending on the nature of the flow, the JSON object is systematically deserialized into appropriate objects. For instance, standard flows translate into 'IpFlow' objects, whereas flows related to the Domain Name System (DNS) become 'DnsFlow' objects. This approach ensures that no crucial IPFIX information gets overlooked.
 
 3. **Temporal Grouping**: 
-   To offer a structured analysis, the flows are organized using a time window mechanism that operates on a hopping principle. Both the window size and the hop duration are configurable, providing flexibility in how the data is temporally segmented.
+   To offer a structured analysis, the flows are organized using a time window mechanism that operates on a hopping principle. The window size and the hop duration are configurable, providing flexibility in how the data is temporally segmented.
 
 4. **Spatial Grouping**: 
    Within these designated time windows, flows are further categorized based on their source and destination IP addresses. By doing so, the Context Builder can pinpoint individual endpoint hosts and collate the relevant flows for them, representing both outgoing (initiated) and incoming (accepted) connections.
@@ -95,9 +95,9 @@ The Context Builder serves as a tool designed to curate a rich contextual repres
    - **TLS Information**: Selective data derived from the TLS handshake.
 
 8. **Output Relay**: 
-   Finally, these structured rich context data are dispatched to the tool's output. They can be further processed and analysed by subsequent tools in the analytical pipeline.
+   Finally, these structured, rich context data are dispatched to the tool's output. They can be further processed and analyzed by subsequent tools in the analytical pipeline.
 
-In essence, the Context Builder plays a pivotal role in transforming raw flow records into a contextually-rich, structured format, ready for deeper insights and interpretations.
+In essence, the Context Builder plays a pivotal role in transforming raw flow records into a contextually rich, structured format, ready for deeper insights and interpretations.
 
 ## Credits
 

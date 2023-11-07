@@ -97,38 +97,6 @@ CREATE TABLE IF NOT EXISTS host_context (
 
 ## Deployment
 
-Change the working folder to `Publish/Docker` and execute `docker-compose` command to build and run the application.
-
-__Building application:__ Docker compose is used to build the application from the source codes by running the following command:
-
-```bash
-docker-compose build
-```
-
-__Running the application:__ Run the following command to start the services defined in your Docker Compose file:
-
-```bash
-docker-compose up
-```
-
-__Stopping the application:__ To stop the running services, run the following command in the same directory where you ran the docker-compose up command:
-
-```bash
-docker-compose down
-```
-
-__Cleaning environment:__ This command will stop and remove all the containers created by docker-compose up. If you want to remove the containers, networks, and volumes used by your services, you can use the --volumes and --remove-orphans options:
-
-```bash
-docker-compose down --volumes --remove-orphans
-```
-
-Certainly! Let's structure the deployment section to be more user-friendly and streamlined.
-
----
-
-## Deployment Guide for Ethanol Application
-
 Follow these steps to seamlessly deploy the Ethanol application using Docker:
 
 1.__Set Up Your Working Directory:__ Navigate to the `Publish/Docker` directory in your project folder.

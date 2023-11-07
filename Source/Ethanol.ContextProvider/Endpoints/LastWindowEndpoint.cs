@@ -1,13 +1,8 @@
-﻿using CsvHelper;
-using Ethanol.ContextBuilder;
-using FastEndpoints;
+﻿using FastEndpoints;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
-using System.Collections;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 
 namespace Ethanol.ContextProvider.Endpoints
 {
@@ -26,10 +21,10 @@ namespace Ethanol.ContextProvider.Endpoints
         private readonly NpgsqlDataSource _dataSource;
         private readonly EthanolConfiguration _configuration;
 
-        public LastWindowEndpoint(NpgsqlDataSource datasource, IOptions<EthanolConfiguration> configuration)
+        public LastWindowEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration)
         {
             _dataSource = datasource;
-            _configuration = configuration.Value;
+            _configuration = configuration;
         }
 
 
@@ -60,7 +55,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch(Exception ex)
             {
-                __logger.LogError(ex, $"Endpoint '{nameof(LastWindowEndpoint)}' cannot create a response.");
+                __logger?.LogError(ex, $"Endpoint '{nameof(LastWindowEndpoint)}' cannot create a response.");
                 await SendErrorsAsync(500, ct);
             }
         }

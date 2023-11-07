@@ -1,21 +1,20 @@
 ﻿namespace Ethanol.Catalogs
 {
-    /// <summary>
-    /// Represents the catalog of data loaders within the Ethanol environment.
-    /// </summary>
-    public class DataLoaderCatalog
+    public class ContextWriterCatalog
     {
         // The environment to which this data loader catalog belongs.
         private EthanolEnvironment _ethanolEnvironment;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DataLoaderCatalog"/> class with the specified environment.
+        /// Initializes a new instance of the <see cref="FlowReaderCatalog"/> class with the specified environment.
         /// </summary>
         /// <param name="ethanolEnvironment">The Ethanol environment to associate with this catalog.</param>
-        public DataLoaderCatalog(EthanolEnvironment ethanolEnvironment)
+        public ContextWriterCatalog(EthanolEnvironment ethanolEnvironment)
         {
             this._ethanolEnvironment = ethanolEnvironment;
         }
+
+        public EthanolEnvironment Environment => _ethanolEnvironment; 
     }
 
 }

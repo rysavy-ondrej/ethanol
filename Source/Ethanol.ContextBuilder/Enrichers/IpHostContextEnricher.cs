@@ -13,15 +13,17 @@ using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
+
+
     /// <summary>
     /// Enriches the context of IP hosts by applying additional data from provided data sources.
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<RawHostContext>>, IPipelineNode
     {
-        static long cacheSize = 1024;
+        //static long cacheSize = 1024;
         static TimeSpan cacheExpiration = TimeSpan.FromMinutes(15);
 
-        static ILogger _logger = LogManager.GetCurrentClassLogger();
+        ILogger _logger;
         /// Represents a subject that can both observe items of type <see cref="ObservableEvent<RawHostContext>"/> 
         /// as well as produce them. This is often used to represent both the source and terminator of an observable sequence.
         private readonly Subject<ObservableEvent<RawHostContext>> _subject;
@@ -37,11 +39,12 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
         /// </summary>
         /// <param name="tagQueryable">Provides querying capabilities for tags.</param>
-        public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable)
+        public IpHostContextEnricher(ITagDataProvider<TagObject> tagQueryable, ILogger logger = null)
         {
             _subject = new Subject<ObservableEvent<RawHostContext>>();
             //_tagQueryable = new CachedTagDataProvider<TagObject>(tagQueryable, cacheSize,cacheExpiration);
             _tagQueryable = tagQueryable;
+            _logger = logger;
         }
 
         /// <summary>
@@ -78,9 +81,10 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in context enrichment.", value);
+                _logger?.LogError(ex, "Error in context enrichment.", value);
                 _subject.OnError(ex);
             }
+
         }
 
         /// <summary>

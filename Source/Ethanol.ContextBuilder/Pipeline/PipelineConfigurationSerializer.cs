@@ -12,7 +12,6 @@ namespace Ethanol.ContextBuilder.Pipeline
     /// </summary>
     public static class PipelineConfigurationSerializer
     {
-        static ILogger __logger = LogManager.GetCurrentClassLogger();
         static IDeserializer deserializer = new DeserializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
         static ISerializer serializer = new SerializerBuilder().WithTypeConverter(new IPAddressPrefixYamlTypeConverter()).Build();
 
@@ -40,7 +39,6 @@ namespace Ethanol.ContextBuilder.Pipeline
             {
                 configurationString = ResolveEnvironmentVariables(configurationString);
             }
-            __logger.LogInformation($"Loading pipeline configuration: {configurationString}");
             var config = deserializer.Deserialize<PipelineConfiguration>(configurationString);
             return config;
         }

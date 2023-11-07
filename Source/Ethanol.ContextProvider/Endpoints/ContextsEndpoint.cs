@@ -24,10 +24,10 @@ namespace Ethanol.ContextProvider.Endpoints
         private readonly NpgsqlDataSource _datasource;
         private readonly EthanolConfiguration _configuration;
 
-        public ContextsEndpoint(NpgsqlDataSource datasource, IOptions<EthanolConfiguration> configuration)
+        public ContextsEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration)
         {
             _datasource = datasource;
-            _configuration = configuration.Value;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -38,12 +38,12 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <returns>Asynchronous task signalizing the completion of the operation.</returns>
         public override async Task HandleAsync(ContextsQuery query, CancellationToken ct)
         {
-            __logger.LogInformation($"Endpoint '{nameof(ContextsEndpoint)}' received requests '{query}'.");
+            __logger?.LogInformation($"Endpoint '{nameof(ContextsEndpoint)}' received requests '{query}'.");
             try
             {
                 var rowList = new List<HostContext>();
                 using var connection = _datasource.OpenConnection();
-                __logger.LogInformation($"Using connection: `{connection.ConnectionString}` to access database.");
+                __logger?.LogInformation($"Using connection: `{connection.ConnectionString}` to access database.");
 
                 using (var cmd = connection.CreateCommand())
                 {
@@ -68,7 +68,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch (Exception ex)
             {
-                __logger.LogError(ex, $"Endpoint '{nameof(ContextsEndpoint)}' cannot create a response for the query {0}.", query);
+                __logger?.LogError(ex, $"Endpoint '{nameof(ContextsEndpoint)}' cannot create a response for the query {0}.", query);
                 await SendErrorsAsync(500, ct);
             }
         }

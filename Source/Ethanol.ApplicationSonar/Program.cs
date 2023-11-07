@@ -84,16 +84,16 @@ namespace Ethanol.ApplicationSonar
                 string outputFormat
         )
         {
-            _logger.Info("Initializing...");
-            _logger.Info("Loading Internet Service database...");
+            _logger?.Info("Initializing...");
+            _logger?.Info("Loading Internet Service database...");
             var serviceDb = await LoadServiceDatabaseAsync(ipsUri, apsUri);
-            _logger.Info($"Service Database Loaded: {serviceDb.AddressCount} Addresses, {serviceDb.ApplicationCount} Applications");
+            _logger?.Info($"Service Database Loaded: {serviceDb.AddressCount} Addresses, {serviceDb.ApplicationCount} Applications");
 
-            _logger.Info("Loading Application Signature database...");
+            _logger?.Info("Loading Application Signature database...");
             LoadSignatureDatabase(processFileUri);
-            _logger.Info("Process Signature Databse loaded:");
+            _logger?.Info("Process Signature Databse loaded:");
 
-            _logger.Info("Processing input...");
+            _logger?.Info("Processing input...");
             await ProcessInputAsync(serviceDb);
 
         }
@@ -109,7 +109,7 @@ namespace Ethanol.ApplicationSonar
                     var hostRecord = JsonSerializer.Deserialize<HostContextEvent>(line);
                     if (hostRecord != null)
                     {
-                        _logger.Info($"Processing context for host {hostRecord.Payload.HostAddress}, [{hostRecord.StartTime} | {hostRecord.EndTime}].");
+                        _logger?.Info($"Processing context for host {hostRecord.Payload.HostAddress}, [{hostRecord.StartTime} | {hostRecord.EndTime}].");
                         // print output now just fo debug:
                         Console.WriteLine($"host: {hostRecord.Payload.HostAddress}");
                         foreach (var con in hostRecord.Payload.InitiatedConnections)
@@ -131,7 +131,7 @@ namespace Ethanol.ApplicationSonar
                 }
                 catch(Exception e)
                 {
-                    _logger.Error(e);
+                    _logger?.Error(e);
                 }
             }
         }

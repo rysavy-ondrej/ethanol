@@ -232,19 +232,3 @@ The enrichment_data table is versatile, storing diverse tag types, each identifi
 * Domain Names
 * Flow Keys
 * Other unique identifier values
-
-## Integrating Netify content with enrichment_data
-
-To insert Netify content into the enrichment_data table, the following command can be executed within the ethanol-service container:
-
-```bash
-/app/Ethanol.ContextBuilder Insert-Netify --connection-string "Server=${POSTGRES_IP};Port=${POSTGRES_PORT};Database=ethanol;User Id=postgres;Password=postgres;" --table-name enrichment_data --apps-file /var/netify/applications.csv --ips-file /var/netify/ips.csv --domains-file /var/netify/domains.csv
-```
-
-__Connection String:__
-
-POSTGRES_IP: This variable fetches the IP address of the PostgreSQL container.
-
-POSTGRES_PORT: Specifies the port on which the PostgreSQL database is active and listening.
-
-__Data Source:__ The command reads data from the /var/netify directory. This directory is essentially a mapped location containing the Netify data in distinct CSV files.

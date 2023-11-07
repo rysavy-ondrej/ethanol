@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Plugins.Attributes;
@@ -13,6 +14,15 @@ using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
+
+    public static class IpHostContextBuilderCatalogRegistration
+    {
+        public static IpHostContextBuilder GetIpHostContextBuilder(this ContextBuilderCatalog catalog, TimeSpan windowSize, TimeSpan windowHop, HostBasedFilter filter)
+        {
+            return new IpHostContextBuilder(windowSize, windowHop, filter);
+        }
+    }
+
     /// <summary>
     /// Builds the contextual information for IP hosts identified from the source IPFIX stream.
     /// </summary>
@@ -46,6 +56,8 @@ namespace Ethanol.ContextBuilder.Builders
         /// Gets the time interval to move the window forward in the IP flow stream.
         /// </summary>
         public TimeSpan WindowHop { get; }
+        public HostBasedFilter AddressFilter { get; private set; }
+
         /// <summary>
         /// Gets the type of node this instance represents in a data processing pipeline.
         /// </summary>
@@ -80,10 +92,11 @@ namespace Ethanol.ContextBuilder.Builders
         /// </summary>
         /// <param name="windowSize">The size of the time window for aggregation.</param>
         /// <param name="windowHop">The interval for moving the time window forward.</param>
-        public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop)
+        public IpHostContextBuilder(TimeSpan windowSize, TimeSpan windowHop, HostBasedFilter filter)
         {
             WindowSize = windowSize;
             WindowHop = windowHop;
+            AddressFilter = filter;
 
             _ingressObservable = new Subject<IpFlow>();
             _egressObservable = new Subject<ObservableEvent<IpHostContext>>();
@@ -132,7 +145,7 @@ namespace Ethanol.ContextBuilder.Builders
         [PluginCreate]
         internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
         {
-            return new IpHostContextBuilder(configuration.Window, configuration.Hop);
+            return new IpHostContextBuilder(configuration.Window, configuration.Hop, new HostBasedFilter());
         }
 
         /// <summary>
@@ -148,15 +161,18 @@ namespace Ethanol.ContextBuilder.Builders
             var windows = flowStream.HoppingWindow(WindowSize);
             return windows.Select(window =>
             {
-                var fhost = window.Payload.SelectMany(flow => 
+                var flowEndpoints = window.Payload.SelectMany(flow => 
                     (new[] 
                     { 
                         new KeyValuePair<string, IpFlow>(flow.SourceAddress.ToString(), flow), 
                         new KeyValuePair<string, IpFlow>(flow.DestinationAddress.ToString(), flow) 
                     }).ToObservable());
+
+                var filtered = flowEndpoints.Where(h => IPAddress.TryParse(h.Key, out var hostAdr) && AddressFilter.Match(hostAdr));
+
                 return new ObservableEvent<IObservable<IGroupedObservable<string, IpFlow>>>(
-                    fhost.GroupBy(flow => flow.Key, flow => flow.Value), 
-                    window.StartTime, 
+                    filtered.GroupBy(flow => flow.Key, flow => flow.Value),
+                    window.StartTime,
                     window.EndTime);
             });
         }

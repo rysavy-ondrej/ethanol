@@ -4,12 +4,19 @@ using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder.Writers
 {
+
+    public interface IContextWriter
+    {
+        Type RecordType { get; }
+
+        public Task Completed { get; }
+    }
     /// <summary>
     /// Represents a base class for all context writers. A writer outputs 
     /// context-based data in a specific output format. 
     /// </summary>
     /// <typeparam name="TRecord">The type of record the context writer will handle.</typeparam>
-    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode
+    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode, IContextWriter
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource = new TaskCompletionSource();
@@ -48,6 +55,8 @@ namespace Ethanol.ContextBuilder.Writers
         /// Gets the type of the pipeline node, indicating it's a sink (end of the pipeline).
         /// </summary>
         public PipelineNodeType NodeType => PipelineNodeType.Sink;
+
+        public Type RecordType => typeof(TRecord);
 
         /// <summary>
         /// Opens the underlying device or stream for writing. This method should be overridden in derived classes 

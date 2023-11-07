@@ -15,7 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="default.config">
+    <ProjectReference Include="..\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj" />
+    <ProjectReference Include="..\Ethanol.ContextProvider\Ethanol.ContextProvider.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="context-builder.config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="context-provider.config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

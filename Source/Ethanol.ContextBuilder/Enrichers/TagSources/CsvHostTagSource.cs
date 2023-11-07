@@ -13,8 +13,6 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
     /// </summary>
     class CsvHostTagSource
     {
-        static ILogger _logger = LogManager.GetCurrentClassLogger();
-
         /// <summary>
         /// Represents a single record in the host tags CSV file.
         /// </summary>
@@ -80,7 +78,6 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
                 // shorter lines are silently ignored...
                 if (parts.Length != 8)
                 {
-                    _logger.LogWarning($"Invalid line: {line}");
                     continue;
                 }
 

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -37,7 +38,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Logger instance for the class to record events and issues.
         /// </summary>
-        static protected ILogger __logger = LogManager.GetCurrentClassLogger();
+        protected ILogger _logger;
 
         /// <summary>
         /// Options used for JSON serialization processes.
@@ -71,22 +72,33 @@ namespace Ethanol.ContextBuilder.Readers
         [PluginCreate]
         public static Flowmonexp5JsonReader Create(Configuration configuration)
         {
-            var tcpReader = configuration.TcpConnection != null ? TcpReader.CreateFromConnectionString(configuration.TcpConnection) : null;
+            var tcpReader = configuration.TcpConnection != null ? TcpReader.CreateFromConnectionString(configuration.TcpConnection, null) : null;
             if (tcpReader != null) return tcpReader;
             else
             {
                 var reader = configuration.FileName != null ? File.OpenText(configuration.FileName) : System.Console.In;
-                return new FileReader(reader);
+                return new FileReader(reader, null);
             }
+        }
+
+        public static Flowmonexp5JsonReader CreateTcpReader(IPEndPoint listenAt, ILogger logger)
+        {
+            return new TcpReader(listenAt, logger);
+        }
+
+        public static Flowmonexp5JsonReader CreateFileReader(TextReader reader, ILogger logger)
+        {
+            return new FileReader(reader, logger);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Flowmonexp5JsonReader"/> class.
         /// </summary>
-        Flowmonexp5JsonReader()
+        Flowmonexp5JsonReader(ILogger logger)
         {
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
+            _logger = logger;
         }
 
         /// <summary>
@@ -104,7 +116,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
             catch (Exception e)
             {
-                __logger.LogWarning($"Cannot deserialize entry: {e.Message}");
+                _logger?.LogWarning($"Cannot deserialize entry: {e.Message}");
                 entry = default;
                 return false;
             }
@@ -144,7 +156,7 @@ namespace Ethanol.ContextBuilder.Readers
             /// Initializes the reader with underlying <see cref="TextReader"/>.
             /// </summary>
             /// <param name="reader">The text reader device (input file or standard input).</param>
-            public FileReader(TextReader reader)
+            public FileReader(TextReader reader, ILogger logger) : base(logger)
             {
                 _reader = reader;
 
@@ -188,7 +200,7 @@ namespace Ethanol.ContextBuilder.Readers
             private CancellationTokenSource _cancellationTokenSource;
             private BlockingCollection<IpFlow> _queue;
 
-            public TcpReader(IPEndPoint endPoint)
+            public TcpReader(IPEndPoint endPoint, ILogger logger) : base(logger)
             {
                 _endpoint = endPoint;
                 _cancellationTokenSource = new CancellationTokenSource();
@@ -198,14 +210,14 @@ namespace Ethanol.ContextBuilder.Readers
 
             public async Task RunAsync(TcpListener listener, CancellationToken cancellation)
             {
-                __logger.LogInformation($"TCP server listening on {_endpoint}");
+                _logger?.LogInformation($"TCP server listening on {_endpoint}");
                 try
                 {
                     // Wait for incoming client connections
                     while (!cancellation.IsCancellationRequested)
                     {
                         var client = await listener.AcceptTcpClientAsync(cancellation);
-                        __logger.LogInformation($"TCP server accepts connection from {client?.Client.RemoteEndPoint}");
+                        _logger?.LogInformation($"TCP server accepts connection from {client?.Client.RemoteEndPoint}");
                         if (client != null)
                         {
                             var tcs = new TaskCompletionSource<object>();
@@ -222,7 +234,7 @@ namespace Ethanol.ContextBuilder.Readers
                 }
                 catch (SocketException ex)
                 {
-                    __logger.LogError($"Socket exception: {ex.Message}");
+                    _logger?.LogError($"Socket exception: {ex.Message}");
                 }
                 finally
                 {
@@ -249,7 +261,7 @@ namespace Ethanol.ContextBuilder.Readers
                     }
                     else
                     {
-                        __logger.LogError($"Invalid input data: Cannot deserialize input {jsonString.Substring(0,64)}.");
+                        _logger?.LogError($"Invalid input data: Cannot deserialize input {jsonString.Substring(0,64)}.");
                     }
                 }
                 reader.Close();
@@ -285,19 +297,19 @@ namespace Ethanol.ContextBuilder.Readers
             /// </summary>
             /// <param name="connectionString">The connection string in the format "host:port" to be used for establishing the TCP connection.</param>
             /// <returns>A new <see cref="TcpReader"/> instance for the given connection string, or null if an error occurs during creation.</returns>
-            internal static TcpReader CreateFromConnectionString(string connectionString)
+            internal static TcpReader CreateFromConnectionString(string connectionString, ILogger logger)
             {
                 try
                 {
                     // Parse the connection string into an IPEndPoint object
                     var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
-                    __logger.LogInformation($"Listening for incoming tcp connection, endpoint={endpoint}.");
+                    logger?.LogInformation($"Listening for incoming tcp connection, endpoint={endpoint}.");
                     // Create the writer
-                    return new TcpReader(endpoint);
+                    return new TcpReader(endpoint, logger);
                 }
                 catch (Exception ex)
                 {
-                    __logger.LogError($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
+                    logger?.LogError($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
                     return null;
                 }
             }

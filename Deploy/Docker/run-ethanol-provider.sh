@@ -1,2 +1,2 @@
-cd /app/provider
-./Ethanol.ContextProvider /app/provider/appsettings.json
+cd /app
+./ethanol start-service -c ethanol-provider.config.json

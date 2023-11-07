@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder;
-using FastEndpoints;
+﻿using FastEndpoints;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
@@ -19,10 +18,10 @@ namespace Ethanol.ContextProvider.Endpoints
         private readonly NpgsqlDataSource _dataSource;
         private readonly EthanolConfiguration _configuration;
 
-        public ContextsCountEndpoint(NpgsqlDataSource datasource, IOptions<EthanolConfiguration> configuration)
+        public ContextsCountEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration)
         {
             _dataSource = datasource;
-            _configuration = configuration.Value;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch (Exception ex)
             {
-                __logger.LogError(ex, $"Endpoint '{nameof(ContextsCountEndpoint)}' cannot create a response for the query {0}.", query);
+                __logger?.LogError(ex, $"Endpoint '{nameof(ContextsCountEndpoint)}' cannot create a response for the query {0}.", query);
                 await SendErrorsAsync(500, ct);
             }
         }

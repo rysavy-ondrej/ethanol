@@ -15,12 +15,6 @@ namespace Test.ContextBuilder
         }
 
         [Test]
-        public async Task NfdumpInputYamlOutput()
-        {
-            await commands.RunCommand("NfdumpCsv:{file=TestInput/short.nfdump.csv}", "TestConfig/config.yaml", "YamlWriter:{file=TestOutput/short.context.yaml}");
-            Assert.Pass();
-        }
-        [Test]
         public void NfdumpInputJsonOutput()
         {
             Assert.Pass();

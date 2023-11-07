@@ -1,4 +1,5 @@
 ﻿
+using ConfigurationSubstitution;
 /// <summary>
 /// Represents the configuration settings required for the Ethanol application.
 /// </summary>
@@ -43,6 +44,18 @@ public class EthanolConfiguration
     /// Gets or sets the name of the table storing tag data.
     /// </summary>
     public string? TagsTable { get; set; }
+
+    public string? ApplicationUrl { get; set; }
+
+    public static EthanolConfiguration LoadFromFile(string configurationFilePath)
+    {
+        var configurationBuilder = new ConfigurationBuilder();
+        var configurationRoot = configurationBuilder.AddJsonFile(configurationFilePath).AddEnvironmentVariables().EnableSubstitutions("${", "}", UnresolvedVariableBehaviour.IgnorePattern).Build();
+
+        var ethanolConfiguration = new EthanolConfiguration();
+        configurationRoot.Bind(ethanolConfiguration);
+        return ethanolConfiguration;
+    }
 
     public string GetConnectionString()
     { 

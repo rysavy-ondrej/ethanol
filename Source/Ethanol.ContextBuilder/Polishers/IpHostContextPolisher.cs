@@ -29,7 +29,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// </remarks>
     public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<RawHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
     {
-        static ILogger _logger = LogManager.GetCurrentClassLogger();
+        ILogger _logger;
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<ObservableEvent<IpTargetHostContext>> _subject;
@@ -49,9 +49,10 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
         /// </summary>
-        public IpHostContextPolisher()
+        public IpHostContextPolisher(ILogger logger = null)
         {
             _subject = new Subject<ObservableEvent<IpTargetHostContext>>();
+            _logger = logger;
         }
 
         /// <summary>
@@ -121,7 +122,7 @@ namespace Ethanol.ContextBuilder.Polishers
             }
             catch(Exception e)
             {
-                _logger.LogError(e, "Error in context polishing.", value);
+                _logger?.LogError(e, "Error in context polishing.", value);
                 _subject.OnError(e);
             }
         }

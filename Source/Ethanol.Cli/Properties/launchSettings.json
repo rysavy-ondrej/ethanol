@@ -1,10 +1,38 @@
 {
   "profiles": {
-    "Ethanol.Cli": {
+    "run-builder file-db-db+file": {
       "commandName": "Project",
-      "commandLineArgs": "run-builder -c default.config",
+      "commandLineArgs": "run-builder -c context-builder.config.json < flows.json > ctx.json",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder",
       "environmentVariables": {
-        "NODENAME": "supermicro"
+        "POSTGRES_IP": "localhost",
+        "POSTGRES_PORT": "1605",
+        "POSTGRES_DATABASE": "ethanol",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "postgres"
+      }
+    },
+    "run-builder tcp-db-file": {
+      "commandName": "Project",
+      "commandLineArgs": "run-builder -c context-builder.tcp-in.config.json > ctx-tcp.json",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder",
+      "environmentVariables": {
+        "POSTGRES_IP": "localhost",
+        "POSTGRES_PORT": "1605",
+        "POSTGRES_DATABASE": "ethanol",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "postgres"
+      }
+    },
+    "start-service": {
+      "commandName": "Project",
+      "commandLineArgs": "start-service -c context-provider.config.json",
+      "environmentVariables": {
+        "POSTGRES_IP": "localhost",
+        "POSTGRES_PORT": "1605",
+        "POSTGRES_DATABASE": "ethanol",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "postgres"
       }
     }
   }

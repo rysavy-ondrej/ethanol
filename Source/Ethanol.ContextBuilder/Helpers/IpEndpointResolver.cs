@@ -1,3 +1,4 @@
+using Ethanol;
 using Ethanol.ContextBuilder;
 using Microsoft.Extensions.Logging;
 using System;
@@ -9,8 +10,6 @@ using System.Net;
 /// </summary>
 public static class IPEndPointResolver
 {
-    static ILogger __logger = LogManager.GetCurrentClassLogger();
-
     /// <summary>
     /// Resolves an <see cref="IPEndPoint"/> from the provided input string.
     /// </summary>
@@ -31,7 +30,6 @@ public static class IPEndPointResolver
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(parts[0]);
             address = hostEntry.AddressList.FirstOrDefault() ?? IPAddress.None;
-            __logger.LogInformation($"Dns Resolver: {parts[0]}->{address}");
         }
  
         int resolvedPort = (parts.Length == 2 ? int.Parse(parts[1]) : defaultPort);

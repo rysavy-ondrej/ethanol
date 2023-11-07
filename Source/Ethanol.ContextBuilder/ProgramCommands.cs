@@ -24,70 +24,7 @@ namespace Ethanol.ContextBuilder
     /// </summary>
     public class ProgramCommands : ConsoleAppBase
     {
-        /// <summary>
-        /// Builds the context for input read by <paramref name="inputReader"/> using the configuration in <paramref name="configurationFile"/>. The output, after building the context, is written using <paramref name="outputWriter"/>.
-        /// </summary>
-        /// <remarks>
-        /// This method is intended to be used for configuring and building the context of flows. It takes input from the specified reader, processes it based on the given configuration, 
-        /// and writes the output using the specified writer.
-        /// <para/>
-        /// The processing can be controlled by configuration file. For more information on the configuration file see Configuration-file.md.
-        /// </remarks>
-        /// <param name="inputReader">The reader module for processing input stream. This specifies which reader to use for reading the input data.</param>
-        /// <param name="configurationFile">The configuration file used to configure the processing. This file contains settings and parameters that dictate 
-        /// how the input is to be processed.</param>
-        /// <param name="outputWriter">The writer module for producing the output. This specifies which writer to use for writing the processed output.</param>
-        [Command("run", "Starts the application.")]
-        public async Task RunCommand(
-        [Option("r", "The reader module for processing input stream.")]
-                string inputReader,
-        [Option("c", "The configuration file used to configure the processing.")]
-                string configurationFile,
-        [Option("w", "The writer module for producing the output.")]
-                string outputWriter
-        )
-        {
-            var environment = new EthanolEnvironment();
-            var readerRecipe = PluginCreateRecipe.Parse(inputReader) ?? throw new CommandLineArgumentException(nameof(inputReader), "Invalid recipe specified.");
-            var writerRecipe = PluginCreateRecipe.Parse(outputWriter) ?? throw new CommandLineArgumentException(nameof(outputWriter), "Invalid recipe specified.");
-            var configuration = PipelineConfigurationSerializer.LoadFromFile(configurationFile) ?? throw new CommandLineArgumentException(nameof(configurationFile), "Could not load the configuration.");
-
-            var logger = LogManager.GetCurrentClassLogger();
-            logger.LogInformation("Initializing processing modules:");
-            int inputCount = 0;
-            int outputCount = 0;
-            async Task MyTimer(CancellationToken ct)
-            {
-                while (!ct.IsCancellationRequested)
-                {
-                    logger.LogInformation($"Status: consumed flows={inputCount}, produced contexts={outputCount}.");
-                    await Task.Delay(10000);
-                }
-            }
-
-            var reader = ReaderFactory.Instance.CreatePluginObject(readerRecipe.Name, readerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Reader {readerRecipe.Name} not found!");
-            logger.LogInformation($"Created reader: {reader}, {readerRecipe}.");
-            var writer = WriterFactory.Instance.CreatePluginObject(writerRecipe.Name, writerRecipe.ConfigurationString) ?? throw new KeyNotFoundException($"Writer {writerRecipe.Name} not found!");
-            logger.LogInformation($"Created writer: {writer}, {writerRecipe}.");
-
-            var cts = new CancellationTokenSource();
-            var t = MyTimer(cts.Token);
-
-            logger.LogInformation($"Setting up the processing pipeline.");
-
-            var pipeline = environment.ContextBuilder.CreateIpHostContextBuilderPipeline(configuration, reader, writer, (x) => inputCount+=x, (x) => outputCount+=x);
-
-            logger.LogInformation($"Pipeline is ready, start processing input flows.");
-            
-            await pipeline.Start(cts.Token).ContinueWith(t => cts.Cancel());
-
-            logger.LogInformation($"Processing of input stream completed.");
-            logger.LogInformation($"Processed {inputCount} input flows and wrote {outputCount} context objects.");
-
-        }
-
-
-
+        
         /// <summary>
         /// Gets the list of all available modules. 
         /// </summary>
@@ -129,10 +66,8 @@ namespace Ethanol.ContextBuilder
         /// <param name="ipsFile">The CSV file containing data related to IPs for the Netify tags.</param>
         /// <param name="domainsFile">The CSV file containing data related to domains for the Netify tags.</param>
         [Command("Insert-Netify", "Updates (deletes and then inserts) Netify tags into the specified SQL table using data from the provided CSV files.")]
-        public void InsertNetify(string connectionString, string tableName, string appsFile, string ipsFile, string domainsFile)
+        public void InsertNetify(string connectionString, string tableName, string appsFile, string ipsFile, string domainsFile, ILogger logger)
         {
-            var logger = LogManager.GetCurrentClassLogger();
-
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
@@ -209,9 +144,8 @@ namespace Ethanol.ContextBuilder
         /// <param name="inputFile">The path to the JSON file containing the FlowTag data to be inserted into the SQL table. Ensure the file is accessible and in a valid JSON format that matches the expected FlowTag structure.</param>
 
         [Command("Insert-FlowTags", "Inserts flow tags from the provided JSON file into the specified table in an SQL database.")]
-        public void InsertFlowTags(string connectionString, string tableName, string inputFile)
+        public void InsertFlowTags(string connectionString, string tableName, string inputFile, ILogger logger)
         {
-            var logger = LogManager.GetCurrentClassLogger();
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
@@ -236,9 +170,8 @@ namespace Ethanol.ContextBuilder
         /// <param name="tableName">The name of the table within the SQL database where the host tags from the JSON file will be inserted. It is important to ensure that this table's schema aligns with the structure of the HostTag data in the JSON input.</param>
         /// <param name="inputFile">The path to the JSON file containing the HostTag data. This file will be used as the data source for insertion into the SQL table. It's imperative to confirm that the file is both accessible and adheres to a valid JSON format, consistent with the expected HostTag structure.</param>
         [Command("Insert-HostTags", "Inserts host tags from the provided JSON file into the specified table in an SQL database.")]
-        public void InsertHostTags(string connectionString, string tableName, string inputFile)
+        public void InsertHostTags(string connectionString, string tableName, string inputFile, ILogger logger)
         {
-            var logger = LogManager.GetCurrentClassLogger();
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();

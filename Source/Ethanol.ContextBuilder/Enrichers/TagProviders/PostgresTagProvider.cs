@@ -25,7 +25,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
     /// </remarks>
     public class PostgresTagProvider : ITagDataProvider<TagObject>
     {
-        static ILogger _logger = LogManager.GetCurrentClassLogger();
+        ILogger _logger;
         private readonly NpgsqlConnection _connection;
         private readonly string _tableName;
 
@@ -50,13 +50,13 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
                 var cmd = connection.CreateCommand();
                 cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
                 var rowCount = cmd.ExecuteScalar();
-                _logger.LogInformation($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
+                //_logger?.LogInformation($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
 
                 return new PostgresTagProvider(connection, tableName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Cannot create {nameof(PostgresTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
+                //_logger?.LogError(ex, $"Cannot create {nameof(PostgresTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
                 return null;
             }
         }
@@ -66,10 +66,11 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         /// </summary>
         /// <param name="connectionString"></param>
         /// <param name="tableName">The name of the table to read records from.</param>
-        public PostgresTagProvider(NpgsqlConnection connection, string tableName)
+        public PostgresTagProvider(NpgsqlConnection connection, string tableName, ILogger logger = null)
         {
             _connection = connection;
             _tableName = tableName;
+            _logger = logger;
         }
 
         /// <summary>
@@ -88,12 +89,12 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error executing SQL command");
+                _logger?.LogError(e, "Error executing SQL command");
                 return Array.Empty<TagObject>();
             }
         }
 
-        private static async Task<IList<TagObject>> ReadObjectsAsync(NpgsqlCommand cmd)
+        private async Task<IList<TagObject>> ReadObjectsAsync(NpgsqlCommand cmd)
         {
             using var reader = await cmd.ExecuteReaderAsync();
             var rowList = new List<TagObject>();
@@ -103,7 +104,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
                 rowList.Add(row);
             }
             await reader.CloseAsync();
-            _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
+            _logger?.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
             return rowList;
         }
 
@@ -123,7 +124,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Error executing SQL command");
+                _logger?.LogError(e, "Error executing SQL command");
                 return new List<TagObject>();
             }
         }
@@ -139,7 +140,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
                     rowList.Add(row);
                 }
                 reader.Close();
-                _logger.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
+                _logger?.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
                 return rowList;
 
         }

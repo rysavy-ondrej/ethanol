@@ -12,7 +12,6 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
     /// </summary>
     public class IpfixcolEntry
     {
-        static ILogger logger = LogManager.GetCurrentClassLogger();
         public static bool TryDeserialize(string input, out IpfixcolEntry entry)
         {
             try
@@ -22,7 +21,6 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
             }
             catch (Exception exception)
             {
-                logger.LogWarning($"Cannot deserialize entry: {exception.Message}");
                 entry = default;
                 return false;
             }

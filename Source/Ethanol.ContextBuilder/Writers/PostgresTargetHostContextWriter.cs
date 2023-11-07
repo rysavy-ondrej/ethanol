@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Enrichers;
+﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
@@ -7,23 +8,31 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
 using System;
+using System.IO;
 using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Writers
 {
-    /// <summary>
-    /// A writer plugin responsible for serializing context data to a PostgreSQL table.
-    /// </summary>
-    /// <remarks>
-    /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="ObservableEvent{IpTargetHostContext}"/> 
-    /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
-    /// don't exist, and write context data.
-    /// </remarks>
-    [Plugin(PluginCategory.Writer, "PostgresWriter", "Writes context to PostgreSQL table.")]
+    public static class PostgresContextWriterCatalogEntry
+    {
+        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetPostgresWriter(this ContextWriterCatalog catalog, NpgsqlConnection connection, string tableName)
+        {
+            return new PostgresTargetHostContextWriter(connection, tableName, catalog.Environment.Logger);
+        }
+    }
+        /// <summary>
+        /// A writer plugin responsible for serializing context data to a PostgreSQL table.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="ObservableEvent{IpTargetHostContext}"/> 
+        /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
+        /// don't exist, and write context data.
+        /// </remarks>
+        [Plugin(PluginCategory.Writer, "PostgresWriter", "Writes context to PostgreSQL table.")]
     public class PostgresTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
     {
 
-        static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
+        protected readonly ILogger _logger;
 
         // Column definitions for the PostgreSQL table
         private static string[] __columns = new string[]
@@ -50,10 +59,11 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         /// <param name="connection">Connection to the PostgreSQL database.</param>
         /// <param name="tableName">Name of the target table in the database.</param>
-        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName)
+        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName, ILogger logger)
         {
             _connection = connection;
             _tableName = tableName;
+            _logger = logger;
         }
 
         /// <summary>
@@ -82,8 +92,15 @@ namespace Ethanol.ContextBuilder.Writers
         /// </summary>
         protected override void Open()
         {
-            __logger.LogInformation($"Open DB connection '{_connection.ConnectionString}'");
-            _connection.Open();
+            if (_connection.State != System.Data.ConnectionState.Open)
+            {
+                _logger?.LogInformation($"Open DB connection '{_connection.ConnectionString}'");
+                _connection.Open();
+            }
+            else
+            {
+                _logger?.LogInformation($"Connection '{_connection.ConnectionString}' already opened.");
+            }
             CreateTableIfNotExists(_connection, _tableName);
         }
 
@@ -118,7 +135,7 @@ namespace Ethanol.ContextBuilder.Writers
         public static PostgresTargetHostContextWriter Create(EnricherConfiguration.PostgresConfiguration configuration)
         {
             var connection = new NpgsqlConnection(configuration.ToPostgresConnectionString());
-            return new PostgresTargetHostContextWriter(connection, configuration.TableName);
+            return new PostgresTargetHostContextWriter(connection, configuration.TableName, null);
         }
     }
 }

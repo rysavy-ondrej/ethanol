@@ -1,4 +1,8 @@
-﻿namespace Ethanol.Catalogs
+﻿using Ethanol.ContextBuilder.Builders;
+using Ethanol.ContextBuilder.Pipeline;
+using System;
+
+namespace Ethanol.Catalogs
 {
 
     /// <summary>
@@ -17,5 +21,7 @@
         {
             this.ethanolEnvironment = ethanolEnvironment;
         }
+
+        public EthanolEnvironment Environment => ethanolEnvironment;
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Ethanol.ContextBuilder
+namespace Ethanol
 {
     /// <summary>
     /// Provides centralized logging management for the application.
@@ -19,15 +19,19 @@ namespace Ethanol.ContextBuilder
         // Holds a reference to the logger factory instance, used to create logger instances.
         private static ILoggerFactory loggerFactory;
 
+
+        public static void SetGlobalLogger(ILogger logger)
+        {
+            globalLogger = logger;
+        }
         /// <summary>
         /// Configures the LogManager with a specified logger factory and initializes the global logger.
         /// </summary>
         /// <param name="loggerFactory">The logger factory to be used for creating logger instances.</param>
-        /// <param name="categoryName">The category name for the global logger.</param>
-        public static void SetLoggerFactory(ILoggerFactory loggerFactory, string categoryName)
+        public static void SetLoggerFactory(ILoggerFactory loggerFactory)
         {
             LogManager.loggerFactory = loggerFactory;
-            LogManager.globalLogger = loggerFactory.CreateLogger(categoryName);
+            LogManager.globalLogger = loggerFactory.CreateLogger("Global");
         }
 
         /// <summary>
@@ -48,7 +52,6 @@ namespace Ethanol.ContextBuilder
         /// </summary>
         /// <param name="categoryName">The category name for the logger. If not specified, defaults to "Global".</param>
         /// <returns>A logger instance associated with the given category name.</returns>
-        public static ILogger GetCurrentClassLogger(string categoryName = null) => loggerFactory.CreateLogger(categoryName ?? "Global");
+        public static ILogger GetCurrentClassLogger() => loggerFactory?.CreateLogger("Global") ?? globalLogger;
     }
-
 }

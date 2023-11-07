@@ -57,7 +57,7 @@ namespace Ethanol.Cli
             // >>>
             try
             {
-                app.Run();
+                app.RunAsync();
             }
             catch (Exception ex)
             {

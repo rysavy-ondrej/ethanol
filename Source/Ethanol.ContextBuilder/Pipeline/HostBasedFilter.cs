@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using System;
+using System.Linq;
 using System.Net;
 
 namespace Ethanol.ContextBuilder.Pipeline
@@ -21,6 +22,19 @@ namespace Ethanol.ContextBuilder.Pipeline
         public HostBasedFilter()
         {
             AddressFilter = x => true;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HostBasedFilter"/> class that matches all IP addresses.
+        /// </summary>
+        public HostBasedFilter(params IPAddressPrefix[] prefixes)
+        {
+            if (prefixes == null) throw new ArgumentException(nameof(prefixes));
+            bool MatchPrefix(IPAddress ip)
+            {
+                return prefixes.Any(x => x.Match(ip));
+            }
+            AddressFilter = MatchPrefix;
         }
 
         /// <summary>

@@ -13,8 +13,6 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
     /// </summary>
     class CsvFlowTagSource
     {
-        static ILogger _logger = LogManager.GetCurrentClassLogger();
-
         /// <summary>
         /// Loads flow tags from the specified CSV file.
         /// </summary>

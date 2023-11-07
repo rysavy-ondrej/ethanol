@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder;
+﻿using Ethanol;
+using Ethanol.ContextBuilder;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Npgsql;
@@ -92,7 +93,7 @@ class TagsProcessor
         }
         catch (Exception e)
         {
-            __logger.LogError(e, "Cannot compact tags {0}.", tags);
+            __logger?.LogError(e, "Cannot compact tags {0}.", tags);
         }
         return result;
     }

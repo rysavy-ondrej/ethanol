@@ -19,7 +19,7 @@ namespace Ethanol.ContextBuilder.Plugins
     /// </typeparam>
     public abstract class PluginFactory<TDestination>
     {
-        static ILogger __logger = LogManager.GetCurrentClassLogger();
+        ILogger __logger =null;
 
         /// <summary>
         /// Helps in deserializing the configuration for plugins, using YAML conventions with camel casing.
@@ -154,7 +154,7 @@ namespace Ethanol.ContextBuilder.Plugins
             /*
             foreach (var p in plugins)
             {
-                __logger.LogDebug($"Available plugin: name={p.Plugin.Name}, category={p.Plugin.Category}, class={p.Type}.");
+                __logger?.LogDebug($"Available plugin: name={p.Plugin.Name}, category={p.Plugin.Category}, class={p.Type}.");
             }*/
             return plugins;
         }

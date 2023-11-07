@@ -73,7 +73,7 @@ namespace Ethanol.ApplicationSonar
                 {
                     _applicationTable.Insert(item);
 
-                    if (++count % 1000 == 0) _logger.Info($"{count} APS record inserted.");
+                    if (++count % 1000 == 0) _logger?.Info($"{count} APS record inserted.");
                 }
             }
         }
@@ -86,7 +86,7 @@ namespace Ethanol.ApplicationSonar
                 if (item != null)
                 {
                     _addressTable.Insert(item);
-                    if (++count % 100000 == 0) _logger.Info($"{count} IPS record inserted.");
+                    if (++count % 100000 == 0) _logger?.Info($"{count} IPS record inserted.");
                 }
             }
         }
@@ -100,7 +100,7 @@ namespace Ethanol.ApplicationSonar
             {
                 // Accessing a local file
                 string filePath = uri.LocalPath;
-                _logger.Info($"Accessing a local file {filePath}");
+                _logger?.Info($"Accessing a local file {filePath}");
                 var stream = File.OpenRead(filePath);
                 return new DisposableAsyncEnumerable<T?>(JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct), stream);
             }
@@ -109,7 +109,7 @@ namespace Ethanol.ApplicationSonar
             {
                 // Accessing an HTTP document
                 string url = uri.ToString();
-                _logger.Info($"Accessing an HTTP(S) document {url}");
+                _logger?.Info($"Accessing an HTTP(S) document {url}");
                 using var client = new HttpClient();
                 var stream = await client.GetStreamAsync(url);
                 return new DisposableAsyncEnumerable<T?>(JsonSerializer.DeserializeAsyncEnumerable<T>(stream, jsonOptions, ct), stream, client);

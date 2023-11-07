@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Observable;
+﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Serialization;
@@ -16,6 +17,19 @@ using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
+
+    public static class JsonContextWriterCatalogEntry
+    {
+        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetJsonFileWriter(this ContextWriterCatalog catalog, TextWriter writer)
+        {
+            return JsonTargetHostContextWriter.CreateFileWriter(writer, catalog.Environment.Logger);
+        }
+        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetJsonTcpWriter(this ContextWriterCatalog catalog, IPEndPoint sendto)
+        {
+            return JsonTargetHostContextWriter.CreateTcpWriter(sendto, catalog.Environment.Logger);
+        }
+    }
+
     /// <summary>
     /// Represents a writer that outputs data in NDJSON (Newline Delimited JSON) format. This class provides mechanisms for writing the formatted data to either a file or a TCP connection.
     /// </summary>
@@ -26,8 +40,6 @@ namespace Ethanol.ContextBuilder.Writers
     [Plugin(PluginCategory.Writer, "JsonWriter", "Writes NDJSON formatted file for computed context.")]
     public abstract class JsonTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
     {
-        static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
-
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonTargetHostContextWriter"/> with the specified configuration.
         /// </summary>
@@ -39,13 +51,23 @@ namespace Ethanol.ContextBuilder.Writers
         [PluginCreate]
         public static JsonTargetHostContextWriter Create(Configuration configuration)
         {
-            var tcpWriter = configuration.TcpConnection != null ? TcpWriter.CreateFromConnectionString(configuration.TcpConnection) : null;
+            var tcpWriter = configuration.TcpConnection != null ? TcpWriter.CreateFromConnectionString(configuration.TcpConnection, null) : null;
             if (tcpWriter != null) return tcpWriter;
             else
             {
                 var fileWriter = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
-                return new FileWriter(fileWriter);
+                return new FileWriter(fileWriter,null);
             }
+        }
+
+        internal static JsonTargetHostContextWriter CreateFileWriter(TextWriter writer, ILogger logger)
+        {
+            return new FileWriter(writer, logger);
+        }
+
+        internal static JsonTargetHostContextWriter CreateTcpWriter(IPEndPoint sendTo, ILogger logger)
+        {
+            return new TcpWriter(sendTo, logger);
         }
 
         /// <summary>
@@ -72,15 +94,19 @@ namespace Ethanol.ContextBuilder.Writers
         /// Provides options for JSON serialization.
         /// </summary>
         protected JsonSerializerOptions _jsonOptions;
+        private ILogger __logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonTargetHostContextWriter"/> class and sets up the JSON serialization options.
         /// </summary>
-        JsonTargetHostContextWriter()
+        protected JsonTargetHostContextWriter(ILogger logger)
         {
+            __logger = logger;
             _jsonOptions = new JsonSerializerOptions { };
             _jsonOptions.AddIPAddressConverter();
         }
+
+
 
         /// <summary>
         /// Represents a writer that produces NDJSON output to a specific <see cref="TextWriter"/>.
@@ -94,7 +120,7 @@ namespace Ethanol.ContextBuilder.Writers
             /// Initializes a new instance of the <see cref="FileWriter"/> class using the specified <paramref name="writer"/>.
             /// </summary>
             /// <param name="writer">The underlying text writer that will be used to write the NDJSON formatted output. This can be any writer derived from <see cref="TextWriter"/>, such as a <see cref="StreamWriter"/> for writing to files or console output.</param>
-            public FileWriter(TextWriter writer)
+            public FileWriter(TextWriter writer, ILogger logger) : base(logger)
             {
                 _writer = writer ?? throw new ArgumentNullException(nameof(writer), "TextWriter cannot be null.");
             }
@@ -160,6 +186,7 @@ namespace Ethanol.ContextBuilder.Writers
             private BlockingCollection<string> _queue;
             private TimeSpan _reconnectTime;
             private int _reconnectAttempts;
+            private IPEndPoint sendTo;
 
 
             /// <summary>
@@ -169,12 +196,12 @@ namespace Ethanol.ContextBuilder.Writers
             /// <param name="endpoint">Specifies the remote server's endpoint (host and port).</param>
             /// <param name="capacity">The maximum capacity for the internal buffering mechanism. Defaults to 1024 records.</param>
 
-            public TcpWriter(IPEndPoint endpoint, int capacity = 1024)
+            public TcpWriter(IPEndPoint endpoint, ILogger logger) : base(logger)
             {
                 _endpoint = endpoint;
                 _reconnectTime = TimeSpan.FromSeconds(3);
                 _reconnectAttempts = 3;
-                _queue = new BlockingCollection<string>(capacity);
+                _queue = new BlockingCollection<string>(1024);
             }
 
             /// <summary>
@@ -212,7 +239,7 @@ namespace Ethanol.ContextBuilder.Writers
                 while (!TryConnectInternal() && attempts-- > 0)
                 {
                     Thread.Sleep(_reconnectTime);
-                    __logger.LogInformation($"Reconnect attempt: {_reconnectAttempts - attempts} of {_reconnectAttempts}.");
+                    __logger?.LogInformation($"Reconnect attempt: {_reconnectAttempts - attempts} of {_reconnectAttempts}.");
                 }
                 if (IsConnected)
                 {
@@ -222,20 +249,20 @@ namespace Ethanol.ContextBuilder.Writers
                         {
                             _writer.WriteLine(line);
                             _writer.Flush();
-                            __logger.LogTrace($"Sent: {line.Substring(0, 50)}...");
+                            __logger?.LogTrace($"Sent: {line.Substring(0, 50)}...");
                         }
                         return true;
                     }
                     catch (SocketException e)
                     {
-                        __logger.LogError($"Cannot sent: {e.Message}.");
+                        __logger?.LogError($"Cannot sent: {e.Message}.");
                         CloseConnectionInternal();
                         return false;
                     }
                 }
                 else
                 {
-                    __logger.LogError($"Cannot sent: server is down.");
+                    __logger?.LogError($"Cannot sent: server is down.");
                     return false;
                 }
             }
@@ -287,19 +314,19 @@ namespace Ethanol.ContextBuilder.Writers
                 }
                 else
                 {
-                    __logger.LogTrace($"Try to connect to the remote host {_endpoint}.");
+                    __logger?.LogTrace($"Try to connect to the remote host {_endpoint}.");
                     CloseConnectionInternal();
                     try
                     {
                         _client = new TcpClient();
                         _client.Connect(_endpoint);
                         _writer = new StreamWriter(_client.GetStream());
-                        __logger.LogInformation($"Connected to remote TCP server: {_endpoint}.");
+                        __logger?.LogInformation($"Connected to remote TCP server: {_endpoint}.");
                         return true;
                     }
                     catch (SocketException e)
                     {
-                        __logger.LogError($"Cannot connect to {_endpoint}: {e.Message}.");
+                        __logger?.LogError($"Cannot connect to {_endpoint}: {e.Message}.");
                         CloseConnectionInternal();
                         return false;
                     }
@@ -331,7 +358,7 @@ namespace Ethanol.ContextBuilder.Writers
                     {
                         if (TryWriteInternal(itemsToSend) == false)
                         {
-                            __logger.LogError($"Cannot write objects.");
+                            __logger?.LogError($"Cannot write objects.");
                         }
                     }
                 }
@@ -344,12 +371,12 @@ namespace Ethanol.ContextBuilder.Writers
             {
                 if (_writerTask == null)
                 {
-                    __logger.LogWarning("Exexuting writer task.");
+                    __logger?.LogWarning("Exexuting writer task.");
                     _writerTask = Task.Factory.StartNew(WriterTask);
                 }
                 else
                 {
-                    __logger.LogWarning("Writer task is already running.");
+                    __logger?.LogWarning("Writer task is already running.");
                 }
             }
             /// <summary>
@@ -357,9 +384,9 @@ namespace Ethanol.ContextBuilder.Writers
             /// </summary>
             protected override void Close()
             {
-                __logger.LogTrace("Close called.");
+                __logger?.LogTrace("Close called.");
                 _queue.CompleteAdding();
-                __logger.LogTrace("Queue closed, waiting for writer task to finish.");
+                __logger?.LogTrace("Queue closed, waiting for writer task to finish.");
                 Task.WaitAny(_writerTask);
                 lock (this)
                 {
@@ -372,20 +399,20 @@ namespace Ethanol.ContextBuilder.Writers
             /// </summary>
             /// <param name="connectionString">A string representing the remote server's endpoint (e.g., "192.168.1.10:1234").</param>
             /// <returns>A `TcpWriter` instance if the connection string is valid; otherwise, returns null.</returns>
-            public static TcpWriter CreateFromConnectionString(string connectionString)
+            public static TcpWriter CreateFromConnectionString(string connectionString, ILogger logger)
             {
                 try
                 {
-                    __logger.LogInformation($"TcpWriter Connection string = {connectionString}");
+                    logger?.LogInformation($"TcpWriter Connection string = {connectionString}");
                     // Parse the connection string into an IPEndPoint object
                     var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
-                    __logger.LogInformation($"TcpWriter Endpoint = {endpoint}");
+                    logger?.LogInformation($"TcpWriter Endpoint = {endpoint}");
                     // Create the writer
-                    return new TcpWriter(endpoint);
+                    return new TcpWriter(endpoint, logger);
                 }
                 catch (Exception ex)
                 {
-                    __logger.LogError($"Cannot create TcpOutputWriter from '{connectionString}': {ex.Message}");
+                    logger?.LogError($"Cannot create TcpOutputWriter from '{connectionString}': {ex.Message}");
                     return null;
                 }
             }

@@ -47,7 +47,7 @@ This document outlines the steps to test the context builder using representativ
    - Execute the following command to run ContextBuilder on the given input samples:
 
      ```bash
-     ..\Source\Ethanol.ContextBuilder\bin\Debug\net7.0\Ethanol.ContextBuilder.exe Build-Context -r FlowmonJson:{file=flows.json} -c config-postgres.yaml -w JsonWriter:{file=ctx.json}
+     ..\Source\Ethanol.Cli\bin\Debug\net7.0\ethanol.exe run-builder -c context-builder.config.json < flows.json > ctx.json
      ```
 
    - This command will use the data from the PostgreSQL database, process it, and generate a context in the `ctx.json` output file.

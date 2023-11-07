@@ -12,13 +12,13 @@ namespace Ethanol.ContextBuilder.Pipeline
     public class EthanolPipeline
     {
         private readonly IPipelineNode[] nodes;
-        private readonly Func<CancellationToken,Task> _startPipeline;
+        private readonly Func<CancellationToken, Task[]> _startPipeline;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EthanolPipeline"/> class with a set of nodes that define the processing sequence.
         /// </summary>
         /// <param name="nodes">An array of <see cref="IPipelineNode"/> instances that constitute the stages or steps of the pipeline.</param>
-        public EthanolPipeline(IPipelineNode[] nodes, Func<CancellationToken, Task> start)
+        public EthanolPipeline(IPipelineNode[] nodes, Func<CancellationToken, Task[]> start)
         {
             this.nodes = nodes ?? throw new ArgumentNullException(nameof(nodes));
             this._startPipeline = start;

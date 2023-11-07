@@ -1,34 +1,21 @@
-﻿using Ethanol.Catalogs;
-using Ethanol.ContextBuilder.Enrichers;
-using Ethanol.ContextBuilder.Helpers;
+﻿using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Plugins.Attributes;
 using Ethanol.ContextBuilder.Polishers;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
 using System;
-using System.IO;
-using YamlDotNet.Core.Tokens;
 
 namespace Ethanol.ContextBuilder.Writers
 {
-    public static class PostgresContextWriterCatalogEntry
-    {
-        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetPostgresWriter(this ContextWriterCatalog catalog, NpgsqlConnection connection, string tableName)
-        {
-            return new PostgresTargetHostContextWriter(connection, tableName, catalog.Environment.Logger);
-        }
-    }
-        /// <summary>
-        /// A writer plugin responsible for serializing context data to a PostgreSQL table.
-        /// </summary>
-        /// <remarks>
-        /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="ObservableEvent{IpTargetHostContext}"/> 
-        /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
-        /// don't exist, and write context data.
-        /// </remarks>
-        [Plugin(PluginCategory.Writer, "PostgresWriter", "Writes context to PostgreSQL table.")]
+    /// <summary>
+    /// A writer plugin responsible for serializing context data to a PostgreSQL table.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="ObservableEvent{IpTargetHostContext}"/> 
+    /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
+    /// don't exist, and write context data.
+    /// </remarks>
     public class PostgresTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
     {
 
@@ -124,18 +111,6 @@ namespace Ethanol.ContextBuilder.Writers
                 cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.StartTime, entity.EndTime));
                 cmd.ExecuteNonQuery();
             }
-        }
-
-        /// <summary>
-        /// Creates a new instance of <see cref="PostgresTargetHostContextWriter"/> based on the provided configuration.
-        /// </summary>
-        /// <param name="configuration">Configuration settings for the writer.</param>
-        /// <returns>Returns an instance of <see cref="PostgresTargetHostContextWriter"/>.</returns>
-        [PluginCreate]
-        public static PostgresTargetHostContextWriter Create(EnricherConfiguration.PostgresConfiguration configuration)
-        {
-            var connection = new NpgsqlConnection(configuration.ToPostgresConnectionString());
-            return new PostgresTargetHostContextWriter(connection, configuration.TableName, null);
         }
     }
 }

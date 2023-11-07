@@ -1,7 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
 
 namespace Ethanol.ContextBuilder.Enrichers
@@ -13,7 +12,6 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// This plugin uses the <see cref="IpHostContextEnricher"/> to enhance the context for IP hosts based on data 
     /// from a provided configuration. The enriched context then provides more detailed information related to IP hosts.
     /// </remarks>
-    [Plugin(PluginCategory.Enricher, "IpHostContextEnricher", "Enriches the context for IP hosts from the provided data.")]
     public class IpHostContextEnricherPlugin : IObservableTransformer
     {
         private IpHostContextEnricher _enricher;
@@ -41,20 +39,6 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Gets the target type that will be produced after the transformation.
         /// </summary>
         public Type TargetType => typeof(ObservableEvent<RawHostContext>);
-
-        /// <summary>
-        /// Factory method to create a new instance of the <see cref="IpHostContextEnricherPlugin"/>.
-        /// </summary>
-        /// <param name="hostTagConfiguraiton">Configuration related to the enrichment process.</param>
-        /// <returns>An instance of the <see cref="IObservableTransformer"/>.</returns>
-        [PluginCreate]
-        internal static IObservableTransformer Create(EnricherConfiguration hostTagConfiguraiton)
-        {
-            ITagDataProvider<TagObject> tagsProvider = hostTagConfiguraiton.GetTagProvider();
-
-            var enricher = new IpHostContextEnricher(tagsProvider);
-            return new IpHostContextEnricherPlugin(enricher);
-        }
 
         /// <summary>
         /// Signals that the enrichment process has completed.

@@ -1,21 +1,13 @@
-﻿using Ethanol.ContextBuilder.Builders;
-using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers;
+﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Ethanol.ContextBuilder.Enrichers.TagSources;
 using Ethanol.ContextBuilder.Helpers;
-using Ethanol.ContextBuilder.Pipeline;
-using Ethanol.ContextBuilder.Plugins;
-using Ethanol.ContextBuilder.Readers;
-using Ethanol.ContextBuilder.Writers;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder
 {
@@ -25,33 +17,6 @@ namespace Ethanol.ContextBuilder
     public class ProgramCommands : ConsoleAppBase
     {
         
-        /// <summary>
-        /// Gets the list of all available modules. 
-        /// </summary>
-        [Command("List-Modules", "Provides information on available modules.")]
-        public void ListModulesCommand()
-        {
-            Console.WriteLine("READERS:");
-            foreach (var obj in ReaderFactory.Instance.PluginObjects)
-            {
-                Console.WriteLine($"  {obj.Name}    {obj.Description}");
-            }
-            Console.WriteLine("BUILDERS:");
-            foreach (var obj in ContextBuilderFactory.Instance.PluginObjects)
-            {
-                Console.WriteLine($"  {obj.Name}    {obj.Description}");
-            }
-            Console.WriteLine("ENRICHERS:");
-            foreach (var obj in ContextEnricherFactory.Instance.PluginObjects)
-            {
-                Console.WriteLine($"  {obj.Name}    {obj.Description}");
-            }
-            Console.WriteLine("WRITERS:");
-            foreach (var obj in WriterFactory.Instance.PluginObjects)
-            {
-                Console.WriteLine($"  {obj.Name}    {obj.Description}");
-            }
-        }
         /// <summary>
         /// Updates (deletes and then inserts) Netify tags into the specified SQL table using data from the provided CSV files.
         /// </summary>

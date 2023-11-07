@@ -9,11 +9,11 @@ namespace Ethanol.Catalogs
     {
         public static IFlowReader<IpFlow> GetFlowmonFileReader(this FlowReaderCatalog catalog, TextReader reader)
         {
-            return Flowmonexp5JsonReader.CreateFileReader( reader, catalog.Environment.Logger);
+            return FlowmonJsonReader.CreateFileReader( reader, catalog.Environment.Logger);
         }
         public static IFlowReader<IpFlow> GetFlowmonTcpReader(this FlowReaderCatalog catalog, IPEndPoint listenAt)
         {
-            return Flowmonexp5JsonReader.CreateTcpReader(listenAt, catalog.Environment.Logger);
+            return FlowmonJsonReader.CreateTcpReader(listenAt, catalog.Environment.Logger);
         }
     }
 }

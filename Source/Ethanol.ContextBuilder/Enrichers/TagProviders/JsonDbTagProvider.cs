@@ -1,6 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using JsonFlatFileDataStore;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,16 +55,6 @@ namespace Ethanol.ContextBuilder.Enrichers.TagProviders
         public Task<IEnumerable<TagObject>> GetAsync(string host, DateTime start, DateTime end)
         {
             return Task.FromResult(Get(host, start, end));
-        }
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="JsonDbTagProvider"/> based on the given JSON configuration.
-        /// </summary>
-        /// <param name="json">The JSON configuration that contains information for creating the provider.</param>
-        /// <returns>A new instance of the <see cref="JsonDbTagProvider"/>.</returns>
-        internal static ITagDataProvider<TagObject> Create(EnricherConfiguration.JsonConfiguration json)
-        {
-            return LoadFromJson(json.Filename, json.Collection);
         }
 
         /// <summary>

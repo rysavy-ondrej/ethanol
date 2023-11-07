@@ -4,19 +4,12 @@ using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder.Writers
 {
-
-    public interface IContextWriter
-    {
-        Type RecordType { get; }
-
-        public Task Completed { get; }
-    }
     /// <summary>
     /// Represents a base class for all context writers. A writer outputs 
     /// context-based data in a specific output format. 
     /// </summary>
     /// <typeparam name="TRecord">The type of record the context writer will handle.</typeparam>
-    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode, IContextWriter
+    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource = new TaskCompletionSource();

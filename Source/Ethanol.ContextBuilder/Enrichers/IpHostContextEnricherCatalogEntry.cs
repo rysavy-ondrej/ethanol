@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace Ethanol.Catalogs
 {
-    public static class IpHostContextEnricherCatalogItems
+    public static class IpHostContextEnricherCatalogEntry
     {
         public static IpHostContextEnricher GetNetifyPostgresEnricher(this ContextEnricherCatalog catalog, string connectionString, string sourceTable)
         {

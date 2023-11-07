@@ -1,6 +1,4 @@
-﻿using Ethanol.Catalogs;
-using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Plugins.Attributes;
+﻿using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
@@ -13,22 +11,9 @@ using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Writers
 {
-
-    public static class JsonContextWriterCatalogEntry
-    {
-        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetJsonFileWriter(this ContextWriterCatalog catalog, TextWriter writer)
-        {
-            return JsonTargetHostContextWriter.CreateFileWriter(writer, catalog.Environment.Logger);
-        }
-        public static ContextWriter<ObservableEvent<IpTargetHostContext>> GetJsonTcpWriter(this ContextWriterCatalog catalog, IPEndPoint sendto)
-        {
-            return JsonTargetHostContextWriter.CreateTcpWriter(sendto, catalog.Environment.Logger);
-        }
-    }
 
     /// <summary>
     /// Represents a writer that outputs data in NDJSON (Newline Delimited JSON) format. This class provides mechanisms for writing the formatted data to either a file or a TCP connection.
@@ -37,29 +22,8 @@ namespace Ethanol.ContextBuilder.Writers
     /// This writer can be configured to direct its output to different destinations based on provided arguments. It supports writing to a file or sending the data over a TCP connection.
     /// The actual method for writing the data (file or TCP) is determined based on the provided configuration.
     /// </remarks>
-    [Plugin(PluginCategory.Writer, "JsonWriter", "Writes NDJSON formatted file for computed context.")]
     public abstract class JsonTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonTargetHostContextWriter"/> with the specified configuration.
-        /// </summary>
-        /// <param name="arguments">The configuration specifying how the writer should operate. Can be either a file path or a TCP connection string.</param>
-        /// <returns>A new instance of <see cref="JsonTargetHostContextWriter"/> configured based on the provided arguments.</returns>
-        /// <remarks>
-        /// Depending on the provided configuration, this method will create a writer that either writes to a file or sends data over a TCP connection.
-        /// </remarks>
-        [PluginCreate]
-        public static JsonTargetHostContextWriter Create(Configuration configuration)
-        {
-            var tcpWriter = configuration.TcpConnection != null ? TcpWriter.CreateFromConnectionString(configuration.TcpConnection, null) : null;
-            if (tcpWriter != null) return tcpWriter;
-            else
-            {
-                var fileWriter = configuration.FileName != null ? File.CreateText(configuration.FileName) : System.Console.Out;
-                return new FileWriter(fileWriter,null);
-            }
-        }
-
         internal static JsonTargetHostContextWriter CreateFileWriter(TextWriter writer, ILogger logger)
         {
             return new FileWriter(writer, logger);
@@ -68,26 +32,6 @@ namespace Ethanol.ContextBuilder.Writers
         internal static JsonTargetHostContextWriter CreateTcpWriter(IPEndPoint sendTo, ILogger logger)
         {
             return new TcpWriter(sendTo, logger);
-        }
-
-        /// <summary>
-        /// Represents the configuration options for the <see cref="JsonTargetHostContextWriter"/>.
-        /// </summary>
-        public class Configuration
-        {
-            /// <summary>
-            /// Specifies the path to the file where the NDJSON data should be written. This is an optional parameter.
-            /// </summary>
-            [PluginParameter(Name: "file", PluginParameterFlag.Optional, Description: "The file name with YAML data to write.")]
-            [YamlMember(Alias = "file")]
-            public string FileName { get; set; }
-
-            /// <summary>
-            /// Specifies the 'host:port' information for a TCP connection. This is an optional parameter, used to send the NDJSON data over a TCP connection.
-            /// </summary>
-            [PluginParameter(Name: "tcp", PluginParameterFlag.Optional, Description: "The 'host:port' information for the tcp connection.")]
-            [YamlMember(Alias = "tcp")]
-            public string TcpConnection { get; set; }
         }
 
         /// <summary>
@@ -105,8 +49,6 @@ namespace Ethanol.ContextBuilder.Writers
             _jsonOptions = new JsonSerializerOptions { };
             _jsonOptions.AddIPAddressConverter();
         }
-
-
 
         /// <summary>
         /// Represents a writer that produces NDJSON output to a specific <see cref="TextWriter"/>.

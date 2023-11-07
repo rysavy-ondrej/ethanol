@@ -1,8 +1,6 @@
-﻿using Ethanol.Catalogs;
-using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
-using Ethanol.ContextBuilder.Plugins.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,19 +8,9 @@ using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using YamlDotNet.Serialization;
 
 namespace Ethanol.ContextBuilder.Builders
 {
-
-    public static class IpHostContextBuilderCatalogRegistration
-    {
-        public static IpHostContextBuilder GetIpHostContextBuilder(this ContextBuilderCatalog catalog, TimeSpan windowSize, TimeSpan windowHop, HostBasedFilter filter)
-        {
-            return new IpHostContextBuilder(windowSize, windowHop, filter);
-        }
-    }
-
     /// <summary>
     /// Builds the contextual information for IP hosts identified from the source IPFIX stream.
     /// </summary>
@@ -44,8 +32,6 @@ namespace Ethanol.ContextBuilder.Builders
     /// </remarks>
     /// <seealso cref="IObservableTransformer{TInput,TOutput}" />
     /// <seealso cref="IPipelineNode" />
-    /// <seealso cref="PluginAttribute" />
-    [Plugin(PluginCategory.Builder, "IpHostContext", "Builds the context for IP hosts identified in the source IPFIX observable.")]
     public class IpHostContextBuilder : IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>>, IPipelineNode
     {
         /// <summary>
@@ -74,18 +60,6 @@ namespace Ethanol.ContextBuilder.Builders
         private Subject<ObservableEvent<IpHostContext>> _egressObservable;
 
         private TaskCompletionSource _tcs = new TaskCompletionSource();
-
-        /// <summary>
-        /// Represents the configuration options for the IpHostContextBuilder, including window size and hop duration.
-        /// </summary>
-        public class Configuration
-        {
-            [YamlMember(Alias = "window", Description = "The time span of window.")]
-            public TimeSpan Window { get; set; } = TimeSpan.FromSeconds(60);
-
-            [YamlMember(Alias = "hop", Description = "The time span of window hop.")]
-            public TimeSpan Hop { get; set; } = TimeSpan.FromSeconds(30);
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IpHostContextBuilder"/> class, specifying the window size and hop duration.
@@ -135,17 +109,6 @@ namespace Ethanol.ContextBuilder.Builders
                 // on completed:
                 _egressObservable.OnCompleted
             );
-        }
-
-        /// <summary>
-        /// Creates an instance of the <see cref="IpHostContextBuilder"/> based on the provided configuration.
-        /// </summary>
-        /// <param name="configuration">The configuration options for the builder.</param>
-        /// <returns>A new instance of the <see cref="IpHostContextBuilder"/>.</returns>
-        [PluginCreate]
-        internal static IObservableTransformer<IpFlow, object> Create(Configuration configuration)
-        {
-            return new IpHostContextBuilder(configuration.Window, configuration.Hop, new HostBasedFilter());
         }
 
         /// <summary>

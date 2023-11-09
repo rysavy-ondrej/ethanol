@@ -78,14 +78,9 @@ namespace Ethanol.ContextBuilder.Polishers
         IPAddress HostAddress,
 
         /// <summary>
-        /// An array of IP connection information for connections initiated by the host.
+        /// An array of IP connection with aggretaed information for connections between hosts.
         /// </summary>
-        IpConnectionInfo[] InitiatedConnections,
-
-        /// <summary>
-        /// An array of IP connection information for connections accepted by the host.
-        /// </summary>
-        IpConnectionInfo[] AcceptedConnections,
+        IpConnectionInfo[] Connections,
 
         /// <summary>
         /// An array of resolved domain information for domains resolved by the host.

@@ -2,14 +2,13 @@
 
 public class HostContext
 {
-    public HostContext(long id, string key, DateTime lowerBound, DateTime upperBound, IpConnectionInfo[] initiatedConnections, IpConnectionInfo[] acceptedConnections, ResolvedDomainInfo[] resolvedDomains, WebRequestInfo[] webUrls, TlsHandshakeInfo[] tlsHandshakes)
+    public HostContext(long id, string key, DateTime lowerBound, DateTime upperBound, IpConnectionInfo[] connections, ResolvedDomainInfo[] resolvedDomains, WebRequestInfo[] webUrls, TlsHandshakeInfo[] tlsHandshakes)
     {
         Id = id;
         Key = key;
         Start = lowerBound;
         End = upperBound; 
-        InitiatedConnections = initiatedConnections;
-        AcceptedConnections = acceptedConnections;
+        Connections = connections;
         ResolvedDomains = resolvedDomains;
         WebUrls = webUrls;
         TlsHandshakes = tlsHandshakes;
@@ -19,8 +18,7 @@ public class HostContext
     public string Key { get; set; }
     public DateTime Start { get;  set; }
     public DateTime End { get;  set; }
-    public IpConnectionInfo[] InitiatedConnections { get; set; }
-    public IpConnectionInfo[] AcceptedConnections { get; set;  }
+    public IpConnectionInfo[] Connections { get; set; }
     public ResolvedDomainInfo[] ResolvedDomains { get; set; }
     public WebRequestInfo[] WebUrls { get; set; }
     public TlsHandshakeInfo[] TlsHandshakes { get; set; }

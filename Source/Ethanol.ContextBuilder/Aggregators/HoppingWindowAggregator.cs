@@ -1,27 +1,29 @@
-﻿using Ethanol.ContextBuilder.Pipeline;
+﻿using Ethanol.ContextBuilder.Observable;
+using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
-namespace Ethanol.ContextBuilder.Observable
+namespace Ethanol.ContextBuilder.Aggregators
 {
     /// <summary>
     /// Implementation class for the hopping window logic on observable events.
     /// </summary>
     /// <typeparam name="T">Type of the event payload in the observable.</typeparam>
-    public class HoppingWindowAggregator<T> : IObservableTransformer<ObservableEvent<T>, ObservableEvent<IObservable<T>>>
+    public class HoppingWindowAggregator<T> : IObservableTransformer<ObservableEvent<T>, ObservableEvent<IObservable<T>> >
     {
-        private long _timeSpan;
+        private readonly long _timeSpan;
         private long _currentEpoch = 0;
 
         // The current window subject.
         private Subject<T> _currentWindow = null;
-        TaskCompletionSource _tcs = new TaskCompletionSource();
+        readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
         // Collection of observers subscribed to the observable.
-        private List<IObserver<ObservableEvent<IObservable<T>>>> _observers;
+        private readonly List<IObserver<ObservableEvent<IObservable<T>>>> _observers;
 
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
@@ -72,7 +74,7 @@ namespace Ethanol.ContextBuilder.Observable
         void EmitWindow()
         {
             var observers = _observers.ToArray();
-            foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<T>>(_currentWindow, (_currentEpoch * _timeSpan), (_currentEpoch * _timeSpan + _timeSpan)));
+            foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<T>>(_currentWindow, _currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan));
         }
 
         /// <summary>
@@ -100,7 +102,7 @@ namespace Ethanol.ContextBuilder.Observable
             _currentWindow.OnNext(evt.Payload);
         }
 
-        (long,long) GetCurrentWindowInterval()
+        (long, long) GetCurrentWindowInterval()
         {
             return (_currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan);
         }
@@ -119,7 +121,7 @@ namespace Ethanol.ContextBuilder.Observable
         private static long RoundTicks(long timeTicks, long roundTicks)
         {
             var sub = timeTicks % roundTicks;
-            return (timeTicks - sub);
+            return timeTicks - sub;
         }
     }
 }

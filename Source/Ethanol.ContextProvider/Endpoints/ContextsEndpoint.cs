@@ -78,14 +78,12 @@ namespace Ethanol.ContextProvider.Endpoints
             var id = reader.GetInt64("id");
             var key = reader.GetString("key");
             var validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity");
-            var initiatedConnections = JsonSerializer.Deserialize<IpConnectionInfo[]>(reader.GetString("initiatedconnections"));
-            var acceptedConnections = JsonSerializer.Deserialize<IpConnectionInfo[]>(reader.GetString("acceptedconnections"));
+            var connections = JsonSerializer.Deserialize<IpConnectionInfo[]>(reader.GetString("connections"));
             var resolvedDomains = JsonSerializer.Deserialize<ResolvedDomainInfo[]>(reader.GetString("resolveddomains"));
             var webUrls = JsonSerializer.Deserialize<WebRequestInfo[]>(reader.GetString("weburls"));
             var tlsHandshakes = JsonSerializer.Deserialize<TlsHandshakeInfo[]>(reader.GetString("tlshandshakes"));
             return new HostContext(id, key, validity.LowerBound, validity.UpperBound,
-                initiatedConnections ?? Array.Empty<IpConnectionInfo>(),
-                acceptedConnections ?? Array.Empty<IpConnectionInfo>(),
+                connections ?? Array.Empty<IpConnectionInfo>(),
                 resolvedDomains ?? Array.Empty<ResolvedDomainInfo>(),
                 webUrls ?? Array.Empty<WebRequestInfo>(),
                 tlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());

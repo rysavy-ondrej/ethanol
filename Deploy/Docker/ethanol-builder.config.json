@@ -34,9 +34,6 @@
 			"user": "${POSTGRES_USER}",
 			"password": "${POSTGRES_PASSWORD}",
 			"tablename": "host_context"
-		},
-		"stdout": {
-			"format": "json"
 		}
 	}
 }

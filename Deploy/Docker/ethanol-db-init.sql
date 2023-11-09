@@ -1,3 +1,7 @@
+-- WARNING: When chaning this script do not forget to update it also at the following locations:
+-- TestData/ContextBuilder/db_init
+-- Deploy/Docker/
+--
 -- The command grants all privileges on the 'ethanol' database to the 'postgres' user.
 -- This includes the ability to create, read, update, and delete data as well as manage the database structure.
 GRANT ALL PRIVILEGES ON DATABASE ethanol TO postgres;
@@ -66,8 +70,7 @@ CREATE TABLE IF NOT EXISTS host_context (
     id SERIAL PRIMARY KEY,   
     key VARCHAR(255) NOT NULL,
     tags JSON,
-    initiatedconnections JSON,
-    acceptedconnections JSON,
+    connections JSON,
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,

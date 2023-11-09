@@ -27,8 +27,7 @@ namespace Ethanol.ContextBuilder.Writers
             "id SERIAL PRIMARY KEY",
             "key VARCHAR(255) NOT NULL",
             "tags JSON",
-            "initiatedconnections JSON",
-            "acceptedconnections JSON",
+            "connections JSON",
             "resolveddomains JSON",
             "weburls JSON",
             "tlshandshakes JSON",
@@ -100,11 +99,10 @@ namespace Ethanol.ContextBuilder.Writers
             using (var cmd = new NpgsqlCommand())
             {
                 cmd.Connection = _connection;
-                cmd.CommandText = $"INSERT INTO {_tableName} (key, initiatedconnections, acceptedconnections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @initiatedconnections, @acceptedconnections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
+                cmd.CommandText = $"INSERT INTO {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @connections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
 
                 cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Payload.HostAddress.ToString());
-                cmd.Parameters.AddWithValue("initiatedconnections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.InitiatedConnections);
-                cmd.Parameters.AddWithValue("acceptedconnections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.AcceptedConnections);
+                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.Connections);
                 cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.ResolvedDomains);
                 cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.WebUrls);
                 cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.TlsHandshakes);

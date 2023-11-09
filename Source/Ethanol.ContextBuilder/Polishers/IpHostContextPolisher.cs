@@ -99,24 +99,24 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(value.Payload.Tags.Where(x => x.Type == "NetifyIp").GroupBy(g => g.Key, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value, (float)x.Reliability)).ToArray())), t => t.Item1);
 
-                string ResolveDomain(IPAddress x)
+                string ResolveDomain(string address)
                 {
-                    return domainResolver.Resolve(x.ToString(), x => x.QueryString);
+                    return domainResolver.Resolve(address, x => x.QueryString);
                 }
                 string ResolveProcessName(FlowKey flowKey)
                 {
                     return processResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
                 }
-                InternetServiceTag[] ResolveServices(IPAddress destinationAddress)
+                InternetServiceTag[] ResolveServices(string destinationAddress)
                 {
-                    return serviceResolver.Resolve(destinationAddress.ToString()).Item2;
+                    return serviceResolver.Resolve(destinationAddress).Item2;
                 }
 
                 var connections = GetConnections(value.Payload.HostAddress, value.Payload.Flows, ResolveDomain, ResolveServices).ToArray();
 
-                var webUrls = value.Payload.Flows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress), x.Method, x.Hostname + x.Url)).ToArray();
+                var webUrls = value.Payload.Flows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.Method, x.Hostname + x.Url)).ToArray();
 
-                var handshakes = value.Payload.Flows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
+                var handshakes = value.Payload.Flows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
 
                 var simpleContext = new IpTargetHostContext(value.Payload.HostAddress, connections, domains, webUrls, handshakes);
 
@@ -135,49 +135,21 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <param name="flows">The collection of IP flows to use as a source for the initiated connections.</param>
         /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
         /// <returns>An enumerable collection of initiated IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetConnections(IPAddress hostAddress, IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain, Func<IPAddress, InternetServiceTag[]> resolveServices)
+        private IEnumerable<IpConnectionInfo> GetConnections(IPAddress hostAddress, IEnumerable<IpFlow> flows, Func<string, string> resolveDomain, Func<string, InternetServiceTag[]> resolveServices)
         {
             // Perform processing on the input flows
             var connections = flows.Select(f => f.SourceAddress.Equals(hostAddress) 
                 ? new IpConnectionInfo(f.DestinationAddress.ToString(),null, f.DestinationPort, null, null, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets)
-                :  new IpConnectionInfo(f.SourceAddress.ToString(), null, f.SourcePort, null, null, 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
+                : new IpConnectionInfo(f.SourceAddress.ToString(), null, f.SourcePort, null, null, 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
             );
             // Return the resulting collection of initiated connections
             return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
-                            var address = IPAddress.TryParse(key.RemoteHostAddress, out var ip) ? ip : IPAddress.None;
-                                return new IpConnectionInfo(key.RemoteHostAddress, resolveDomain(address), key.RemotePort, null, resolveServices(address),
+                            var address = key.RemoteHostAddress;
+                                return new IpConnectionInfo(address, resolveDomain(address), key.RemotePort, null, resolveServices(address),
                                     val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
                                     val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
-                        }
-                    );
-        }
-        /// <summary>
-        /// Returns an enumerable collection of accepted IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
-        /// </summary>
-        /// <param name="flows">The collection of IP flows to use as a source for the accepted connections.</param>
-        /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
-        /// <returns>An enumerable collection of accepted IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetAcceptedConnections(IEnumerable<IpFlow> flows, Func<IPAddress, string> resolveDomain, Func<FlowKey, string> resolveProcessName, Func<IPAddress, InternetServiceTag[]> resolveServices)
-        {
-            var connections = flows.Select(f =>
-                        new IpConnectionInfo(f.SourceAddress.ToString(), resolveDomain(f.SourceAddress), f.SourcePort, resolveProcessName(f.FlowKey), resolveServices(f.SourceAddress), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets));
-            return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
-                        (key, val) =>
-                        {
-                            
-                            var first = val.FirstOrDefault();
-                            if (first != default)
-                            {
-                                return new IpConnectionInfo(key.RemoteHostAddress, first.RemoteHostName, key.RemotePort, first.ApplicationProcessName, first.InternetServices,
-                                    val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
-                                    val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
-                            }
-                            else
-                            {   
-                                throw new InvalidOperationException("This should not happen!");
-                            }
                         }
                     );
         }

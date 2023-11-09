@@ -97,7 +97,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var processResolver = new Resolver<string, TcpFlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag>(x => x.GetDetailsAs<TcpFlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
 
-                var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(value.Payload.Tags.Where(x => x.Type == nameof(NetifyTag)).GroupBy(g => g.Key, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value, (float)x.Reliability)).ToArray())), t => t.Item1);
+                var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(value.Payload.Tags.Where(x => x.Type == "NetifyIp").GroupBy(g => g.Key, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value, (float)x.Reliability)).ToArray())), t => t.Item1);
 
                 string ResolveDomain(IPAddress x)
                 {

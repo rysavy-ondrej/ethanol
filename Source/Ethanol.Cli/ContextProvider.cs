@@ -5,10 +5,12 @@ namespace Ethanol.Cli
     internal class ContextProvider : ConsoleAppBase
     {
         private readonly ILogger _logger;
+        private readonly EthanolEnvironment _environment;
 
-        public ContextProvider(ILogger<ContextProvider> logger)
+        public ContextProvider(ILogger<ContextProvider> logger, EthanolEnvironment environment)
         {
             this._logger = logger;
+            this._environment = environment;
         }
         [Command("start-service", "Starts the API for accesing the context objects.")]
         public async Task RunBuilderCommand(

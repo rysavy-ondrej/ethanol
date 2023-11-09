@@ -36,11 +36,11 @@ namespace Ethanol.Cli
                     logging.SetMinimumLevel(LogLevel.Information);
 #endif
                 });
-                
+
+                services.AddSingleton<EthanolEnvironment>();
+
             });
-
             
-
             // >>>>>>
             // BUILD
             // >>>>>>

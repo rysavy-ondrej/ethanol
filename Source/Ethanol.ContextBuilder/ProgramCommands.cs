@@ -16,7 +16,7 @@ namespace Ethanol.ContextBuilder
     /// </summary>
     public class ProgramCommands : ConsoleAppBase
     {
-        
+          
         /// <summary>
         /// Updates (deletes and then inserts) Netify tags into the specified SQL table using data from the provided CSV files.
         /// </summary>
@@ -36,7 +36,7 @@ namespace Ethanol.ContextBuilder
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
-                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
+                PostgresTagDataSource.CreateTableIfNotExists(conn, tableName);
 
                 logger.LogInformation($"Removing existing netify tags.");
                 var removedRows = NpgsqlTableHelper.Delete(conn, tableName, $"type = '{nameof(NetifyTag)}'");
@@ -49,13 +49,13 @@ namespace Ethanol.ContextBuilder
                 logger.LogInformation($"Loading ips from '{ipsFile}'...");
                 var addresses = CsvNetifyTagSource.LoadAddressesFromFile(ipsFile);
                 var addressTags = ConvertToTag(applications, addresses);
-                var addressesInserted = PostgresTagProvider.BulkInsert(conn, tableName, addressTags);
+                var addressesInserted = PostgresTagDataSource.BulkInsert(conn, tableName, addressTags);
                 logger.LogInformation($"Inserted {addressesInserted} addresses.");
 
                 logger.LogInformation($"Loading domains from '{domainsFile}'...");
                 var domains = CsvNetifyTagSource.LoadDomainsFromFile(domainsFile);
                 var domainTags = ConvertToTag(applications, domains);
-                var domainsInserted = PostgresTagProvider.BulkInsert(conn, tableName, domainTags);
+                var domainsInserted = PostgresTagDataSource.BulkInsert(conn, tableName, domainTags);
                 logger.LogInformation($"Inserted {domainsInserted} domains.");
             }
         }
@@ -116,11 +116,11 @@ namespace Ethanol.ContextBuilder
                 conn.Open();
 
                 // test if the table exists:
-                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
+                PostgresTagDataSource.CreateTableIfNotExists(conn, tableName);
                 logger.LogInformation($"FlowTags table exists: {tableName}.");
                 var records = CsvFlowTagSource.LoadFromFile(inputFile);
                 logger.LogInformation($"Loading flow tags from '{inputFile}'...");
-                var ftCount = PostgresTagProvider.BulkInsert(conn, tableName, records);
+                var ftCount = PostgresTagDataSource.BulkInsert(conn, tableName, records);
                 logger.LogInformation($"Inserted {ftCount} flow tags.");
             }
         }
@@ -140,12 +140,12 @@ namespace Ethanol.ContextBuilder
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
-                PostgresTagProvider.CreateTableIfNotExists(conn, tableName);
+                PostgresTagDataSource.CreateTableIfNotExists(conn, tableName);
 
                 logger.LogInformation($"HostTags table exists: {tableName}.");
                 var records = CsvHostTagSource.LoadFromFile(inputFile);
                 logger.LogInformation($"Loading host tags from '{inputFile}'...");
-                var count = PostgresTagProvider.BulkInsert(conn, tableName, records);
+                var count = PostgresTagDataSource.BulkInsert(conn, tableName, records);
                 logger.LogInformation($"Inserted {count} host tags.");
             }
         }

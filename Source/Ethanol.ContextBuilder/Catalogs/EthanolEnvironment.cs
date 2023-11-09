@@ -15,21 +15,22 @@ namespace Ethanol
         // Context builder catalog to manage the context-building components.
         private readonly ContextBuilderCatalog _contextBuilderCatalog;
 
-        private readonly ContextEnricherCatalog _contextEnricherCatalog;
+        private readonly ContextTransformCatalog _contextTransformCatalog;
 
         private readonly ContextWriterCatalog _contextWriterCatalog;
-        private static ILogger __logger;
+
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EthanolEnvironment"/> class.
         /// </summary>
-        public EthanolEnvironment(ILogger logger)
+        public EthanolEnvironment(ILogger<EthanolEnvironment> logger)
         {
             _flowReaderCatalog = new FlowReaderCatalog(this);
             _contextBuilderCatalog = new ContextBuilderCatalog(this);
-            _contextEnricherCatalog = new ContextEnricherCatalog(this);
+            _contextTransformCatalog = new ContextTransformCatalog(this);
             _contextWriterCatalog = new ContextWriterCatalog(this);
-            __logger = logger;
+            _logger = logger;
         }
 
         /// <summary>
@@ -42,13 +43,11 @@ namespace Ethanol
         /// </summary>
         public ContextBuilderCatalog ContextBuilder => _contextBuilderCatalog;
 
-        public ContextEnricherCatalog ContextEnricher => _contextEnricherCatalog;
+        public ContextTransformCatalog ContextTransform => _contextTransformCatalog;
 
         public ContextWriterCatalog ContextWriter => _contextWriterCatalog;
 
-        public static ILogger DefaultLogger => __logger;
-
-        public ILogger Logger => __logger;
+        public ILogger Logger => _logger;
     }
 
 }

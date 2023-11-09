@@ -20,11 +20,13 @@ namespace Ethanol.Cli
 
     internal class ContextBuilder : ConsoleAppBase
     {
-        private readonly ILogger _logger;        
+        private readonly ILogger _logger;
+        private readonly EthanolEnvironment _environment;
 
-        public ContextBuilder(ILogger<ContextBuilder> logger)
+        public ContextBuilder(ILogger<ContextBuilder> logger, EthanolEnvironment environment)
         {
             this._logger = logger;
+            this._environment = environment;
         }
 
         [Command("run-builder", "Starts the application.")]
@@ -36,7 +38,6 @@ namespace Ethanol.Cli
         {
             // this is our internal cnacellation token:
             var cts = new CancellationTokenSource();
-            var environment = new EthanolEnvironment(_logger);
             var progressReport = new BuilderProgressReport();
 
             // Load configuration:
@@ -45,13 +46,13 @@ namespace Ethanol.Cli
             var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
 
             // create modules: 
-            var readers = CreateInputReaders(contextBuilderConfiguration.Input, environment);
-            var writers = CreateOutputWriters(contextBuilderConfiguration.Output, environment);
-            var builder = CreateBuilder(contextBuilderConfiguration.Builder, environment);
-            var enricher = CreateEnricher(contextBuilderConfiguration.Enricher, environment);
-            var polisher = new IpHostContextPolisher();
+            var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
+            var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
+            var builder = CreateBuilder(contextBuilderConfiguration.Builder, _environment);
+            var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
+            var polisher = _environment.ContextTransform.GetContextPolisher();
             // set-up pipeline:
-            var pipeline = environment.ContextBuilder.CreateIpHostContextBuilderPipeline(readers, writers, builder, enricher, polisher, x => progressReport.ConsumedFlows += x, y => progressReport.ProducedContexts += y);
+            var pipeline = _environment.ContextBuilder.CreateIpHostContextBuilderPipeline(readers, writers, builder, enricher, polisher, x => progressReport.ConsumedFlows += x, y => progressReport.ProducedContexts += y);
 
             var monitorTask = MonitorProcessingAsync(progressReport, cts.Token);
 
@@ -74,14 +75,14 @@ namespace Ethanol.Cli
             catch (TaskCanceledException) { }
         }
 
-        private IpHostContextEnricher? CreateEnricher(ContextBuilderConfiguration.StaticEnricher enricher, EthanolEnvironment environment)
+        private IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers enricher, EthanolEnvironment environment)
         {
-            if (enricher.Postgres != null)
+            if (enricher?.Netify != null && enricher.Netify.Postgres != null)
             {
-                return environment.ContextEnricher.GetNetifyPostgresEnricher(enricher.Postgres.GetConnectionString(), enricher.Postgres.TableName);
-            }
-            return null;
-        }
+                return environment.ContextTransform.GetNetifyPostgresEnricher(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
+            } 
+            return environment.ContextTransform.GetVoidEnricher();
+        } 
 
         private IpHostContextBuilder? CreateBuilder(ContextBuilderConfiguration.ContextBuilder builder, EthanolEnvironment environment)
         {

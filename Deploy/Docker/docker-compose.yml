@@ -31,6 +31,7 @@ services:
     volumes:
       - ./data:/var/lib/postgresql/data
       - ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql
+      - ./netify:/var/netify
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 30s
@@ -52,8 +53,6 @@ services:
       FLUENTBIT_IP: fluentbit-service
       FLUENTBIT_PORT: 5175
       ETHANOL_PORT: 5180
-    volumes:
-      - ./netify:/var/netify
     depends_on:
       postgres-service:
         condition: service_healthy

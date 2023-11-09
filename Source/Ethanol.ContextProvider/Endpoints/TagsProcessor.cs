@@ -21,7 +21,7 @@ class TagsProcessor
     /// <summary>
     /// The provider for fetching tag data from PostgreSQL.
     /// </summary>
-    private readonly PostgresTagProvider _provider;
+    private readonly PostgresTagDataSource _provider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TagsProcessor"/> class.
@@ -31,7 +31,7 @@ class TagsProcessor
 
     public TagsProcessor(NpgsqlConnection connection, string tablename)
     {
-        _provider = new PostgresTagProvider(connection, tablename);
+        _provider = new PostgresTagDataSource(connection, tablename);
     }
     /// <summary>
     /// Represents aggregated activity data.

@@ -191,8 +191,6 @@ The examples of different data are shown in the following table:
 | ---- | --- | ---- | ------------| ---------| --------|
 | activity_bytes | 192.168.123.254 | 4560.0 | 1 | [2021-11-09 03:30:00,2021-11-09 03:40:00] | {"KeyType":"ip","KeyValue":"192.168.123.254","Source":"activity_bytes","StartTime":"2021-11-09T03:30:00","EndTime":"2021-11-09T03:40:00","Reliability":1,"Module":"ip_activity_new@netmonlab","Data":4560.0} |
 | os_by_tcpip | 147.229.13.244 | "Linux" | 1 | [2021-11-09 03:41:07.289802,2021-11-09 03:46:26.679065] | {"KeyType":"ip","KeyValue":"147.229.13.244","Source":"os_by_tcpip","StartTime":"2021-11-09T03:41:07.289802","EndTime":"2021-11-09T03:46:26.679065","Reliability":1,"Module":"os_by_tcpip@collector-enta","Data":"Linux"} |
-| NetifyTag | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Description":"Netflix is an online video streaming service that provides movies, TV shows, documentaries and other video formats.","Url":"https://www.netflix.com","Category":"Streaming Media"} |
-| NetifyTag | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Description":"At Microsoft our mission and values are to help people and businesses throughout the world realize their full potential.","Url":"https://www.microsoft.com","Category":"Business"} |
 
 The enrichment_data table is versatile, storing diverse tag types, each identified uniquely by a key. This key could be represented in various formats, including but not limited to:
 
@@ -200,3 +198,13 @@ The enrichment_data table is versatile, storing diverse tag types, each identifi
 * Domain Names
 * Flow Keys
 * Other unique identifier values
+
+For Netify data, there is a separate table which makes it easier and more efficient ot maintaain. The table names is `netify_data` and has the same structure 
+as `enrichment_data` table.
+
+| type | key |value | reliability | validity | details |
+| ---- | --- | ---- | ------------| ---------| --------|
+| NetifyIp | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Category":"Streaming Media"} |
+| NetifyDomain | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Category":"Business"} |
+
+The Netify data table can be populated using the provided data and scripts in netify folder which is mounted to PostgreSQL container at `/var/netify` folder.

@@ -1,2 +1,2 @@
-\COPY enrichment_data FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
-\COPY enrichment_data FROM netify.csv WITH DELIMITER ',' CSV HEADER;
+\COPY enrichment_data(type,key,value,reliability,validity,details) FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
+\COPY netify_data(type,key,value,reliability,validity,details) FROM netify.csv WITH DELIMITER ',' CSV HEADER;

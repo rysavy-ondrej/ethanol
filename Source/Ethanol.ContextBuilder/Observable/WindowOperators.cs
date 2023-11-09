@@ -22,7 +22,7 @@ namespace Ethanol.ContextBuilder.Observable
 
             return System.Reactive.Linq.Observable.Create<ObservableEvent<IObservable<T>>>(observer =>
             {
-                var window = new HoppingWindowImplementation<T>(timeSpan);
+                var window = new HoppingWindowAggregator<T>(timeSpan);
                 source.Subscribe(window);
                 return window.Subscribe(observer);
             });

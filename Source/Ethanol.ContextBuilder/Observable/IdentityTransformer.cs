@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Ethanol.ContextBuilder.Pipeline;
+using System;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Observable
 {
@@ -14,12 +16,21 @@ namespace Ethanol.ContextBuilder.Observable
         /// </summary>
         private Subject<TSource> _subject = new Subject<TSource>();
 
+        /// Represents a mechanism for signaling the completion of some asynchronous operation. 
+        /// This provides a way to manually control the lifetime of a Task, signaling its completion.
+        private TaskCompletionSource _tcs = new TaskCompletionSource();
+
+        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
+
+        public Task Completed => _tcs.Task;
+
         /// <summary>
         /// Notifies subscribers that the provider has finished sending push-based notifications.
         /// </summary>
         public void OnCompleted()
         {
             _subject.OnCompleted();
+            _tcs.SetResult();
         }
 
         /// <summary>

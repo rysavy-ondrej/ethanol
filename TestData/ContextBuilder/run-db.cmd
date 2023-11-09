@@ -2,5 +2,5 @@ docker run --name ethanol-postgres -e POSTGRES_DB=ethanol -e POSTGRES_USER=postg
 
 timeout /t 10
 
-psql -U postgres -d ethanol -p 1605 -f db_init/create-tables.sql
+psql -U postgres -d ethanol -p 1605 -f db_init/ethanol-db-init.sql
 psql -U postgres -d ethanol -p 1605 -f insert-data.sql

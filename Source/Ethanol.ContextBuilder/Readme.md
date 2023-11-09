@@ -61,6 +61,9 @@ After compilation, the binary executable and associated files can be found in th
 
 The application can be execute via [ethanol command line interface](..\Ethanol.Cli\Readme.md).
 
+Dpending on the configuration the application reads/writes data from PostgreSQL database `ethanol`. See [Scripts](./Scripts/Readme.md) for instructions on the initialization of the 
+database.
+
 
 ## Context Builder: Deep Dive into Functionality
 
@@ -82,7 +85,15 @@ The Context Builder serves as a tool designed to curate a rich contextual repres
    Upon identifying each host, a unique context is constructed for it. The foundation of this context is the host's IP address, which serves as a primary identifier. This is accompanied by a list of all connections associated with that host.
 
 6. **Enrichment Process**: 
-   The base context undergoes an augmentation phase, where it is enhanced using data fetched from the enrichment table. This table is a reservoir of multifaceted data types. Examples include lists of internet applications provided by Netify, inferred host-based tags, and more. This enrichment adds layers of depth to the primary context.
+The basic context is first refined through an enrichment stage using information from an enrichment repository. This repository serves as a cache of various data elements, with examples ranging from Netify's catalog of Internet applications to derived tags based on host information, among others. Such enrichment adds complexity and dimension to the base context.
+
+The data introduced by the Content Enricher must be accessible from some part of the system, with common sources including
+
+Computation: The content enricher may compute the required data from information available in the context.
+
+Environment: Additional data can be obtained from the system environment itself. 
+
+Other system: Often, the Content Enricher must retrieve the required data from a separate system, which may be a database, file, etc.
 
 7. **Context Refinement**:
    The enriched host-based context is then streamlined to derive a more concise output structure. This resultant structure comprises the following elements:
@@ -96,8 +107,6 @@ The Context Builder serves as a tool designed to curate a rich contextual repres
 
 8. **Output Relay**: 
    Finally, these structured rich context data are dispatched to the tool's output. They can be further processed and analysed by subsequent tools in the analytical pipeline.
-
-In essence, the Context Builder plays a pivotal role in transforming raw flow records into a contextually-rich, structured format, ready for deeper insights and interpretations.
 
 ## Credits
 

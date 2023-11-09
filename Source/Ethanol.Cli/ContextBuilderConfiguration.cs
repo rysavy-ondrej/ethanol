@@ -82,13 +82,19 @@ namespace Ethanol.Cli
             public ContextBuilder Builder { get; set; }
 
             [JsonPropertyName("enricher")]
-            public StaticEnricher Enricher { get; set; }
+            public Enrichers Enrichers { get; set; }
 
             [JsonPropertyName("output")]
             public Output Output { get; set; }
         }
+        public class Enrichers
+        {
+            [JsonPropertyName("netify")]
+            public NetifyEnricher Netify { get; set; }
+        }
+        
 
-        public class StaticEnricher
+        public class NetifyEnricher 
         {
             [JsonPropertyName("postgres")]
             public Postgres Postgres { get; set; }

@@ -74,8 +74,6 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
                 Tag = record.Tag,
                 ShortName = record.ShortName,
                 FullName = record.FullName,
-                Description = record.Description,
-                Url = record.Url,
                 Category = record.Category
             };
         }

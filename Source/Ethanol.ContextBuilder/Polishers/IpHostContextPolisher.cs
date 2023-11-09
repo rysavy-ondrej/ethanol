@@ -12,22 +12,30 @@ using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
+
+    public static class IpHostContextPolisherCatalogEntry
+    {
+        public static IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>> GetContextPolisher(this ContextTransformCatalog catalog)
+        {
+            return new IpHostContextPolisher(catalog.Environment.Logger);
+        }
+    }
     /// <summary>
     /// Transforms a rich IP host context into a simplified IP host context.
     /// </summary>
     /// <remarks>
-    /// The <see cref="IpHostContextPolisher"/> class is designed to take in an IP host context with abundant details (represented by <see cref="RawHostContext"/>) 
+    /// The <see cref="IpHostContextPolisher"/> class is designed to take in an IP host context with abundant details (represented by <see cref="IpHostContextWithTags"/>) 
     /// and transform it into a more streamlined or simplified format, represented by <see cref="IpTargetHostContext"/>.
     /// 
     /// This transformation can be essential for scenarios where only specific details of the IP host are required, 
     /// thus reducing overhead and optimizing performance or readability.
     /// 
     /// The class implements the <see cref="IObservableTransformer{TInput,TOutput}"/> interface, indicating its ability to observe
-    /// events of type <see cref="RawHostContext"/> and produce transformed events of type <see cref="IpTargetHostContext"/>.
+    /// events of type <see cref="IpHostContextWithTags"/> and produce transformed events of type <see cref="IpTargetHostContext"/>.
     /// Additionally, by implementing the <see cref="IPipelineNode"/> interface, it suggests that this class plays a role in a processing pipeline, 
     /// as a node that performs specific transformations.
     /// </remarks>
-    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<RawHostContext>, ObservableEvent<IpTargetHostContext>>, IPipelineNode
+    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>>
     {
         ILogger _logger;
         // We use subject as the simplest way to implement the transformer.
@@ -77,7 +85,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// Performs transformation on the new input in the form of an observable event containing a rich IP host context.
         /// </summary>
         /// <param name="value">The input observable event containing a rich IP host context.</param>
-        public void OnNext(ObservableEvent<RawHostContext> value)
+        public void OnNext(ObservableEvent<IpHostContextWithTags> value)
         {
             try
             {

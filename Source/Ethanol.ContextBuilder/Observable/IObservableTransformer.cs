@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ethanol.ContextBuilder.Pipeline;
+using System;
 
 namespace Ethanol.ContextBuilder.Observable
 {
@@ -10,7 +11,7 @@ namespace Ethanol.ContextBuilder.Observable
     /// produce transformed data of a specific target type, effectively acting as a transformation step 
     /// in an observable data pipeline.
     /// </remarks>
-    public interface IObservableTransformer : IObserver<object>, IObservable<object>
+    public interface IObservableTransformer : IObserver<object>, IObservable<object>, IPipelineNode
     {
         /// <summary>
         /// Gets the name of the transformer, typically used for identification or logging purposes.
@@ -34,5 +35,5 @@ namespace Ethanol.ContextBuilder.Observable
     /// </summary>
     /// <typeparam name="TSource">The type of source data.</typeparam>
     /// <typeparam name="TTarget">The type of generated context.</typeparam>
-    public interface IObservableTransformer<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget> { }
+    public interface IObservableTransformer<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget>, IPipelineNode { }
 }

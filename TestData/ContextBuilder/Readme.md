@@ -24,7 +24,7 @@ This document outlines the steps to test the context builder using representativ
    - Connect to your PostgreSQL database using the PostgreSQL client and create tables. If you're running the database locally or in a Docker container with a port mapped to 1605, you can use:
 
      ```bash
-     psql -U postgres -d ethanol -p 1605 -f db_init/create-tables.sql
+     psql -U postgres -d ethanol -p 1605 -f db_init/ethanol-db-init.sql
      ```
 
    - Note: Make sure the user `postgres` has access to the database named `ethanol`.
@@ -37,8 +37,8 @@ This document outlines the steps to test the context builder using representativ
      ```sql
      psql -U postgres -d ethanol -p 1605
      
-     \COPY enrichment_data FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
-     \COPY enrichment_data FROM netify.csv WITH DELIMITER ',' CSV HEADER;
+     \COPY enrichment_data(type,key,value,reliability,validity,details) FROM smartads.csv WITH DELIMITER ',' CSV HEADER;
+     \COPY netify_data(type,key,value,reliability,validity,details) FROM netify.csv WITH DELIMITER ',' CSV HEADER;
      ```
 
    - Ensure your current directory points to where the CSV files are located.

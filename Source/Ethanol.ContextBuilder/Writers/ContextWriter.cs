@@ -9,7 +9,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// context-based data in a specific output format. 
     /// </summary>
     /// <typeparam name="TRecord">The type of record the context writer will handle.</typeparam>
-    public abstract class ContextWriter<TRecord> : IObserver<TRecord>, IPipelineNode
+    public abstract class ContextWriter<TRecord> : IContextWriter<TRecord>
     {
         bool _isopen = false;
         TaskCompletionSource _taskCompletionSource = new TaskCompletionSource();

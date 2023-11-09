@@ -139,24 +139,17 @@ namespace Ethanol.ContextBuilder.Polishers
         {
             // Perform processing on the input flows
             var connections = flows.Select(f => f.SourceAddress.Equals(hostAddress) 
-                ? new IpConnectionInfo(f.DestinationAddress.ToString(), resolveDomain(f.DestinationAddress), f.DestinationPort, null, resolveServices(f.DestinationAddress), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets)
-                :  new IpConnectionInfo(f.SourceAddress.ToString(), resolveDomain(f.SourceAddress), f.SourcePort, null, resolveServices(f.SourceAddress), 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
+                ? new IpConnectionInfo(f.DestinationAddress.ToString(),null, f.DestinationPort, null, null, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets)
+                :  new IpConnectionInfo(f.SourceAddress.ToString(), null, f.SourcePort, null, null, 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
             );
             // Return the resulting collection of initiated connections
             return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
-                            var first = val.FirstOrDefault();
-                            if (first != default)
-                            {
-                                return new IpConnectionInfo(key.RemoteHostAddress, first.RemoteHostName, key.RemotePort, first.ApplicationProcessName, first.InternetServices,
+                            var address = IPAddress.TryParse(key.RemoteHostAddress, out var ip) ? ip : IPAddress.None;
+                                return new IpConnectionInfo(key.RemoteHostAddress, resolveDomain(address), key.RemotePort, null, resolveServices(address),
                                     val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
                                     val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException("This should not happen!");
-                            }
                         }
                     );
         }

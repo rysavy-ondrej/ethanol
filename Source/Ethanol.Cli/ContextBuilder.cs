@@ -54,6 +54,11 @@ namespace Ethanol.Cli
             // set-up pipeline:
             var pipeline = _environment.ContextBuilder.CreateIpHostContextBuilderPipeline(readers, writers, builder, enricher, polisher, x => progressReport.ConsumedFlows += x, y => progressReport.ProducedContexts += y);
 
+
+
+
+
+
             var monitorTask = MonitorProcessingAsync(progressReport, cts.Token);
 
             // execute:
@@ -61,6 +66,8 @@ namespace Ethanol.Cli
             
             await monitorTask;
         }
+
+
 
         private async Task MonitorProcessingAsync(BuilderProgressReport progressReport, CancellationToken ct)
         {
@@ -93,9 +100,9 @@ namespace Ethanol.Cli
 
         }
 
-        private static IFlowReader<IpFlow>[] CreateInputReaders(ContextBuilderConfiguration.Input inputConfiguration, EthanolEnvironment environment)
+        private static IDataReader<IpFlow>[] CreateInputReaders(ContextBuilderConfiguration.Input inputConfiguration, EthanolEnvironment environment)
         {
-            var inputReaders = new List<IFlowReader<IpFlow>>();
+            var inputReaders = new List<IDataReader<IpFlow>>();
             // build the pipeline based on the configuration:
             if (inputConfiguration?.Stdin != null
             && inputConfiguration.Stdin.Format == "flowmon-json")

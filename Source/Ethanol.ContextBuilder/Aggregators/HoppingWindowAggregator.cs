@@ -2,6 +2,7 @@
 using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -12,18 +13,18 @@ namespace Ethanol.ContextBuilder.Aggregators
     /// <summary>
     /// Implementation class for the hopping window logic on observable events.
     /// </summary>
-    /// <typeparam name="T">Type of the event payload in the observable.</typeparam>
-    public class HoppingWindowAggregator<T> : IObservableTransformer<ObservableEvent<T>, ObservableEvent<IObservable<T>> >
+    /// <typeparam name="TRecord">Type of the event payload in the observable.</typeparam>
+    public class HoppingWindowAggregator<TRecord> : ObservableBase<ObservableEvent<IObservable<TRecord>>>, IObservableTransformer<ObservableEvent<TRecord>, ObservableEvent<IObservable<TRecord>> >
     {
         private readonly long _timeSpan;
         private long _currentEpoch = 0;
 
         // The current window subject.
-        private Subject<T> _currentWindow = null;
+        private Subject<TRecord> _currentWindow = null;
         readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
         // Collection of observers subscribed to the observable.
-        private readonly List<IObserver<ObservableEvent<IObservable<T>>>> _observers;
+        private readonly List<IObserver<ObservableEvent<IObservable<TRecord>>>> _observers;
 
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
@@ -36,20 +37,8 @@ namespace Ethanol.ContextBuilder.Aggregators
         public HoppingWindowAggregator(TimeSpan timeSpan)
         {
             _timeSpan = timeSpan.Ticks;
-            _observers = new List<IObserver<ObservableEvent<IObservable<T>>>>();
+            _observers = new List<IObserver<ObservableEvent<IObservable<TRecord>>>>();
         }
-
-        /// <summary>
-        /// Subscribes an observer to the observable sequence.
-        /// </summary>
-        /// <param name="observer">Observer to be subscribed.</param>
-        /// <returns>A disposable object representing the observer's subscription.</returns>
-        public IDisposable Subscribe(IObserver<ObservableEvent<IObservable<T>>> observer)
-        {
-            _observers.Add(observer);
-            return Disposable.Create(() => { observer.OnCompleted(); _observers.Remove(observer); });
-        }
-
         /// <summary>
         /// Notifies all observers about the end of the sequence.
         /// </summary>
@@ -74,18 +63,18 @@ namespace Ethanol.ContextBuilder.Aggregators
         void EmitWindow()
         {
             var observers = _observers.ToArray();
-            foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<T>>(_currentWindow, _currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan));
+            foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<TRecord>>(_currentWindow, _currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan));
         }
 
         /// <summary>
         /// Process the next event.
         /// </summary>
         /// <param name="evt">The event to process.</param>
-        public void OnNext(ObservableEvent<T> evt)
+        public void OnNext(ObservableEvent<TRecord> evt)
         {
             if (_currentWindow == null) // this is the very first event received.
             {
-                _currentWindow = new Subject<T>();
+                _currentWindow = new Subject<TRecord>();
                 _currentEpoch = evt.StartTime.Ticks / _timeSpan;
                 EmitWindow();
             }
@@ -112,7 +101,7 @@ namespace Ethanol.ContextBuilder.Aggregators
         {
             _currentWindow.OnCompleted();
             _currentEpoch++;
-            var newWindow = new Subject<T>();
+            var newWindow = new Subject<TRecord>();
             _currentWindow = newWindow;
             EmitWindow();
         }
@@ -122,6 +111,12 @@ namespace Ethanol.ContextBuilder.Aggregators
         {
             var sub = timeTicks % roundTicks;
             return timeTicks - sub;
+        }
+
+        protected override IDisposable SubscribeCore(IObserver<ObservableEvent<IObservable<TRecord>>> observer)
+        {
+            _observers.Add(observer);
+            return Disposable.Create(() => { observer.OnCompleted(); _observers.Remove(observer); });
         }
     }
 }

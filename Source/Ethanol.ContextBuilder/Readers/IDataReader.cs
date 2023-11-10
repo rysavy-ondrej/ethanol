@@ -10,7 +10,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// Defines a contract for reader objects that can produce a sequence of records asynchronously.
     /// </summary>
     /// <typeparam name="TRecord">The type of records that the reader produces.</typeparam>
-    public interface IFlowReader<TRecord> : IObservable<TRecord>, IPipelineNode
+    public interface IDataReader<TRecord> : IObservable<TRecord>, IPipelineNode
     {
         /// <summary>
         /// Initiates the reading process asynchronously. Once started, the reader will produce records that can be observed.

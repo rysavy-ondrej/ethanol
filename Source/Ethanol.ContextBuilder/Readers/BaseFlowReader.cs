@@ -15,7 +15,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// abstract from implementation details and provide data as observable sequence.
     /// </summary>
     /// <typeparam name="TRecord">The type of recrods to read.</typeparam>
-    public abstract class BaseFlowReader<TRecord> : IFlowReader<TRecord>
+    public abstract class BaseFlowReader<TRecord> : IDataReader<TRecord>
     {
         private Subject<TRecord> _subject = new Subject<TRecord>();
         private Task _readingTask = Task.CompletedTask;

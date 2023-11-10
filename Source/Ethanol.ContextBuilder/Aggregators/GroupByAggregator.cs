@@ -3,6 +3,7 @@ using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -21,39 +22,35 @@ namespace Ethanol.ContextBuilder.Aggregators
     /// groups them by a specified key, and then transforms each group into a single, aggregated result.
     /// It's a reactive pipeline component that can be used to process streams of data in real-time.
     /// </remarks>
-    public class GroupByAggregator<TSource, TKey, TValue, TResult> : IObservableTransformer<ObservableEvent<TSource>, ObservableEvent<TResult>>
+    public class GroupByAggregator<TSource, TKey, TValue, TResult> : ObservableBase<TResult>, IObservableTransformer<TSource, TResult>
     {
         public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
-        private readonly Subject<ObservableEvent<TSource>> _sourceSubject;
-        private readonly Subject<ObservableEvent<TResult>> _resultSubject;
+        private readonly Subject<TSource> _sourceSubject;
+        private readonly Subject<TResult> _resultSubject;
 
-        public GroupByAggregator(Func<ObservableEvent<TSource>, TKey> keySelector,
-                                 Func<ObservableEvent<TSource>, TValue> elementSelector,
+        public GroupByAggregator(Func<TSource, TKey> keySelector,
+                                 Func<TSource, TValue> elementSelector,
                                  Func<KeyValuePair<TKey, TValue[]>, TResult> resultSelector)
         {
-            _sourceSubject = new Subject<ObservableEvent<TSource>>();
-            _resultSubject = new Subject<ObservableEvent<TResult>>();
+            _sourceSubject = new Subject<TSource>();
+            _resultSubject = new Subject<TResult>();
             var grouped = _sourceSubject
-                .GroupBy(keySelector, e => (StartTime: e.StartTime, EndTime: e.EndTime, Items: elementSelector(e)))
-                .SelectMany(group => group.ToList()
-                            .Select(array => 
-                                    new ObservableEvent<KeyValuePair<TKey, TValue[]>>(new KeyValuePair<TKey, TValue[]>(group.Key, array.Select(x => x.Items).ToArray()),
-                                        GetStartTime(array.Select(x => x.StartTime)), GetEndTime(array.Select(x => x.EndTime))))
-                            .Select(item => new ObservableEvent<TResult>(resultSelector(item.Payload), item.StartTime, item.EndTime)));
+                .GroupBy(keySelector, elementSelector)
+                .SelectMany(group => group.ToArray().Select(array => resultSelector(new KeyValuePair<TKey, TValue[]>(group.Key, array))));        
             grouped.Subscribe(_resultSubject);
         }
 
-        private long GetEndTime(IEnumerable<DateTime> enumerable)
+        public static long GetEndTime(IEnumerable<DateTime> enumerable)
         {
             long? time = null;
             foreach (var item in enumerable) { time = time == null ? item.Ticks : System.Math.Max(time.Value, item.Ticks); }
             return time ?? DateTime.MaxValue.Ticks;
         }
 
-        private long GetStartTime(IEnumerable<DateTime> enumerable)
+        public static long GetStartTime(IEnumerable<DateTime> enumerable)
         {
             long? time = null;
             foreach(var item in enumerable) { time = time == null ? item.Ticks : System.Math.Min(time.Value, item.Ticks); }
@@ -73,14 +70,14 @@ namespace Ethanol.ContextBuilder.Aggregators
             _sourceSubject.OnError(error);
         }
 
-        public IDisposable Subscribe(IObserver<ObservableEvent<TResult>> observer)
-        {
-            return _resultSubject.Subscribe(observer);
-        }
-
-        public void OnNext(ObservableEvent<TSource> value)
+        public void OnNext(TSource value)
         {
             _sourceSubject.OnNext(value);
+        }
+
+        protected override IDisposable SubscribeCore(IObserver<TResult> observer)
+        {
+            return _resultSubject.Subscribe(observer);
         }
     }
 }

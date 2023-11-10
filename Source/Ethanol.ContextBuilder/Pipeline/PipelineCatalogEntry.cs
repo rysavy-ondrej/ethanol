@@ -28,8 +28,8 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// </summary>
         public static EthanolPipeline CreateIpHostContextBuilderPipeline(
         this ContextBuilderCatalog catalog,
-        IFlowReader<IpFlow>[] readers,
-        IContextWriter<ObservableEvent<IpTargetHostContext>>[] writers,
+        IDataReader<IpFlow>[] readers,
+        IDataWriter<ObservableEvent<IpTargetHostContext>>[] writers,
         IObservableTransformer<IpFlow, ObservableEvent<IpHostContext>> builder,
         IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> enricher,
         IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>> refiner,

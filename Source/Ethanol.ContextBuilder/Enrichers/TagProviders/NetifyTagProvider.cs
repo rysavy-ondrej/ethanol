@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 
 
-class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
+public class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
 {
     private readonly ITagDataSource<TagObject> _tagDataSource;
 

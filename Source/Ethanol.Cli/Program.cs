@@ -50,6 +50,7 @@ public class Program : ConsoleAppBase
 
         app.AddCommands<ContextBuilderCommand>();
         app.AddCommands<ContextProviderCommand>();
+        app.AddCommands<TagsHelperCommands>();
 
         // >>>
         // RUN

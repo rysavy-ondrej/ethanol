@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
     /// <summary>
     /// Provides functionality to load flow tags from a CSV file.
     /// </summary>
-    class CsvFlowTagSource
+    public class CsvFlowTagSource
     {
         /// <summary>
         /// Loads flow tags from the specified CSV file.

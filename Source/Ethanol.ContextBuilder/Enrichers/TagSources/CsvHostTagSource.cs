@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
     /// <summary>
     /// Provides functionality to load host tags from a CSV file.
     /// </summary>
-    class CsvHostTagSource
+    public class CsvHostTagSource
     {
         /// <summary>
         /// Represents a single record in the host tags CSV file.

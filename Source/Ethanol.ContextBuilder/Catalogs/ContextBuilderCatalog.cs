@@ -1,8 +1,4 @@
-﻿using Ethanol.ContextBuilder.Builders;
-using Ethanol.ContextBuilder.Pipeline;
-using System;
-
-namespace Ethanol.Catalogs
+﻿namespace Ethanol.Catalogs
 {
 
     /// <summary>

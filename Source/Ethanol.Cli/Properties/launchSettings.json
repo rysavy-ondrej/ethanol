@@ -14,7 +14,7 @@
     },
     "run-builder tcp-db-file": {
       "commandName": "Project",
-      "commandLineArgs": "run-builder -c context-builder.tcp-in.config.json > ctx-tcp.json",
+      "commandLineArgs": "run-builder -c context-builder.tcp-in.config.json -p true > ctx-tcp.json",
       "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextBuilder",
       "environmentVariables": {
         "POSTGRES_IP": "localhost",

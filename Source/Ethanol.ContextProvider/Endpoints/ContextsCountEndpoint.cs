@@ -36,7 +36,8 @@ namespace Ethanol.ContextProvider.Endpoints
             {
                 using var conn = _dataSource.OpenConnection();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT COUNT(*) FROM \"public\".\"{_configuration.HostContextTable}\"";
+                var whereExpr = query.GetWhereExpression();
+                cmd.CommandText = $"SELECT COUNT(*) FROM \"public\".\"{_configuration.HostContextTable}\" WHERE {whereExpr}";
 
                 var result = await cmd.ExecuteScalarAsync(ct);
                 var count = int.TryParse(result?.ToString(), out var val) ? val : 0;

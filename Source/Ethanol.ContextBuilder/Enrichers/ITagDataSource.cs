@@ -1,10 +1,9 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
-namespace Ethanol.ContextBuilder.Enrichers.TagProviders
+namespace Ethanol.ContextBuilder.Enrichers
 {
     /// <summary>
     /// Defines a data source for retrieving <see cref="TagDataType"/> based on specified criteria.

@@ -1,10 +1,8 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers.TagProviders;
+﻿using Ethanol.ContextBuilder.Enrichers;
 using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>

@@ -1,69 +1,67 @@
 ﻿using Cysharp.Text;
+using Ethanol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ZLogger;
 
-namespace Ethanol.Cli
+/// <summary>
+/// The program class containing the main entry point.
+/// </summary>
+public class Program : ConsoleAppBase
 {
     /// <summary>
-    /// The program class containing the main entry point.
+    /// Entry point to the console application.
     /// </summary>
-    public class Program : ConsoleAppBase
+    /// <param name="args">Command line arguments.</param>
+    public static void Main(string[] args)
     {
-        /// <summary>
-        /// Entry point to the console application.
-        /// </summary>
-        /// <param name="args">Command line arguments.</param>
-        public static void Main(string[] args)
-        {
-            // >>>>>>>>>
-            // CONFIGURE
-            // >>>>>>>>>
-            var builder = ConsoleApp.CreateBuilder(args);
+        // >>>>>>>>>
+        // CONFIGURE
+        // >>>>>>>>>
+        var builder = ConsoleApp.CreateBuilder(args);
 
-            builder.ConfigureServices((ctx, services) =>
+        builder.ConfigureServices((ctx, services) =>
+        {
+            services.AddLogging(logging =>
             {
-                services.AddLogging(logging =>
+                logging.ClearProviders();
+                logging.AddZLoggerConsole(options =>
                 {
-                    logging.ClearProviders();
-                    logging.AddZLoggerConsole(options =>
-                    {
-                        options.PrefixFormatter = (writer, info) => ZString.Utf8Format(writer, "[{0}][{1}] ", info.LogLevel, info.Timestamp.DateTime.ToLocalTime());
-                    }, outputToErrorStream: true);
+                    options.PrefixFormatter = (writer, info) => ZString.Utf8Format(writer, "[{0}][{1}] ", info.LogLevel, info.Timestamp.DateTime.ToLocalTime());
+                }, outputToErrorStream: true);
 #if DEBUG
-                    logging.SetMinimumLevel(LogLevel.Trace);
+                logging.SetMinimumLevel(LogLevel.Trace);
 #else
                     logging.SetMinimumLevel(LogLevel.Information);
 #endif
-                });
-
-                services.AddSingleton<EthanolEnvironment>();
-
             });
-            
-            // >>>>>>
-            // BUILD
-            // >>>>>>
-            var app = builder.Build();
 
-            var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-            LogManager.SetLoggerFactory(loggerFactory, "Global");
+            services.AddSingleton<EthanolEnvironment>();
 
-            app.AddCommands<ContextBuilder>();
-            app.AddCommands<ContextProvider>();
+        });
 
-            // >>>
-            // RUN
-            // >>>
-            try
-            {
-                app.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.LogCritical(ex, $"ERROR:{ex.Message}");
-            }
+        // >>>>>>
+        // BUILD
+        // >>>>>>
+        var app = builder.Build();
+
+        var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+        LogManager.SetLoggerFactory(loggerFactory, "Global");
+
+        app.AddCommands<ContextBuilderCommand>();
+        app.AddCommands<ContextProviderCommand>();
+
+        // >>>
+        // RUN
+        // >>>
+        try
+        {
+            app.RunAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = LogManager.GetCurrentClassLogger();
+            logger.LogCritical(ex, $"ERROR:{ex.Message}");
         }
     }
 }

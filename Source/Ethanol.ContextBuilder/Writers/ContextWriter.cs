@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Ethanol.ContextBuilder.Pipeline;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -43,11 +42,6 @@ namespace Ethanol.ContextBuilder.Writers
         /// Gets a task that signals the completion of the writing operation.
         /// </summary>
         public Task Completed => _taskCompletionSource.Task;
-
-        /// <summary>
-        /// Gets the type of the pipeline node, indicating it's a sink (end of the pipeline).
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Sink;
 
         public Type RecordType => typeof(TRecord);
 

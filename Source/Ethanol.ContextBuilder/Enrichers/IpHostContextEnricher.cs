@@ -20,7 +20,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         private readonly Subject<ObservableEvent<IpHostContextWithTags>> _subject;
 
         /// Provides a mechanism for querying tag data. It can be used to retrieve or fetch tags associated with certain data or context.
-        private readonly IEnrichmentTagProvider<TagObject, IpHostContext> _tagProvider;
+        private readonly ITagDataProvider<TagObject, IpHostContext> _tagProvider;
 
         /// Represents a mechanism for signaling the completion of some asynchronous operation. 
         /// This provides a way to manually control the lifetime of a Task, signaling its completion.
@@ -30,17 +30,12 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
         /// </summary>
         /// <param name="tagQueryable">Provides querying capabilities for tags.</param>
-        public IpHostContextEnricher(IEnrichmentTagProvider<TagObject, IpHostContext> tagProvider, ILogger logger = null)
+        public IpHostContextEnricher(ITagDataProvider<TagObject, IpHostContext> tagProvider, ILogger logger = null)
         {
             _subject = new Subject<ObservableEvent<IpHostContextWithTags>>();
             _tagProvider = tagProvider;
             _logger = logger;
         }
-
-        /// <summary>
-        /// Gets the type of the pipeline node, which in this case is Transformer.
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         public Task Completed => _tcs.Task;
 

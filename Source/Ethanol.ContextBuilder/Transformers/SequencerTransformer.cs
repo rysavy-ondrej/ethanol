@@ -37,11 +37,6 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     private TaskCompletionSource _tcs = new TaskCompletionSource();
 
     /// <summary>
-    /// Gets the type of the pipeline node, which in this case is a transformer.
-    /// </summary>
-    public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
-    /// <summary>
     /// Initializes a new instance of the SequencerTransformer class with a specified queue length.
     /// </summary>
     /// <param name="queueLength">The maximum length of the queue before the transformer starts emitting events.</param>

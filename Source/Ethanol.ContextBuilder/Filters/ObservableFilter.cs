@@ -10,16 +10,16 @@ namespace Ethanol.ContextBuilder.Filters
     /// Represents a filtering transformer in an observable pipeline that allows events to pass through only if they match a specified condition.
     /// </summary>
     /// <typeparam name="TValue">The type of the values contained in the observable events.</typeparam>
-    public class ObservableFilter<TValue> : IObservableTransformer<ObservableEvent<TValue>, ObservableEvent<TValue>>, IPipelineNode
+    public class ObservableFilter<TValue> : IObservableTransformer<ObservableEvent<TValue>, ObservableEvent<TValue>>
     {
         // Task completion source to signal completion of the data flow.
-        readonly TaskCompletionSource _tcs = new TaskCompletionSource();
+        readonly TaskCompletionSource _tcs = new();
 
         // The predicate function that determines if an ObservableEvent<TValue> matches the condition to pass through the filter.
         private readonly Func<ObservableEvent<TValue>, bool> _match;
 
         // The subject that acts as both an observer and an observable.
-        private Subject<ObservableEvent<TValue>> _subject;
+        private readonly Subject<ObservableEvent<TValue>> _subject;
 
         /// <summary>
         /// Initializes a new instance of the ObservableFilter with the match condition.
@@ -30,11 +30,6 @@ namespace Ethanol.ContextBuilder.Filters
             this._match = match ?? throw new ArgumentNullException(nameof(match), "Match predicate cannot be null.");
             this._subject = new Subject<ObservableEvent<TValue>>();
         }
-
-        /// <summary>
-        /// Gets the type of this pipeline node which is Filter in this case.
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Filter;
 
         /// <summary>
         /// Gets the task that completes when the filter has finished processing all events.

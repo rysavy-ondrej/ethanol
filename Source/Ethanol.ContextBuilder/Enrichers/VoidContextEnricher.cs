@@ -30,8 +30,6 @@ namespace Ethanol.ContextBuilder.Enrichers
             this._transform = transform ?? throw new ArgumentNullException(nameof(transform));
         }
 
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
         public Task Completed => _tcs.Task;
 
         public void OnCompleted()

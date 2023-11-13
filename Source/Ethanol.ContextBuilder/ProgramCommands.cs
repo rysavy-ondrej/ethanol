@@ -1,6 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
-using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Ethanol.ContextBuilder.Enrichers.TagSources;
 using Ethanol.ContextBuilder.Helpers;
 using Microsoft.Extensions.Logging;
@@ -14,7 +13,7 @@ namespace Ethanol.ContextBuilder
     /// <summary>
     /// This class implements commands available in the CLI application.
     /// </summary>
-    public class ProgramCommands : ConsoleAppBase
+    public class ProgramCommands
     {
           
         /// <summary>
@@ -30,7 +29,6 @@ namespace Ethanol.ContextBuilder
         /// <param name="appsFile">The CSV file containing data related to applications for the Netify tags.</param>
         /// <param name="ipsFile">The CSV file containing data related to IPs for the Netify tags.</param>
         /// <param name="domainsFile">The CSV file containing data related to domains for the Netify tags.</param>
-        [Command("Insert-Netify", "Updates (deletes and then inserts) Netify tags into the specified SQL table using data from the provided CSV files.")]
         public void InsertNetify(string connectionString, string tableName, string appsFile, string ipsFile, string domainsFile, ILogger logger)
         {
             using (var conn = new NpgsqlConnection(connectionString))
@@ -107,8 +105,6 @@ namespace Ethanol.ContextBuilder
         /// <param name="connectionString">The connection string for the SQL database, typically in the format: "Server=localhost;Port=1605;Database=ethanol;User Id=postgres;Password=postgres;". This string provides all the necessary details to establish a connection to the desired database.</param>
         /// <param name="tableName">The name of the table in the SQL database where the flow tags from the JSON file will be inserted. This table should have a schema that matches the structure of the FlowTag data in the JSON file.</param>
         /// <param name="inputFile">The path to the JSON file containing the FlowTag data to be inserted into the SQL table. Ensure the file is accessible and in a valid JSON format that matches the expected FlowTag structure.</param>
-
-        [Command("Insert-FlowTags", "Inserts flow tags from the provided JSON file into the specified table in an SQL database.")]
         public void InsertFlowTags(string connectionString, string tableName, string inputFile, ILogger logger)
         {
             using (var conn = new NpgsqlConnection(connectionString))

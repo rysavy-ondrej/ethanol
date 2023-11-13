@@ -9,7 +9,7 @@ namespace Ethanol.ContextBuilder.Pipeline
     /// <summary>
     /// Provides a filter mechanism based on IP addresses of hosts.
     /// </summary>
-    public class HostBasedFilter
+    public class HostBasedFilter : IHostBasedFilter
     {
         /// <summary>
         /// The delegate to perform the actual filtering based on IP addresses.

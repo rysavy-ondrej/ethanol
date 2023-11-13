@@ -21,11 +21,6 @@ namespace Ethanol.ContextBuilder.Readers
         private Task _readingTask = Task.CompletedTask;
 
         /// <summary>
-        /// Gets the node type of this reader, which is always a producer in the pipeline.
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Producer;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="BaseFlowReader{TRecord}"/> class.
         /// </summary>
         protected BaseFlowReader()

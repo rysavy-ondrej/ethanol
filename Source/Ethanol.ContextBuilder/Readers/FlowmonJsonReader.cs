@@ -187,6 +187,7 @@ namespace Ethanol.ContextBuilder.Readers
                                 await ReadInputData(client, cancellation);
                                 _clientsTasks.Remove(tcs.Task);
                                 tcs.SetResult(null);
+                                client.Dispose();
                             },  cancellation);
                         }
                     }

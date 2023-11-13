@@ -20,7 +20,7 @@ namespace Ethanol.ContextBuilder.Cleaners
     /// pairs them together. If a matching flow is not found within a specified timeout,
     /// the single flow is emitted as-is.
     /// </remarks>
-    public class FlowPairing : IObservableTransformer<IpFlow, IpFlow>, IPipelineNode
+    public class FlowPairing : IObservableTransformer<IpFlow, IpFlow>
     {
         private readonly Subject<IpFlow> _flowSubject;
         private readonly TimeSpan _flowTimeout;
@@ -40,11 +40,6 @@ namespace Ethanol.ContextBuilder.Cleaners
             _flowTimeout = flowTimeout;
             _flowDictionary = new Cache<FlowKey, IpFlow>();
         }
-
-        /// <summary>
-        /// Gets the node type of this transformer within the pipeline.
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
 
         public Task Completed => _tcs.Task;
 

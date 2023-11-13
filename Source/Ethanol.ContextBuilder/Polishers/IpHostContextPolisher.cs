@@ -46,12 +46,6 @@ namespace Ethanol.ContextBuilder.Polishers
         /// for signaling the completion of some asynchronous operation. 
         private TaskCompletionSource _tcs = new TaskCompletionSource();
 
-
-        /// <summary>
-        /// Gets the type of pipeline node represented by this instance, which is always Transformer.
-        /// </summary>
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
         public Task Completed => _tcs.Task;
 
         /// <summary>

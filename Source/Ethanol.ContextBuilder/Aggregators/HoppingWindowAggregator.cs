@@ -26,8 +26,6 @@ namespace Ethanol.ContextBuilder.Aggregators
         // Collection of observers subscribed to the observable.
         private readonly List<IObserver<ObservableEvent<IObservable<TRecord>>>> _observers;
 
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
         public Task Completed => _tcs.Task;
 
         /// <summary>
@@ -104,13 +102,6 @@ namespace Ethanol.ContextBuilder.Aggregators
             var newWindow = new Subject<TRecord>();
             _currentWindow = newWindow;
             EmitWindow();
-        }
-
-        // Rounds the ticks value based on the rounding ticks provided.
-        private static long RoundTicks(long timeTicks, long roundTicks)
-        {
-            var sub = timeTicks % roundTicks;
-            return timeTicks - sub;
         }
 
         protected override IDisposable SubscribeCore(IObserver<ObservableEvent<IObservable<TRecord>>> observer)

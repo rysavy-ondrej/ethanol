@@ -24,8 +24,6 @@ namespace Ethanol.ContextBuilder.Aggregators
     /// </remarks>
     public class GroupByAggregator<TSource, TKey, TValue, TResult> : ObservableBase<TResult>, IObservableTransformer<TSource, TResult>
     {
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
         readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
         private readonly Subject<TSource> _sourceSubject;

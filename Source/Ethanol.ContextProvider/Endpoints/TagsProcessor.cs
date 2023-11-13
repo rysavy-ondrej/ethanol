@@ -1,7 +1,5 @@
 ﻿using Ethanol;
-using Ethanol.ContextBuilder;
 using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers.TagProviders;
 using Npgsql;
 using System.Data;
 

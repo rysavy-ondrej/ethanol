@@ -20,8 +20,6 @@ namespace Ethanol.ContextBuilder.Observable
         /// This provides a way to manually control the lifetime of a Task, signaling its completion.
         private TaskCompletionSource _tcs = new TaskCompletionSource();
 
-        public PipelineNodeType NodeType => PipelineNodeType.Transformer;
-
         public Task Completed => _tcs.Task;
 
         /// <summary>

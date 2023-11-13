@@ -1,9 +1,10 @@
 ﻿using System;
-using Ethanol.ContextBuilder.Pipeline;
+using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Writers
 {
-    public interface IDataWriter<TRecord> : IObserver<TRecord>, IPipelineNode
+    public interface IDataWriter<TRecord> : IObserver<TRecord>
     {
+        Task Completed { get; }
     }
 }

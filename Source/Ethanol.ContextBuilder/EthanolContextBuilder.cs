@@ -1,4 +1,5 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Aggregators;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Polishers;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -156,11 +158,11 @@ public static class EthanolContextBuilder
     public static async Task Run(BuilderModules modules, TimeSpan windowSpan, IHostBasedFilter filter, IObserver<ProgressReport> progressReport = null)
     {
 
-        int loadedCount = 0;
-        int flowCount = 0;
-        int windowCount = 0;
-        int contextCount = 0;
-        int writtenCount = 0;
+        int flowsLoadedCount = 0;
+        int flowsConsumedCount = 0;
+        int windowsCreatedCount = 0;
+        int contextsCreatedCount = 0;
+        int contextsWrittenCount = 0;
 
         DateTime? currentWindowStartTime = null;
         IEnumerable<ObservableEvent<IpHostContext>> AddPeriod(ObservableEvent<IpHostContext> evt)
@@ -176,26 +178,35 @@ public static class EthanolContextBuilder
 
             yield return evt;
         }
-        
-        var progressReportSubscription = (progressReport is not null) ? Observable.Interval(TimeSpan.FromSeconds(10)).Select(x => new ProgressReport(loadedCount, flowCount, windowCount, contextCount, writtenCount)).Subscribe(progressReport) : null;
+
+        var windowTransformer = new HoppingWindowAggregator<IpFlow>(windowSpan, null);
+
+        ProgressReport CreateReport(long delta)
+        {
+            return new ProgressReport(flowsLoadedCount, flowsConsumedCount, windowsCreatedCount, contextsCreatedCount, contextsWrittenCount, windowTransformer.Counters.CurrentWindowStart,
+                windowTransformer.Counters.CurrentTimestamp, windowTransformer.Counters.OutOfOrderFlowsTotal, windowTransformer.Counters.OutOfOrderFlowsInCurrentWindow,
+                windowTransformer.Counters.FlowsInCurrentWindow, windowTransformer.Counters.FlowsTotal);
+        }
+
+        var progressReportSubscription = (progressReport is not null) ? Observable.Interval(TimeSpan.FromSeconds(10)).Select(CreateReport).Subscribe(progressReport) : null;
 
         var task = Produce(modules.Readers)
 
                  .Select(t => new ObservableEvent<IpFlow>(t, t.TimeStart, t.TimeStart + t.TimeDuration))
 
-                 .Do(_ => loadedCount++)
+                 .Do(_ => flowsLoadedCount++)
 
                  .OrderSequence(16)
 
-                 .Do(_ => flowCount++)
+                 .Do(_ => flowsConsumedCount++)
 
-                 .HoppingWindow(windowSpan)
+                 .HoppingWindow(windowTransformer)
 
-                 .Do(_ => windowCount++)
+                 .Do(_ => windowsCreatedCount++)
 
                  .IpHostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value })
                  
-                 .Do(_ => contextCount++)
+                 .Do(_ => contextsCreatedCount++)
 
                  .Where(filter.Evaluate)
 
@@ -205,7 +216,7 @@ public static class EthanolContextBuilder
 
                  .Transform(modules.Refiner)
 
-                 .Do(_ => writtenCount++)
+                 .Do(_ => contextsWrittenCount++)
 
                  .Consume(modules.Writers);
 
@@ -218,13 +229,38 @@ public static class EthanolContextBuilder
     /// <summary>
     /// Represents a progress report for the data processing pipeline.
     /// </summary>
-    /// <param name="LoadedFlows">The number of data flows that have been loaded into the pipeline.</param>
-    /// <param name="ConsumedFlows">The number of data flows that have been consumed or processed by the pipeline.</param>
-    /// <param name="CreatedWindows">The number of windows created for processing, typically in a windowed aggregation scenario.</param>
-    /// <param name="ContextsBuilt">The number of contexts that have been constructed from the data flows, representing a more complex data structure for further processing.</param>
-    /// <param name="ContextsWritten">The number of contexts that have been successfully written to the output or storage system.</param>
+
     /// <remarks>
     /// This record provides a snapshot of the current state of the data processing pipeline, giving insights into its overall progress and the volume of data it has handled. The information encapsulated in this record can be used for monitoring, logging, and diagnostic purposes to understand and optimize the pipeline's performance.
     /// </remarks>
-    public record ProgressReport(int LoadedFlows, int ConsumedFlows, int CreatedWindows, int ContextsBuilt, int ContextsWritten);
+    public record ProgressReport
+{
+    public ProgressReport(int loadedFlows, int consumedFlows, int createdWindows, int contextsBuilt, int contextsWritten, DateTime currentWindowStart, DateTime currentTimestamp, int droppedFlowsInAllWindows, int droppedFlowInCurrentWindow, int flowsInCurrentWindow, int totalFlowsInAllWindows)
+    {
+        LoadedFlows = loadedFlows;
+        ConsumedFlows = consumedFlows;
+        CreatedWindows = createdWindows;
+        ContextsBuilt = contextsBuilt;
+        ContextsWritten = contextsWritten;
+        CurrentWindowStart = currentWindowStart;
+        CurrentTimestamp = currentTimestamp;
+        DroppedFlowsInAllWindows = droppedFlowsInAllWindows;
+        DroppedFlowInCurrentWindow = droppedFlowInCurrentWindow;
+        FlowsInCurrentWindow = flowsInCurrentWindow;
+        TotalFlowsInAllWindows = totalFlowsInAllWindows;
+    }
+
+    public int LoadedFlows { get; }
+    public int ConsumedFlows { get; }
+    public int CreatedWindows { get; }
+    public int ContextsBuilt { get; }
+    public int ContextsWritten { get; }
+    public DateTime CurrentWindowStart { get; }
+    public DateTime CurrentTimestamp { get; }
+    public int DroppedFlowsInAllWindows { get; }
+    public int DroppedFlowInCurrentWindow { get; }
+    public int FlowsInCurrentWindow { get; }
+
+    public int TotalFlowsInAllWindows { get; }
+}
 }

@@ -29,15 +29,15 @@ namespace Ethanol.ContextBuilder.Observable
         /// </remarks>
         /// <exception cref="ArgumentNullException">Thrown when the source observable is null.</exception>
 
-        public static IObservable<ObservableEvent<IObservable<TSource>>> HoppingWindow<TSource>(this IObservable<ObservableEvent<TSource>> source, TimeSpan timeSpan)
+        public static IObservable<ObservableEvent<IObservable<TSource>>> HoppingWindow<TSource>(this IObservable<ObservableEvent<TSource>> source,
+            IObservableTransformer<ObservableEvent<TSource>, ObservableEvent<IObservable<TSource>>> windowTransformer)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
             return System.Reactive.Linq.Observable.Create<ObservableEvent<IObservable<TSource>>>(observer =>
             {
-                var window = new HoppingWindowAggregator<TSource>(timeSpan);
-                source.Subscribe(window);
-                return window.Subscribe(observer);
+                source.Subscribe(windowTransformer);
+                return windowTransformer.Subscribe(observer);
             });
         }
 

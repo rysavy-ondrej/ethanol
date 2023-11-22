@@ -77,7 +77,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
 
     private void OnProgressUpdate(EthanolContextBuilder.ProgressReport report)
     {
-        _logger.LogInformation($"Statistics: loaded={report.LoadedFlows}, consumed={report.ConsumedFlows}, windows={report.CreatedWindows}, ctxall={report.ContextsBuilt}, written={report.ContextsWritten}.");
+        _logger.LogInformation($"Statistics: {report}.");
     }
 
     private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder builder)

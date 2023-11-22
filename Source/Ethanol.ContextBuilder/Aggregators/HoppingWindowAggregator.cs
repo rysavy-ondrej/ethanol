@@ -16,8 +16,22 @@ namespace Ethanol.ContextBuilder.Aggregators
     /// <typeparam name="TRecord">Type of the event payload in the observable.</typeparam>
     public class HoppingWindowAggregator<TRecord> : ObservableBase<ObservableEvent<IObservable<TRecord>>>, IObservableTransformer<ObservableEvent<TRecord>, ObservableEvent<IObservable<TRecord>> >
     {
+
+        public class Statistics
+        {
+            public int FlowsTotal { get; set; }           
+            public int OutOfOrderFlowsTotal { get; set; }
+            public int FlowsInCurrentWindow { get; set; }
+            public int OutOfOrderFlowsInCurrentWindow { get; set; }
+            public DateTime CurrentWindowStart { get; set; }
+            public DateTime CurrentTimestamp { get; set; }
+        }
+
         private readonly long _timeSpan;
         private long _currentEpoch = 0;
+
+        public Statistics Counters { get; } = new Statistics();
+
 
         // The current window subject.
         private Subject<TRecord> _currentWindow = null;
@@ -26,16 +40,19 @@ namespace Ethanol.ContextBuilder.Aggregators
         // Collection of observers subscribed to the observable.
         private readonly List<IObserver<ObservableEvent<IObservable<TRecord>>>> _observers;
 
+        private IObserver<ObservableEvent<TRecord>> _obsoleteRecordObserver; 
+
         public Task Completed => _tcs.Task;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HoppingWindowAggregator{T}"/> class with a specified time span.
         /// </summary>
         /// <param name="timeSpan">Duration of each window.</param>
-        public HoppingWindowAggregator(TimeSpan timeSpan)
+        public HoppingWindowAggregator(TimeSpan timeSpan, IObserver<ObservableEvent<TRecord>> obsoleteRecordObserver = null)
         {
             _timeSpan = timeSpan.Ticks;
             _observers = new List<IObserver<ObservableEvent<IObservable<TRecord>>>>();
+            _obsoleteRecordObserver = obsoleteRecordObserver;
         }
         /// <summary>
         /// Notifies all observers about the end of the sequence.
@@ -45,6 +62,7 @@ namespace Ethanol.ContextBuilder.Aggregators
             _currentWindow?.OnCompleted();
             var observers = _observers.ToArray();
             foreach (var o in observers) o.OnCompleted();
+            _obsoleteRecordObserver?.OnCompleted();
             _tcs.SetResult();
         }
 
@@ -60,6 +78,8 @@ namespace Ethanol.ContextBuilder.Aggregators
         // Emits the current window to all observers.
         void EmitWindow()
         {
+            Counters.CurrentWindowStart = new DateTime(_currentEpoch * _timeSpan);
+
             var observers = _observers.ToArray();
             foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<TRecord>>(_currentWindow, _currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan));
         }
@@ -84,9 +104,22 @@ namespace Ethanol.ContextBuilder.Aggregators
                 }
             }
             // the element is obsolete, its end time is before the current window:
-            if (evt.EndTime.Ticks < GetCurrentWindowInterval().Item1) return;
+            if (evt.EndTime.Ticks < GetCurrentWindowInterval().Item1)
+            {
+                Counters.OutOfOrderFlowsTotal++;
+                Counters.OutOfOrderFlowsInCurrentWindow++;
 
-            _currentWindow.OnNext(evt.Payload);
+                _obsoleteRecordObserver?.OnNext(evt);                                             
+                return;
+            }
+            else
+            {
+                Counters.FlowsInCurrentWindow++;
+                Counters.FlowsTotal++;
+                Counters.CurrentTimestamp = evt.StartTime;
+
+                _currentWindow.OnNext(evt.Payload);
+            }            
         }
 
         (long, long) GetCurrentWindowInterval()
@@ -99,8 +132,14 @@ namespace Ethanol.ContextBuilder.Aggregators
         {
             _currentWindow.OnCompleted();
             _currentEpoch++;
+
+            Counters.FlowsInCurrentWindow = 0;
+            Counters.OutOfOrderFlowsInCurrentWindow = 0;
+            
+
             var newWindow = new Subject<TRecord>();
             _currentWindow = newWindow;
+            
             EmitWindow();
         }
 

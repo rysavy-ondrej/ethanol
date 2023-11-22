@@ -157,6 +157,8 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
 
     public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
     {
+        if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
+
         using var cmd = PrepareCommand(keys, tagType, start, end);
         return ReadObjects(cmd);
     }

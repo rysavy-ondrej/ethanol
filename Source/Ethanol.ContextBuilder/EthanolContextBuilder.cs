@@ -66,6 +66,7 @@ public static class EthanolContextBuilder
     public static IObservable<ObservableEvent<TContext>> IpHostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,
         Func<KeyValuePair<IPAddress, IpFlow[]>, TContext> resultSelector)
     {
+        // duplicates flows so that they can be assigned to both end points:
         KeyValuePair<IPAddress, IpFlow>[] GetKey(IpFlow flow)
         {
             return new[] { new KeyValuePair<IPAddress, IpFlow>(flow.SourceAddress, flow), new KeyValuePair<IPAddress, IpFlow>(flow.DestinationAddress, flow) };
@@ -161,7 +162,22 @@ public static class EthanolContextBuilder
         int contextCount = 0;
         int writtenCount = 0;
 
-        var stop = Observable.Interval(TimeSpan.FromSeconds(10)).Select(x => new ProgressReport(loadedCount, flowCount, windowCount, contextCount, writtenCount)).Subscribe(progressReport);
+        DateTime? currentWindowStartTime = null;
+        IEnumerable<ObservableEvent<IpHostContext>> AddPeriod(ObservableEvent<IpHostContext> evt)
+        {
+            if (currentWindowStartTime is null) currentWindowStartTime = evt.StartTime;
+
+            // if context in the new window is observed, we generate the "window period":
+            if (evt.StartTime > currentWindowStartTime) 
+            {                
+                yield return new ObservableEvent<IpHostContext>(new IpHostContext { HostAddress = IPAddress.Any, Flows = Array.Empty<IpFlow>() }, currentWindowStartTime.Value, currentWindowStartTime.Value + windowSpan);
+                currentWindowStartTime = evt.StartTime;
+            }
+
+            yield return evt;
+        }
+        
+        var progressReportSubscription = (progressReport is not null) ? Observable.Interval(TimeSpan.FromSeconds(10)).Select(x => new ProgressReport(loadedCount, flowCount, windowCount, contextCount, writtenCount)).Subscribe(progressReport) : null;
 
         var task = Produce(modules.Readers)
 
@@ -178,10 +194,12 @@ public static class EthanolContextBuilder
                  .Do(_ => windowCount++)
 
                  .IpHostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value })
-
+                 
                  .Do(_ => contextCount++)
 
                  .Where(filter.Evaluate)
+
+                 .SelectMany(selector: AddPeriod)
 
                  .Transform(modules.Enricher)
 
@@ -193,9 +211,13 @@ public static class EthanolContextBuilder
 
         var _readerTasks = modules.Readers.Select(x => x.ReadAllAsync(CancellationToken.None)).ToArray();
 
-        stop.Dispose();
+        progressReportSubscription?.Dispose();
         await task;
     }
+
+
+
+
     /// <summary>
     /// Represents a progress report for the data processing pipeline.
     /// </summary>

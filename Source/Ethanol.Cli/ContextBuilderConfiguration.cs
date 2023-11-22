@@ -19,13 +19,16 @@ public class ContextBuilderConfiguration
     public class ContextBuilder
     {
         [JsonPropertyName("windowsize")]
-        public string WindowSize { get; set; }
+        public string WindowSize { get; set; } = "\"00:05:00\"";
 
         [JsonPropertyName("windowhop")]
-        public string WindowHop { get; set; }
+        public string WindowHop { get; set; } = "\"00:05:00\"";
 
         [JsonPropertyName("networks")]
         public List<string> Networks { get; set; }
+
+        [JsonPropertyName("orderingbuffersize")]
+        public int FlowOrderingBufferSize { get; set; } = 16;
     }
 
     public class Input

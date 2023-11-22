@@ -72,12 +72,14 @@ internal class ContextBuilderCommand : ConsoleAppBase
         // 3.set-up pipeline:
         var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
         // 4.execute:
-        await EthanolContextBuilder.Run(modules, windowSpan, filter, progressReport ? Observer.Create<EthanolContextBuilder.ProgressReport>(OnProgressUpdate) : null);
+        await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder.FlowOrderingBufferSize, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
     }
 
-    private void OnProgressUpdate(EthanolContextBuilder.ProgressReport report)
+    EthanolContextBuilder.BuilderStatistics _lastReport;
+    private void OnProgressUpdate(EthanolContextBuilder.BuilderStatistics report)
     {
-        _logger.LogInformation($"Statistics: {report}.");
+        _logger.LogInformation($"{report}.");
+        _lastReport = report;
     }
 
     private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder builder)

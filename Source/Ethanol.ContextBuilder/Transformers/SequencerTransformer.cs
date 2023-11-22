@@ -1,5 +1,4 @@
 ﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,10 +30,10 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     private int _bufferedElements = 0;
 
     // The maximum number of events the queue will hold before starting to emit items.
-    private int _maxQueueLength;
+    private readonly int _maxQueueLength;
 
     // TaskCompletionSource to signal completion of event processing.
-    private TaskCompletionSource _tcs = new TaskCompletionSource();
+    private readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
     /// <summary>
     /// Initializes a new instance of the SequencerTransformer class with a specified queue length.
@@ -43,6 +42,7 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     public SequencerTransformer(int queueLength)
     {
         this._maxQueueLength = queueLength;
+        Statistics = new SequencerTransformerStatistics(this);
     }
 
     /// <summary>
@@ -109,6 +109,22 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     public IDisposable Subscribe(IObserver<ObservableEvent<T>> observer)
     {
         return _subject.Subscribe(observer);
+    }
+
+    public SequencerTransformerStatistics Statistics { get; }
+
+    public class SequencerTransformerStatistics
+    {
+        private readonly SequencerTransformer<T> transformer;
+
+        internal SequencerTransformerStatistics(SequencerTransformer<T> transformer)
+        {
+            this.transformer = transformer;
+        }
+
+        public int ActualQueueLength => transformer._bufferedElements;
+
+        public int MaxQueueLength => transformer._maxQueueLength;
     }
 }
 

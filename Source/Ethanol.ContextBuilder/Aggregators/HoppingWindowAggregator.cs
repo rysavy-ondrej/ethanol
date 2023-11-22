@@ -17,7 +17,7 @@ namespace Ethanol.ContextBuilder.Aggregators
     public class HoppingWindowAggregator<TRecord> : ObservableBase<ObservableEvent<IObservable<TRecord>>>, IObservableTransformer<ObservableEvent<TRecord>, ObservableEvent<IObservable<TRecord>> >
     {
 
-        public class Statistics
+        public class WindowStatistics
         {
             public int FlowsTotal { get; set; }           
             public int OutOfOrderFlowsTotal { get; set; }
@@ -30,7 +30,7 @@ namespace Ethanol.ContextBuilder.Aggregators
         private readonly long _timeSpan;
         private long _currentEpoch = 0;
 
-        public Statistics Counters { get; } = new Statistics();
+        public WindowStatistics Statistics { get; } = new WindowStatistics();
 
 
         // The current window subject.
@@ -78,7 +78,7 @@ namespace Ethanol.ContextBuilder.Aggregators
         // Emits the current window to all observers.
         void EmitWindow()
         {
-            Counters.CurrentWindowStart = new DateTime(_currentEpoch * _timeSpan);
+            Statistics.CurrentWindowStart = new DateTime(_currentEpoch * _timeSpan);
 
             var observers = _observers.ToArray();
             foreach (var o in observers) o.OnNext(new ObservableEvent<IObservable<TRecord>>(_currentWindow, _currentEpoch * _timeSpan, _currentEpoch * _timeSpan + _timeSpan));
@@ -106,17 +106,17 @@ namespace Ethanol.ContextBuilder.Aggregators
             // the element is obsolete, its end time is before the current window:
             if (evt.EndTime.Ticks < GetCurrentWindowInterval().Item1)
             {
-                Counters.OutOfOrderFlowsTotal++;
-                Counters.OutOfOrderFlowsInCurrentWindow++;
+                Statistics.OutOfOrderFlowsTotal++;
+                Statistics.OutOfOrderFlowsInCurrentWindow++;
 
                 _obsoleteRecordObserver?.OnNext(evt);                                             
                 return;
             }
             else
             {
-                Counters.FlowsInCurrentWindow++;
-                Counters.FlowsTotal++;
-                Counters.CurrentTimestamp = evt.StartTime;
+                Statistics.FlowsInCurrentWindow++;
+                Statistics.FlowsTotal++;
+                Statistics.CurrentTimestamp = evt.StartTime;
 
                 _currentWindow.OnNext(evt.Payload);
             }            
@@ -133,8 +133,8 @@ namespace Ethanol.ContextBuilder.Aggregators
             _currentWindow.OnCompleted();
             _currentEpoch++;
 
-            Counters.FlowsInCurrentWindow = 0;
-            Counters.OutOfOrderFlowsInCurrentWindow = 0;
+            Statistics.FlowsInCurrentWindow = 0;
+            Statistics.OutOfOrderFlowsInCurrentWindow = 0;
             
 
             var newWindow = new Subject<TRecord>();

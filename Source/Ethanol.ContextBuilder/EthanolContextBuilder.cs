@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +24,6 @@ public static class EthanolContextBuilder
     /// <typeparam name="TFlow">The type of data produced by the readers.</typeparam>
     /// <param name="readers">An array of data readers.</param>
     /// <returns>An observable sequence containing data from all provided readers.</returns>
-
     public static IObservable<TFlow> Produce<TFlow>(params IDataReader<TFlow>[] readers)
     {
         return readers.Merge();
@@ -38,7 +36,6 @@ public static class EthanolContextBuilder
     /// <param name="observable">The observable sequence to be ordered.</param>
     /// <param name="sequenceLength">The length of the sequence for ordering.</param>
     /// <returns>An ordered observable sequence of events.</returns>
-
     public static IObservable<ObservableEvent<TPayload>> OrderSequence<TPayload>(this IObservable<ObservableEvent<TPayload>> observable, IObservableTransformer<ObservableEvent<TPayload>, ObservableEvent<TPayload>> sequencer)
     {
     
@@ -51,7 +48,6 @@ public static class EthanolContextBuilder
     /// </summary>
     /// <param name="ipString">The string representation of the IP address.</param>
     /// <returns>An IPAddress object or IPAddress.None.</returns>
-
     public static IPAddress GetAddressOrDefault(this string ipString)
     {
         return IPAddress.TryParse(ipString, out var address) ? address : IPAddress.None;
@@ -64,7 +60,6 @@ public static class EthanolContextBuilder
     /// <param name="source">The source observable sequence of IpFlow events.</param>
     /// <param name="resultSelector">A function to transform grouped IpFlow events into a context object.</param>
     /// <returns>An observable sequence of context objects.</returns>
-
     public static IObservable<ObservableEvent<TContext>> IpHostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,
         Func<KeyValuePair<IPAddress, IpFlow[]>, TContext> resultSelector)
     {
@@ -86,7 +81,6 @@ public static class EthanolContextBuilder
     /// <param name="keySelector">A function to select the key for grouping flows.</param>
     /// <param name="resultSelector">A function to transform grouped flows into a context object.</param>
     /// <returns>An observable sequence of context objects.</returns>
-
     public static IObservable<ObservableEvent<TContext>> HostContext<TFlow, TKey, TContext>(this IObservable<ObservableEvent<IObservable<TFlow>>> source,
         Func<TFlow, IEnumerable<KeyValuePair<TKey, TFlow>>> keySelector,
         Func<KeyValuePair<TKey, TFlow[]>, TContext> resultSelector)
@@ -105,7 +99,6 @@ public static class EthanolContextBuilder
     /// <param name="source">The observable source to subscribe to.</param>
     /// <param name="writers">An array of data writers to write the data to.</param>
     /// <returns>A task representing the asynchronous operation of writing data.</returns>
-
     public static Task Consume<T>(this IObservable<T> source, params IDataWriter<T>[] writers)
     {
         var connectable = source.Publish();
@@ -140,22 +133,37 @@ public static class EthanolContextBuilder
     /// <param name="Refiner">A transformer to refine IpHostContextWithTags into IpTargetHostContext.</param>
     public record BuilderModules(
         IDataReader<IpFlow>[] Readers,
-
         IDataWriter<ObservableEvent<IpTargetHostContext>>[] Writers,
-
         IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> Enricher,
-
         IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>> Refiner);
 
 
     /// <summary>
     /// Orchestrates the entire data processing pipeline using the provided builder modules.
+    /// This method sets up and executes the pipeline, handling data through various stages
+    /// like reading, writing, enriching, and refining based on the provided modules.
     /// </summary>
-    /// <param name="modules">The set of builder modules including readers, writers, enricher, and refiner.</param>
-    /// <param name="windowSpan">The time span for the hopping window operation.</param>
-    /// <param name="filter">A host-based filter to apply to the processing pipeline.</param>
-    /// <returns>A task representing the asynchronous operation of the pipeline.</returns>
-    public static async Task Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, IObserver<BuilderStatistics> progressReport = null)
+    /// <param name="modules">
+    /// The set of builder modules including readers, writers, enricher, and refiner.
+    /// These modules collectively define the behavior of the data processing pipeline.
+    /// </param>
+    /// <param name="windowSpan">
+    /// The time span for the hopping window operation. This defines the window size for processing data batches.
+    /// </param>
+    /// <param name="inputOrderingQueueLength">
+    /// The length of the queue for ordering input data. This parameter helps manage the order in which data is processed.
+    /// </param>
+    /// <param name="filter">
+    /// A host-based filter to apply to the processing pipeline. This filter allows for selective processing of data based on certain criteria.
+    /// </param>
+    /// <param name="builderStatsObserver">
+    /// An optional observer for builder statistics. If provided, the observer will receive updates on various metrics and statistics of the pipeline's operation.
+    /// This parameter is optional and can be null.
+    /// </param>
+    /// <returns>
+    /// A task representing the asynchronous operation of the pipeline. This task can be awaited to ensure the pipeline's completion.
+    /// </returns>
+    public static async Task Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, IObserver<BuilderStatistics> builderStatsObserver = null)
     {
 
         int flowsLoadedCount = 0;
@@ -201,7 +209,7 @@ public static class EthanolContextBuilder
             };
         }
 
-        var progressReportSubscription = (progressReport is not null) ? Observable.Interval(TimeSpan.FromSeconds(10)).Select(CreateReport).Subscribe(progressReport) : null;
+        var progressReportSubscription = (builderStatsObserver is not null) ? Observable.Interval(TimeSpan.FromSeconds(10)).Select(CreateReport).Subscribe(builderStatsObserver) : null;
 
         var task = Produce(modules.Readers)
 
@@ -240,28 +248,50 @@ public static class EthanolContextBuilder
     }
 
     /// <summary>
-    /// Represents a progress report for the data processing pipeline.
+    /// Represents statistics related to the management and processing of flows in a builder system.
+    /// This record tracks metrics like loaded, consumed, and buffered flows, as well as statistics
+    /// related to window creation and flow handling.
     /// </summary>
-    /// <remarks>
-    /// This record provides a snapshot of the current state of the data processing pipeline, 
-    /// giving insights into its overall progress and the volume of data it has handled. 
-    /// The information encapsulated in this record can be used for monitoring, logging, 
-    /// and diagnostic purposes to understand and optimize the pipeline's performance.
-    /// </remarks>
     public record BuilderStatistics
     {
+        /// <summary>Gets or sets the number of flows that have been loaded into the system.</summary>
         public int LoadedFlows { get; set; }
+
+        /// <summary>Gets or sets the number of flows that have been consumed by the system.</summary>
         public int ConsumedFlows { get; set; }
+
+        /// <summary>Gets or sets the number of flows currently buffered in the system.</summary>
         public int BufferedFlows { get; set; }
+
+        /// <summary>Gets or sets the maximum size of the flow buffer.</summary>
         public int MaxFlowBufferSize { get; set; }
+
+        /// <summary>Gets or sets the number of windows created by the system for managing flows.</summary>
         public int CreatedWindows { get; set; }
+
+        /// <summary>Gets or sets the number of contexts that have been built in the system.</summary>
         public int ContextsBuilt { get; set; }
+
+        /// <summary>Gets or sets the number of contexts that have been written to an output or storage.</summary>
         public int ContextsWritten { get; set; }
+
+        /// <summary>Gets or sets the start time of the current window for flow processing.</summary>
         public DateTime CurrentWindowStart { get; set; }
+
+        /// <summary>Gets or sets the current timestamp within the system.</summary>
         public DateTime CurrentTimestamp { get; set; }
+
+        /// <summary>Gets or sets the number of flows that have been dropped across all windows.</summary>
         public int DroppedFlowsInAllWindows { get; set; }
+
+        /// <summary>Gets or sets the number of flows dropped in the current window.</summary>
         public int DroppedFlowInCurrentWindow { get; set; }
+
+        /// <summary>Gets or sets the number of flows present in the current window.</summary>
         public int FlowsInCurrentWindow { get; set; }
+
+        /// <summary>Gets or sets the total number of flows processed across all windows.</summary>
         public int TotalFlowsInAllWindows { get; set; }
     }
+
 }

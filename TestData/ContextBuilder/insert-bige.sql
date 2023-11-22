@@ -1,0 +1,1 @@
+\COPY enrichment_data(type,key,value,reliability,validity,details) FROM smartads.csv WITH DELIMITER ',' CSV HEADER;

@@ -27,7 +27,7 @@ public record ContextsQuery
         var start = Start.GetValueOrDefault(DateTime.MinValue);
         var end = End.GetValueOrDefault(DateTime.MaxValue);
         var exprs = new[]{  $"validity && '[{start},{end})'",
-                             HostKey != null ? $"key = '{HostKey}'" : "true" };
+                             HostKey != null ? $"key = '{HostKey}'" : "key <> '0.0.0.0'" };
         return String.Join(" AND ", exprs);
     }
 }

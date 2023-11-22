@@ -38,14 +38,15 @@ public class EthanolConfiguration
     /// <summary>
     /// Gets or sets the name of the table storing host context data.
     /// </summary>
-    public string? HostContextTable { get; set; }
+    public string? HostContextTable { get; set; } = "host_context";
 
     /// <summary>
     /// Gets or sets the name of the table storing tag data.
     /// </summary>
-    public string? TagsTable { get; set; }
+    public string? TagsTable { get; set; } = "enrichment_data";
 
     public string? ApplicationUrl { get; set; }
+    public int TagsChunkSize { get; set; } = 100;
 
     public static EthanolConfiguration LoadFromFile(string configurationFilePath)
     {

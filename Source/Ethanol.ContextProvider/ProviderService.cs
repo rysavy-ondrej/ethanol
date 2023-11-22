@@ -19,10 +19,10 @@ namespace Ethanol.ContextProvider
             builder.Services.AddNpgsqlDataSource(configuration.GetConnectionString());
         
             builder.Services.AddSingleton<EthanolConfiguration>(configuration);
-            var app = builder.Build();
 
-            // set up logger:
-            LogManager.SetGlobalLogger(logger);
+            builder.Services.AddSingleton<ILogger>(logger);
+
+            var app = builder.Build();
 
             // adjust endpoints:
             app.UseFastEndpoints(c =>

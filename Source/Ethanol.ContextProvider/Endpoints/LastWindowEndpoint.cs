@@ -16,15 +16,15 @@ namespace Ethanol.ContextProvider.Endpoints
     [HttpGet("/api/v1/host-context/windows/last")]
     public class LastWindowEndpoint : EndpointWithoutRequest<WindowObject>
     {
-        static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
-
+        private readonly ILogger _logger;
         private readonly NpgsqlDataSource _dataSource;
         private readonly EthanolConfiguration _configuration;
 
-        public LastWindowEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration)
+        public LastWindowEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger logger)
         {
             _dataSource = datasource;
             _configuration = configuration;
+            _logger = logger;
         }
 
 
@@ -55,7 +55,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch(Exception ex)
             {
-                __logger?.LogError(ex, $"Endpoint '{nameof(LastWindowEndpoint)}' cannot create a response.");
+                _logger?.LogError(ex, $"Endpoint '{nameof(LastWindowEndpoint)}' cannot create a response.");
                 await SendErrorsAsync(500, ct);
             }
         }

@@ -13,15 +13,15 @@ namespace Ethanol.ContextProvider.Endpoints
     [HttpGet("/api/v1/host-context/contexts/count")]
     public class ContextsCountEndpoint : Endpoint<ContextsQuery, int>
     {
-        static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
-
+        private readonly ILogger _logger;
         private readonly NpgsqlDataSource _dataSource;
         private readonly EthanolConfiguration _configuration;
 
-        public ContextsCountEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration)
+        public ContextsCountEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger logger)
         {
             _dataSource = datasource;
             _configuration = configuration;
+            _logger = logger;
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch (Exception ex)
             {
-                __logger?.LogError(ex, $"Endpoint '{nameof(ContextsCountEndpoint)}' cannot create a response for the query {0}.", query);
+                _logger?.LogError(ex, $"Endpoint '{nameof(ContextsCountEndpoint)}' cannot create a response for the query {0}.", query);
                 await SendErrorsAsync(500, ct);
             }
         }

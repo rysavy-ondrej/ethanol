@@ -1,5 +1,4 @@
-﻿using Ethanol;
-using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.ContextBuilder.Context;
 using Npgsql;
 using System.Data;
 
@@ -14,7 +13,7 @@ class TagsProcessor
     /// <summary>
     /// Logger instance for logging messages.
     /// </summary>
-    static protected readonly ILogger __logger = LogManager.GetCurrentClassLogger();
+    private readonly ILogger __logger;
 
     /// <summary>
     /// The provider for fetching tag data from PostgreSQL.
@@ -27,9 +26,10 @@ class TagsProcessor
     /// <param name="connection">The Npgsql connection instance.</param>
     /// <param name="tablename">The name of the table to work with.</param>
 
-    public TagsProcessor(NpgsqlConnection connection, string tablename)
+    public TagsProcessor(NpgsqlConnection connection, string tablename, ILogger logger)
     {
         _provider = new PostgresTagDataSource(connection, tablename);
+        __logger = logger;
     }
     /// <summary>
     /// Represents aggregated activity data.
@@ -103,9 +103,9 @@ class TagsProcessor
     /// <param name="start">The start of the date-time range.</param>
     /// <param name="end">The end of the date-time range.</param>
     /// <returns>An array of <see cref="TagObject"/> matching the criteria.</returns>
-    public TagObject[] ReadTagObjects(string key, DateTime start, DateTime end)
+    public TagObject[] ReadTagObjects(IEnumerable<string> key, DateTime start, DateTime end)
     {
-        var tags = _provider.Get(key, start, end);
+        var tags = _provider.GetMany(key, start, end);
         return tags.ToArray();
     }
 }

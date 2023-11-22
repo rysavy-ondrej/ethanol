@@ -6,5 +6,6 @@
   "PostgresPassword": "${POSTGRES_PASSWORD}",
   "PostgresDatabase": "${POSTGRES_DATABASE}",
   "TagsTable": "enrichment_data",
-  "HostContextTable": "host_context"
+  "HostContextTable": "host_context",
+  "TagsChunkSize" : 500
 }

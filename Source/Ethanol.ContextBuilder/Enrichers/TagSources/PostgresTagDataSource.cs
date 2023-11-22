@@ -162,7 +162,13 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         using var cmd = PrepareCommand(keys, tagType, start, end);
         return ReadObjects(cmd);
     }
+    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, DateTime start, DateTime end)
+    {
+        if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
 
+        using var cmd = PrepareCommand(keys, start, end);
+        return ReadObjects(cmd);
+    }
     /// <summary>
     /// Prepares a NpgsqlCommand for retrieving data based on the provided tag key and time range.
     /// </summary>
@@ -193,6 +199,18 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         var cmd = _connection.CreateCommand();
         // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key ='{tagKey}'";
+        return cmd;
+    }
+    private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, DateTime start, DateTime end)
+    {
+        var startString = start.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.ToString("o", CultureInfo.InvariantCulture);
+        var cmd = _connection.CreateCommand();
+        // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+
+        var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
+
+        cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
         return cmd;
     }
     private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)

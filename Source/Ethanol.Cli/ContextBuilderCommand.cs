@@ -55,7 +55,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
     [Option("c", "The path to the configuration file used for processing setup.s")]
                 string configurationFile,
     [Option("p", "Enable or disable progress reporting during processing.")]
-                bool progressReport
+                bool progressReport = true
     )
     {
         // 1.load configuration:

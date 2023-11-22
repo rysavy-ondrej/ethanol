@@ -215,9 +215,6 @@ public static class EthanolContextBuilder
         await task;
     }
 
-
-
-
     /// <summary>
     /// Represents a progress report for the data processing pipeline.
     /// </summary>

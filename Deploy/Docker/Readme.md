@@ -31,9 +31,7 @@ __postgres-service__
 
 * ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql: This maps a local SQL file, ethanol-db-init.sql, to the initialization scripts directory in the PostgreSQL container. This script will be executed when the container starts up for the first time. It contains comands to prepare the ethanol data abse and create required tables.
 
-__ethanol-service__
-
-* ./netify:/var/netify: This maps the local netify folder to the /var/netify directory inside the ethanol-service container. This can be used to insert and update the Netify dataset.
+* ./netify:/var/netify: This maps the local netify folder to the /var/netify directory inside the postgres-service container. This can be used to insert and update the Netify dataset (see bellow the instruction on how to proceed).
 
 ### Processing pipeline
 
@@ -45,7 +43,7 @@ __ethanol-service__
 
 ### Data Storage Scheme
 
-The PostgreSQL database is created with two tables:
+The PostgreSQL database is created with the following tables:
 
 Table `enrichment_data` is intended to store additional or supplementary information to enrich the context around computed IP host data: 
 
@@ -77,8 +75,7 @@ Table `host_context` is intended to store computed context related to IP hosts:
 CREATE TABLE IF NOT EXISTS host_context (    
     key VARCHAR(255) NOT NULL,
     tags JSON,
-    initiatedconnections JSON,
-    acceptedconnections JSON,
+    connections JSON,
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,
@@ -88,8 +85,7 @@ CREATE TABLE IF NOT EXISTS host_context (
 
 * `key` represents the unique identifier for each IP host, which could be the IP address itself or another related unique value.
 * `tags` can store a set of descriptive tags or labels associated with the IP host. These tags come from `enrichment_data` table.
-* `initiatedconnections` represents connections that the IP host has initiated. This includes destination IPs, ports, number of flows, packets, duration, and other relevant connection details.
-* `acceptedconnections` represents incoming connections that the IP host has accepted. 
+* `connections` represents connections that the IP host has initiated or accepted. This includes destination IPs, ports, number of flows, packets, duration, and other relevant connection details.
 * `resolveddomains` contains information about domain names that the IP host has resolved.
 * `weburls` lists URLs with which the IP host might have accessed or interacted. It gives insights into the web activity of the host.
 * `tlshandshakes` contains information about TLS (Transport Layer Security) handshakes initiated by the IP host. This provides insights into the secure communications of the host and can include details like cipher suites, certificates, or protocols.
@@ -181,6 +177,16 @@ Review the returned data to understand the host context information stored by th
 
 ## Enrichment Data
 
+In the context of data enrichment, there are two distinct types: static enrichment data and dynamic enrichment data.
+
+**Static enrichment** data refers to information that is known and available prior to the computation of the context.
+This data is stored in the database and is not subject to frequent changes. It is relatively stable over time.
+Even though it can change, such changes are rare. Examples are Netify data, Geolocation data.
+Static data is used during the context computation process. It is incorporated as a part of the computed context from the outset. Dynamic Enrichment Data:
+
+**Dynamic enrichment data** is generated in real-time and pertains to information that is often produced at the moment of context computation or may sometimes not be available at all during the computation. This data is fluid and changes frequently as it is derived from real-time operations. Unlike static data, dynamic data is not initially part of the computed context. It is added to the context later when the context is accessed or consumed, typically through an API.
+
+
 The `enrichment_data` table is used to store and provide additional tags and attributes that enhances the informational value of hosts or flows, allowing for richer analysis.
 One of the primary utilities of the `enrichment_data` table is to associate specific tags with hosts or flows. These tags can signify various attributes or characteristics.
 Diverse data sources may represent information differently. The enrichment_data table brings a unified representation, ensuring consistency across different types of data.
@@ -200,11 +206,28 @@ The enrichment_data table is versatile, storing diverse tag types, each identifi
 * Other unique identifier values
 
 For Netify data, there is a separate table which makes it easier and more efficient ot maintaain. The table names is `netify_data` and has the same structure 
-as `enrichment_data` table.
+as `enrichment_data` table but only contains data from the Netify data.
 
 | type | key |value | reliability | validity | details |
 | ---- | --- | ---- | ------------| ---------| --------|
 | NetifyIp | 13.32.216.50 | app.netflix | 1 | [-infinity,infinity] | {"Tag":"app.netflix","ShortName":"Netflix","FullName":"Netflix","Category":"Streaming Media"} |
 | NetifyDomain | microsoft | app.microsoft | 1 |  [-infinity,infinity] | {"Tag":"app.microsoft","ShortName":"Microsoft","FullName":"Microsoft","Category":"Business"} |
 
-The Netify data table can be populated using the provided data and scripts in netify folder which is mounted to PostgreSQL container at `/var/netify` folder.
+To populate the Netify data table, follow these step-by-step instructions:
+
+1. **Prepare the Source CSV File**:
+   
+   - Locate the `prepare.py` script in the `netify` folder.
+   - Run this script to prepare the source CSV. This will create `netify.csv` files that are ready to be loaded into the database.
+
+2. **Load Data into the Database**:
+   
+   - Ensure the `netify` folder is correctly mounted to the PostgreSQL container at the `/var/netify` folder.
+   - Open your command line interface.
+   - Execute the following command to load the data into the database:
+
+     ```bash
+     psql -U postgres -d ethanol -f update-netify.sql
+     ```
+
+   This command uses PostgreSQL's command-line tool (`psql`) to run the `update-netify.sql` script. It connects to the database named `ethanol` as the `postgres` user and executes the SQL commands contained in the script. These commands will load the data from the prepared `netify.csv` into the Netify data table.

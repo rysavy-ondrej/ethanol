@@ -32,6 +32,7 @@ RUN dotnet publish -c Release -o /bin -r linux-x64 --self-contained true /p:Publ
 # Build the runtime image
 FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
 
+
 # Set the working directory to /app and copy the published output
 WORKDIR /app/
 COPY --from=build /bin ./

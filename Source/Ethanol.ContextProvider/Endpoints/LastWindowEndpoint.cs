@@ -39,7 +39,7 @@ namespace Ethanol.ContextProvider.Endpoints
             {
                 using var conn = _dataSource.OpenConnection();
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT validity FROM {_configuration.HostContextTable} ORDER BY id DESC LIMIT 1";
+                cmd.CommandText = $"SELECT validity FROM {_configuration.HostContextTable} WHERE key='0.0.0.0' ORDER BY id DESC LIMIT 1";
 
                 var reader = await cmd.ExecuteReaderAsync(ct);
                 if (reader.Read())
@@ -49,7 +49,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 }
                 else
                 {
-                    await SendAsync(default);
+                    await SendNoContentAsync(ct);
                 }
                 reader.Close();
             }

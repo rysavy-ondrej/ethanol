@@ -27,6 +27,7 @@
     "start-service": {
       "commandName": "Project",
       "commandLineArgs": "start-service -c context-provider.config.json",
+      "workingDirectory": "D:\\GitHub\\ethanol\\TestData\\ContextProvider",
       "environmentVariables": {
         "POSTGRES_IP": "localhost",
         "POSTGRES_PORT": "1605",

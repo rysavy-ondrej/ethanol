@@ -60,15 +60,17 @@ public static class EthanolContextBuilder
     /// <param name="source">The source observable sequence of IpFlow events.</param>
     /// <param name="resultSelector">A function to transform grouped IpFlow events into a context object.</param>
     /// <returns>An observable sequence of context objects.</returns>
-    public static IObservable<ObservableEvent<TContext>> IpHostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,
-        Func<KeyValuePair<IPAddress, IpFlow[]>, TContext> resultSelector)
+    public static IObservable<ObservableEvent<TContext>> IpHostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,        
+        Func<KeyValuePair<IPAddress, IpFlow[]>, TContext> resultSelector,
+        Func<TContext> periodFunc = null
+        )
     {
         // duplicates flows so that they can be assigned to both end points:
         KeyValuePair<IPAddress, IpFlow>[] GetKey(IpFlow flow)
         {
             return new[] { new KeyValuePair<IPAddress, IpFlow>(flow.SourceAddress, flow), new KeyValuePair<IPAddress, IpFlow>(flow.DestinationAddress, flow) };
         }
-        return source.HostContext(GetKey, resultSelector);
+        return source.HostContext(GetKey, resultSelector, periodFunc);
     }
 
     /// <summary>
@@ -83,13 +85,27 @@ public static class EthanolContextBuilder
     /// <returns>An observable sequence of context objects.</returns>
     public static IObservable<ObservableEvent<TContext>> HostContext<TFlow, TKey, TContext>(this IObservable<ObservableEvent<IObservable<TFlow>>> source,
         Func<TFlow, IEnumerable<KeyValuePair<TKey, TFlow>>> keySelector,
-        Func<KeyValuePair<TKey, TFlow[]>, TContext> resultSelector)
+        Func<KeyValuePair<TKey, TFlow[]>, TContext> resultSelector,
+        Func<TContext> periodFunc
+        )
     {
-        return source.SelectMany(window =>
-            window.Payload
-                .SelectMany(keySelector)
-                .GroupByAggregate(k => k.Key, v => v.Value, g => new ObservableEvent<TContext>(resultSelector(g), window.StartTime, window.EndTime))
-            );
+        if (periodFunc is not null)
+        { 
+            return source.SelectMany(window =>
+                window.Payload
+                    .SelectMany(keySelector)
+                    .GroupByAggregate(k => k.Key, v => v.Value, g => new ObservableEvent<TContext>(resultSelector(g), window.StartTime, window.EndTime))
+                    .Append(new ObservableEvent<TContext>(periodFunc(), window.StartTime, window.EndTime))
+                );
+        }
+        else
+        {
+            return source.SelectMany(window =>
+                window.Payload
+                    .SelectMany(keySelector)
+                    .GroupByAggregate(k => k.Key, v => v.Value, g => new ObservableEvent<TContext>(resultSelector(g), window.StartTime, window.EndTime))
+                );
+        }
     }
 
     /// <summary>
@@ -217,6 +233,8 @@ public static class EthanolContextBuilder
 
                  .Do(_ => flowsLoadedCount++)
 
+                 .Where(f => !f.Payload.FlowKey.SourceAddress.Equals(IPAddress.Any) && !f.Payload.FlowKey.DestinationAddress.Equals(IPAddress.Any))
+
                  .OrderSequence(sequencer)
 
                  .Do(_ => flowsConsumedCount++)
@@ -225,13 +243,11 @@ public static class EthanolContextBuilder
 
                  .Do(_ => windowsCreatedCount++)
 
-                 .IpHostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value })
+                 .IpHostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value }, () => new IpHostContext { HostAddress = IPAddress.Any, Flows = Array.Empty<IpFlow>() })
                  
                  .Do(_ => contextsCreatedCount++)
 
-                 .Where(filter.Evaluate)
-
-                 .SelectMany(selector: AddPeriod)
+                 .Where(f => f.Payload.HostAddress.Equals(IPAddress.Any) || filter.Evaluate(f))
 
                  .Transform(modules.Enricher)
 

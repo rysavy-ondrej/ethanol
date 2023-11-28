@@ -49,7 +49,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 using (var cmd = connection.CreateCommand())
                 {
                     
-                    cmd.CommandText = $"SELECT * FROM \"{_configuration.HostContextTable}\" WHERE {query.GetWhereExpression()}";
+                    cmd.CommandText = $"SELECT * FROM \"{_configuration.HostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
                     _logger?.LogTrace($"Execute command: {cmd.CommandText}");
 
                     using var reader = cmd.ExecuteReader();
@@ -67,8 +67,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 var tagsProcessor = new TagsProcessor(connection, _configuration.TagsTable, _logger);
                 // group context by their windows:
                 var windows = hostContexts.GroupBy(r => (Start: r.Start, End: r.End));               
-                var orderedWindows = (query.OrderDescending??false) ? windows.OrderByDescending(r => r.Key.Start) : windows.OrderBy(r => r.Key.Start);
-                foreach (var window in orderedWindows)
+                foreach (var window in windows)
                 {
                     _logger?.LogTrace($"Processing window: start={window.Key.Start}, end={window.Key.End}");
                     foreach (var chunk in window.Chunk(_configuration.TagsChunkSize))

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.IO;
+using System.Text.Json;
 
 namespace Ethanol.ContextBuilder.Serialization
 {
@@ -21,4 +22,24 @@ namespace Ethanol.ContextBuilder.Serialization
         }
     }
 
+    public static class Json
+    {
+        static JsonSerializerOptions options = new JsonSerializerOptions();
+        static Json()
+        {
+            options.AddIPAddressConverter();
+        }
+        public static string Serialize<T>(T value)
+        {
+            return JsonSerializer.Serialize<T>(value, options);
+        }
+        public static T Deserialize<T>(string value)
+        {
+            return JsonSerializer.Deserialize<T>(value, options);
+        }
+        public static T Deserialize<T>(Stream stream)
+        {
+            return JsonSerializer.Deserialize<T>(stream, options);
+        }
+    }
 }

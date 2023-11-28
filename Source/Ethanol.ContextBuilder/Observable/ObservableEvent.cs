@@ -11,17 +11,17 @@ namespace Ethanol.ContextBuilder.Observable
         /// <summary>
         /// Gets the start time of the event.
         /// </summary>
-        public DateTime StartTime { get; init; }
+        public DateTime StartTime { get; set; }
 
         /// <summary>
         /// Gets the end time of the event.
         /// </summary>
-        public DateTime EndTime { get; init; }
+        public DateTime EndTime { get; set; }
 
         /// <summary>
         /// Gets the payload or data associated with the event.
         /// </summary>
-        public TPayload Payload { get; init; }
+        public TPayload Payload { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObservableEvent{TPayload}"/> record 
@@ -49,6 +49,10 @@ namespace Ethanol.ContextBuilder.Observable
             Payload = payload;
             StartTime = startTime;
             EndTime = endTime;
+        }
+
+        public ObservableEvent()
+        {
         }
     }
 }

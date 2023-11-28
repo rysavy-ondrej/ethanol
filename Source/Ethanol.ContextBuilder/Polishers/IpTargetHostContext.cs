@@ -71,30 +71,32 @@ namespace Ethanol.ContextBuilder.Polishers
     /// <summary>
     /// Represents a simplified IP host context.
     /// </summary>
-    public record IpTargetHostContext(
+    public record IpTargetHostContext {
         /// <summary>
         /// The IP address of the host.
         /// </summary>
-        IPAddress HostAddress,
+        public IPAddress HostAddress { get; set; }
 
         /// <summary>
         /// An array of IP connection with aggretaed information for connections between hosts.
         /// </summary>
-        IpConnectionInfo[] Connections,
+        public IpConnectionInfo[] Connections { get; set; }
 
         /// <summary>
         /// An array of resolved domain information for domains resolved by the host.
         /// </summary>
-        ResolvedDomainInfo[] ResolvedDomains,
+        public ResolvedDomainInfo[] ResolvedDomains { get; set; }
 
         /// <summary>
         /// An array of web request information for URLs requested by the host.
         /// </summary>
-        WebRequestInfo[] WebUrls,
+        public WebRequestInfo[] WebUrls { get; set; }
 
         /// <summary>
         /// An array of TLS handshake information for secure connections initiated by the host.
         /// </summary>
-        TlsHandshakeInfo[] TlsHandshakes
-    );
+        public TlsHandshakeInfo[] TlsHandshakes { get; set; }
+    };
+
+
 }

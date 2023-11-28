@@ -66,8 +66,9 @@ namespace Ethanol.ContextProvider.Endpoints
 
                 var tagsProcessor = new TagsProcessor(connection, _configuration.TagsTable, _logger);
                 // group context by their windows:
-                var windows = hostContexts.GroupBy(r => (Start: r.Start, End: r.End));
-                foreach (var window in windows)
+                var windows = hostContexts.GroupBy(r => (Start: r.Start, End: r.End));               
+                var orderedWindows = (query.OrderDescending??false) ? windows.OrderByDescending(r => r.Key.Start) : windows.OrderBy(r => r.Key.Start);
+                foreach (var window in orderedWindows)
                 {
                     _logger?.LogTrace($"Processing window: start={window.Key.Start}, end={window.Key.End}");
                     foreach (var chunk in window.Chunk(_configuration.TagsChunkSize))

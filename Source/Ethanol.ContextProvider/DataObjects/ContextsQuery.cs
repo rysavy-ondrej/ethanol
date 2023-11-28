@@ -14,6 +14,10 @@ public record ContextsQuery
     public DateTime? End { get; set; }
 
     /// <summary>
+    /// Gets or sets the flag to modify ordering of the contexts in the result. Default is ascending order by the time of the context.
+    /// </summary>
+    public bool? OrderDescending { get; set; }
+    /// <summary>
     /// Gets or sets the IP prefix used for filtering the context data. If not set, context data for all IP addresses will be retrieved.
     /// </summary>
     public string? HostKey { get; set; }

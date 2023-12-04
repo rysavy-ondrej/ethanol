@@ -4,6 +4,21 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
+        {
+            "name": "C#: ContextBuilder Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
+            "args": [
+                "run-builder",
+                "-c",
+                "context-builder.config.json",
+            ],
+            "console": "externalTerminal",
+            "cwd": "${workspaceFolder}/TestData/ContextBuilder",
+        },
         {
             "name": ".NET Core Launch (console)",
             "type": "coreclr",

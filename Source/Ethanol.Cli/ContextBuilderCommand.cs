@@ -58,21 +58,28 @@ internal class ContextBuilderCommand : ConsoleAppBase
                 bool progressReport = true
     )
     {
-        // 1.load configuration:
-        var configurationFilePath = Path.GetFullPath(configurationFile);
-        _logger?.LogInformation($"Running context builder with configuration file: '{configurationFilePath}'");
-        var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
-        // 2.create modules: 
-        var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
-        var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
-        var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
-        var polisher = _environment.ContextTransform.GetContextPolisher();
-        var filter = GetFilter(contextBuilderConfiguration.Builder);
-        var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
-        // 3.set-up pipeline:
-        var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-        // 4.execute:
-        await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder.FlowOrderingBufferSize, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+        try
+        {
+            // 1.load configuration:
+            var configurationFilePath = Path.GetFullPath(configurationFile);
+            _logger?.LogInformation($"Running context builder with configuration file: '{configurationFilePath}'");
+            var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
+            // 2.create modules: 
+            var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
+            var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
+            var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
+            var polisher = _environment.ContextTransform.GetContextPolisher();
+            var filter = GetFilter(contextBuilderConfiguration.Builder);
+            var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
+            // 3.set-up pipeline:
+            var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
+            // 4.execute:
+            await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder.FlowOrderingBufferSize, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogCritical(ex, $"ERROR: {ex.Message}");
+        }
     }
 
     EthanolContextBuilder.BuilderStatistics _lastReport;

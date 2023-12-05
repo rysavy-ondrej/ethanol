@@ -62,7 +62,7 @@ public class Program : ConsoleAppBase
         catch (Exception ex)
         {
             var logger = LogManager.GetCurrentClassLogger();
-            logger.LogCritical(ex, $"ERROR:{ex.Message}");
+            logger.LogCritical(ex, $"ERROR: {ex.Message}");
         }
     }
 }

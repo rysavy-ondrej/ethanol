@@ -13,7 +13,7 @@ public class Program : ConsoleAppBase
     /// Entry point to the console application.
     /// </summary>
     /// <param name="args">Command line arguments.</param>
-    public static void Main(string[] args)
+    public async static Task Main(string[] args)
     {
         // >>>>>>>>>
         // CONFIGURE
@@ -50,6 +50,7 @@ public class Program : ConsoleAppBase
 
         app.AddCommands<ContextBuilderCommand>();
         app.AddCommands<ContextProviderCommand>();
+        app.AddCommands<MalwareSonarCommands>();
         app.AddCommands<TagsHelperCommands>();
 
         // >>>
@@ -57,7 +58,7 @@ public class Program : ConsoleAppBase
         // >>>
         try
         {
-            app.RunAsync();
+            await app.RunAsync();
         }
         catch (Exception ex)
         {

@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj" />
     <ProjectReference Include="..\Ethanol.ContextProvider\Ethanol.ContextProvider.csproj" />
+    <ProjectReference Include="..\Ethanol.MalwareSonar\Ethanol.MalwareSonar.csproj" />
   </ItemGroup>
 
   <ItemGroup>

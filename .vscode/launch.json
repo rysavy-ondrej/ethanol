@@ -81,7 +81,7 @@
                 "-r",
                 "Train",
                 "-o",
-                "Models"
+                "Models/lightblue.mal"
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
             "console": "externalTerminal"
@@ -95,12 +95,16 @@
             "args": [
                 "test-malware",
                 "-p",
-                "Models",
+                "Models/lightblue.mal",
                 "-i",
-                "../ContextBuilder/ctx.json"
+                "../ContextBuilder/ctx.json",
+                "-o",
+                "malware.test.json",
+                "-t",
+                "0.5"
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-            "console": "externalTerminal"
+            //"console": "externalTerminal"
         }  
     ]
 }

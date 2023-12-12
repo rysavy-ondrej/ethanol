@@ -118,7 +118,7 @@ namespace Ethanol.ContextBuilder.Polishers
             }
             catch(Exception e)
             {
-                _logger?.LogError(e, "Error in context polishing.", value);
+                _logger?.LogError(e, "Error in context polishing for event {0}.", value);
                 _subject.OnError(e);
             }
         }

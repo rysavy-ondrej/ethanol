@@ -1,0 +1,1 @@
+Get-Content ./flows.json | ../../Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe run-builder -c context-builder.plain.config.json > ctx-plain.json

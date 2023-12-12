@@ -17,7 +17,6 @@
                 "context-builder.config.json"
             ],
             "cwd": "${workspaceFolder/TestData/ContextBuilder",
-            "console": "externalTerminal",
             "env": {
                 "POSTGRES_IP": "localhost",
                 "POSTGRES_PORT": "1605",
@@ -27,7 +26,7 @@
             }
         },
         {
-            "name": "Run Builder TCP-DB-File",
+            "name": "Run Builder TCP-DB->File",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -40,7 +39,6 @@
                 "true"
             ],
             "cwd": "${workspaceFolder}/TestData/ContextBuilder",
-            "console": "externalTerminal",
             "env": {
                 "POSTGRES_IP": "localhost",
                 "POSTGRES_PORT": "1605",
@@ -48,6 +46,17 @@
                 "POSTGRES_USER": "postgres",
                 "POSTGRES_PASSWORD": "postgres"
             }
+        },
+        {
+            "name": "Run Builder File->File",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "pwsh",
+            "args": [
+                "run-builder-tcp.ps1",
+            ],
+            "cwd": "${workspaceFolder}/TestData/ContextBuilder",
         },
         {
             "name": "Start Service",
@@ -104,7 +113,6 @@
                 "0.5"
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-            //"console": "externalTerminal"
         },
         {
             "name": "Test Malware Infected",
@@ -124,7 +132,6 @@
                 "0.5"
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-            //"console": "externalTerminal"
         },
         {
             "name": "Infect Context",
@@ -142,7 +149,6 @@
                 "ctx-infected.json",
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-            //"console": "externalTerminal"
         }  
     ]
 }

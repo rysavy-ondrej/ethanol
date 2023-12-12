@@ -11,7 +11,7 @@ namespace Ethanol.ContextProvider
         /// <summary>
         /// Entry point to the console application.
         /// </summary>
-        public Task RunService(EthanolConfiguration configuration, ILogger? logger)
+        public void RunService(EthanolConfiguration configuration, ILogger? logger)
         {
             var builder = WebApplication.CreateBuilder();
             builder.Services.AddFastEndpoints();
@@ -35,15 +35,13 @@ namespace Ethanol.ContextProvider
             });
 
             try
-            {
-                // TODO: How to use RunAsync instead of Run?  
+            {                
                 app.Run(configuration.ApplicationUrl);
-                return Task.CompletedTask;
+                
             }
             catch (Exception e)
             {
                 logger?.LogError($"FATAL: {e}");
-                return Task.FromException(e);
             }  
         }
     }

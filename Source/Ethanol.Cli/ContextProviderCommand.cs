@@ -13,7 +13,7 @@ internal class ContextProviderCommand : ConsoleAppBase
         this._environment = environment;
     }
     [Command("start-service", "Starts the API for accesing the context objects.")]
-    public async Task RunBuilderCommand(
+    public void RunBuilderCommand(
         [Option("c", "The configuration file used to configure the service.")] string configurationFile
     )
     {
@@ -23,6 +23,6 @@ internal class ContextProviderCommand : ConsoleAppBase
         var configuration = EthanolConfiguration.LoadFromFile(configurationFilePath);
 
         var service = new Ethanol.ContextProvider.ProviderService();
-        await service.RunService(configuration, _logger);
+        service.RunService(configuration, _logger);
     }
 }

@@ -112,7 +112,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var handshakes = value.Payload.Flows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
 
-                var simpleContext = new IpTargetHostContext { HostAddress = value.Payload.HostAddress, Connections = connections, ResolvedDomains = domains, WebUrls = webUrls, TlsHandshakes = handshakes };
+                var simpleContext = new IpTargetHostContext { HostAddress = value.Payload.HostAddress.ToString(), Connections = connections, ResolvedDomains = domains, WebUrls = webUrls, TlsHandshakes = handshakes };
 
                 _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
             }

@@ -75,7 +75,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// The IP address of the host.
         /// </summary>
-        public IPAddress HostAddress { get; set; }
+        public string HostAddress { get; set; }
 
         /// <summary>
         /// An array of IP connection with aggretaed information for connections between hosts.

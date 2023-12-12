@@ -87,7 +87,7 @@
             "console": "externalTerminal"
         },
         {
-            "name": "Test Malware Models",
+            "name": "Test Malware Bening",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -97,11 +97,49 @@
                 "-p",
                 "Models/lightblue.mal",
                 "-i",
-                "../ContextBuilder/ctx.json",
+                "ctx-bening.json",
                 "-o",
-                "malware.test.json",
+                "malware-test-bening.json",
                 "-t",
                 "0.5"
+            ],
+            "cwd": "${workspaceFolder}/TestData/MalwareSonar",
+            //"console": "externalTerminal"
+        },
+        {
+            "name": "Test Malware Infected",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
+            "args": [
+                "test-malware",
+                "-p",
+                "Models/lightblue.mal",
+                "-i",
+                "ctx-infected.json",
+                "-o",
+                "malware-test-infected.json",
+                "-t",
+                "0.5"
+            ],
+            "cwd": "${workspaceFolder}/TestData/MalwareSonar",
+            //"console": "externalTerminal"
+        },
+        {
+            "name": "Infect Context",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
+            "args": [
+                "infect-context",
+                "-i",
+                "ctx-bening.json",
+                "-r",
+                "Test",
+                "-o",
+                "ctx-infected.json",
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
             //"console": "externalTerminal"

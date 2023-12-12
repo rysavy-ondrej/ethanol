@@ -361,3 +361,6 @@ Deploy/Docker/netify/netify.csv
 TestData/MalwareSonar/malware-test-infected.json
 TestData/MalwareSonar/malware-test-infected.json
 TestData/MalwareSonar/malware-test-bening.json
+TestData/ContextBuilder/ctx-plain.json
+TestData/MalwareSonar/malware-test-bening.json
+TestData/MalwareSonar/malware-test-infected.json

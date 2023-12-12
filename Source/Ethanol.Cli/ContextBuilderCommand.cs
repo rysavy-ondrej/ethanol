@@ -49,10 +49,10 @@ internal class ContextBuilderCommand : ConsoleAppBase
     /// and can optionally report progress if enabled. The process involves setting up data flows, 
     /// context building, and other operations as defined in the configuration.
     /// </remarks>
-    [Command("run-builder", "Starts the application.")]
+    [Command("run-builder", "Runs the context builder command according to the configuration file.")]
     public async Task RunBuilderCommand(
 
-    [Option("c", "The path to the configuration file used for processing setup.s")]
+    [Option("c", "The path to the configuration file used for processing setup.")]
                 string configurationFile,
     [Option("p", "Enable or disable progress reporting during processing.")]
                 bool progressReport = true
@@ -75,6 +75,29 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
             // 4.execute:
             await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder.FlowOrderingBufferSize, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogCritical(ex, $"ERROR: {ex.Message}");
+        }
+    }
+
+    [Command("exec-builder", "Executes the context builder that reads data on stdin and produces contexts to stdout.")]
+    public async Task ExecBuilderCommand(
+        [Option("w", "Configuration of the window size for the builder. Default is 5 minutes.")]
+        string windowSpan="00:05:00")
+    {
+        try
+        {
+            var readers = new[] { _environment.FlowReader.GetFlowmonFileReader(Console.In) };
+            var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out) };
+            var enricher = _environment.ContextTransform.GetVoidEnricher(); 
+            var polisher = _environment.ContextTransform.GetContextPolisher();
+            var filter = new HostBasedFilter();
+            var windowTimeSpan = TimeSpan.Parse(windowSpan);
+
+            var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
+            await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, null);
         }
         catch(Exception ex)
         {

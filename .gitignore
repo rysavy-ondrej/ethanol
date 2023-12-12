@@ -358,3 +358,4 @@ TestData/output.yaml
 TestData/iphost-csv.contex.yaml
 .DS_Store
 Deploy/Docker/netify/netify.csv
+TestData/MalwareSonar/malware-test-infected.json

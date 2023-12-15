@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  postgres-service:
+    image: postgres:latest
+    ports:
+      - 1605:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ethanol
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql
+      - ./netify:/var/netify
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ethanol-run-service:
+    image: rysavyondrej/ethanol:latest
+    command: ["/app/run-ethanol-builder.sh"]
+    ports:
+      - 1600:5180
+    environment:
+      POSTGRES_IP: postgres-service
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ethanol
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      ETHANOL_PORT: 5180
+    depends_on:
+      postgres-service:
+        condition: service_healthy
+
+  ethanol-api-service:
+    image:  rysavyondrej/ethanol:latest
+    command: ["/app/run-ethanol-provider.sh"]
+    ports:
+      - 1610:5190
+    environment:
+      POSTGRES_IP: postgres-service
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: ethanol
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      postgres-service:
+        condition: service_healthy
+volumes:
+  postgres-data:

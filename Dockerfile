@@ -9,9 +9,18 @@
 #
 #   $ docker build -t ethanol https://github.com/rysavy-ondrej/ethanol
 #
-# To run the application, replace TARGET-HOST with valid Tcp server connection string, e.g., 192.168.1.21:6364, and execute:
+#   To run interactively (with shell):
+#    
+#   $ docker run -it ethanol
 #
-#   $ docker run -p 6363:6363 ethanol Build-Context -r FlowmonJson:{tcp=0.0.0.0:6363} -c default-config.yaml -w JsonWriter:{tcp=TARGET-HOST}
+#   To deploy the container to Docker Registry:
+#
+#   $ docker login
+# 
+#   $ docker tag ethanol:latest rysavyondrej/ethanol:latest
+#
+#   $ docker push rysavyondrej/ethanol:latest
+#
 #
 # The file can be also used from docker-compose:
 # In this case the following arguments shold be specify to provide information on other service points.

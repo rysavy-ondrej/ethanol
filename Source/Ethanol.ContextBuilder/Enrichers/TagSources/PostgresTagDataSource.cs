@@ -49,13 +49,10 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             var cmd = connection.CreateCommand();
             cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
             var rowCount = cmd.ExecuteScalar();
-            //_logger?.LogInformation($"Postgres connected '{connectionString}'. Available {rowCount} records in table '{tableName}'.");
-
             return new PostgresTagDataSource(connection, tableName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            //_logger?.LogError(ex, $"Cannot create {nameof(PostgresTagProvider)}: {ex.Message}. {ex.InnerException?.Message}");
             return null;
         }
     }

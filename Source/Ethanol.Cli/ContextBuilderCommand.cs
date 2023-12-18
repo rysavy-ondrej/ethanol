@@ -1,4 +1,5 @@
 ﻿using Ethanol;
+using Ethanol.DataObjects;
 using Ethanol.Catalogs;
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
@@ -74,7 +75,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             // 3.set-up pipeline:
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
             // 4.execute:
-            await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder.FlowOrderingBufferSize, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+            await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
         }
         catch(Exception ex)
         {
@@ -82,6 +83,11 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
     }
 
+    /// <summary>
+    /// Executes the context builder that reads data on stdin and produces contexts to stdout.
+    /// </summary>
+    /// <param name="windowSpan">Configuration of the window size for the builder. Default is 5 minutes.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Command("exec-builder", "Executes the context builder that reads data on stdin and produces contexts to stdout.")]
     public async Task ExecBuilderCommand(
         [Option("w", "Configuration of the window size for the builder. Default is 5 minutes.")]
@@ -105,36 +111,51 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
     }
 
-    EthanolContextBuilder.BuilderStatistics _lastReport;
     private void OnProgressUpdate(EthanolContextBuilder.BuilderStatistics report)
     {
         _logger.LogInformation($"{report}.");
-        _lastReport = report;
     }
 
-    private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder builder)
+    private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder? builder)
     {
+        if (builder == null) return TimeSpan.FromMinutes(5);
+
         return TimeSpan.TryParse(builder.WindowSize, out var span) ? span : throw new ArgumentException("Invalid WindowSize specified in configuration file.");
     }
 
-    private IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers enricher, EthanolEnvironment environment)
+    private IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
     {
+        if (enricher==null)
+        {
+            return environment.ContextTransform.GetVoidEnricher();
+        }
+
         if (enricher?.Netify != null && enricher.Netify.Postgres != null)
         {
             return environment.ContextTransform.GetNetifyPostgresEnricher(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
         }
+    
         return environment.ContextTransform.GetVoidEnricher();
     }
 
-    private static HostBasedFilter GetFilter(ContextBuilderConfiguration.ContextBuilder builder)
+    private static HostBasedFilter GetFilter(ContextBuilderConfiguration.ContextBuilder? builder)
     {
-        var prefixes = builder.Networks.Select(s => IPAddressPrefix.TryParse(s, out var prefix) ? prefix : null).Where(x => x != null).ToArray();
-        var filter = (prefixes.Length != 0) ? new HostBasedFilter(prefixes) : new HostBasedFilter();
-        return filter;
+        if (builder?.Networks == null) return new HostBasedFilter();
+        else
+        {
+            var prefixes = builder.Networks.Select(s => IPAddressPrefix.TryParse(s, out var prefix) ? prefix : null).Where(x => x != null).ToArray();
+            var filter = (prefixes.Length != 0) ? new HostBasedFilter(prefixes) : new HostBasedFilter();
+            return filter;
+        }
     }
 
-    private static IDataReader<IpFlow>[] CreateInputReaders(ContextBuilderConfiguration.Input inputConfiguration, EthanolEnvironment environment)
+    private static IDataReader<IpFlow>[] CreateInputReaders(ContextBuilderConfiguration.Input? inputConfiguration, EthanolEnvironment environment)
     {
+        if (inputConfiguration == null)
+        {
+            return new[] { environment.FlowReader.GetFlowmonFileReader(Console.In) };
+        }
+
         var inputReaders = new List<IDataReader<IpFlow>>();
         // build the pipeline based on the configuration:
         if (inputConfiguration?.Stdin != null
@@ -152,9 +173,14 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
         return inputReaders.ToArray();
     }
-    private static ContextWriter<ObservableEvent<IpTargetHostContext>>[] CreateOutputWriters(ContextBuilderConfiguration.Output outputConfiguration, EthanolEnvironment environment)
+    private static ContextWriter<HostContext>[] CreateOutputWriters(ContextBuilderConfiguration.Output? outputConfiguration, EthanolEnvironment environment)
     {
-        var outputWriters = new List<ContextWriter<ObservableEvent<IpTargetHostContext>>>();
+        if (outputConfiguration == null)
+        {
+            return new[] { environment.ContextWriter.GetJsonFileWriter(Console.Out) };
+        }
+
+        var outputWriters = new List<ContextWriter<HostContext>>();
         if (outputConfiguration?.Stdout != null)
         {
             if (outputConfiguration.Stdout.Format == "json")

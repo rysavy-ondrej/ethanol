@@ -1,6 +1,7 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Npgsql;
+﻿using Npgsql;
 using System.Data;
+using Ethanol.DataObjects;
+using Ethanol.ContextBuilder.Context;
 
 /// <summary>
 /// Processor for handling operations related to tags. The class is designed to read tags relevant 
@@ -13,7 +14,7 @@ class TagsProcessor
     /// <summary>
     /// Logger instance for logging messages.
     /// </summary>
-    private readonly ILogger __logger;
+    private readonly ILogger? __logger;
 
     /// <summary>
     /// The provider for fetching tag data from PostgreSQL.
@@ -26,7 +27,7 @@ class TagsProcessor
     /// <param name="connection">The Npgsql connection instance.</param>
     /// <param name="tablename">The name of the table to work with.</param>
 
-    public TagsProcessor(NpgsqlConnection connection, string tablename, ILogger logger)
+    public TagsProcessor(NpgsqlConnection connection, string tablename, ILogger? logger)
     {
         _provider = new PostgresTagDataSource(connection, tablename);
         __logger = logger;

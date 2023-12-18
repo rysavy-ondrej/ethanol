@@ -11,8 +11,17 @@ namespace Ethanol.ContextProvider
         /// <summary>
         /// Entry point to the console application.
         /// </summary>
-        public void RunService(EthanolConfiguration configuration, ILogger? logger)
+        public void RunService(EthanolConfiguration configuration, ILogger logger)
         {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+            if (logger == null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+            
             var builder = WebApplication.CreateBuilder();
             builder.Services.AddFastEndpoints();
 

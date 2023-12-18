@@ -106,25 +106,32 @@ namespace Ethanol.ApplicationSonar
 
                 try
                 {
-                    var hostRecord = JsonSerializer.Deserialize<HostContextEvent>(line);
+                    var hostRecord = JsonSerializer.Deserialize<HostContext>(line);
                     if (hostRecord != null)
                     {
-                        _logger?.Info($"Processing context for host {hostRecord.Payload.HostAddress}, [{hostRecord.StartTime} | {hostRecord.EndTime}].");
+                        _logger?.Info($"Processing context for host {hostRecord.Key}, [{hostRecord.Start} | {hostRecord.End}].");
                         // print output now just fo debug:
-                        Console.WriteLine($"host: {hostRecord.Payload.HostAddress}");
-                        foreach (var con in hostRecord.Payload.InitiatedConnections)
+                        Console.WriteLine($"host: {hostRecord.Key}");
+                        if (hostRecord.Connections != null)
                         {
-                            var tls = GetTlsForConnection(hostRecord, con);                                                                                  
-                            var remoteAddress = con.RemoteHostAddress;
-                            var applications = serviceDb.GetApplications(remoteAddress, out var shared);
-
-                            Console.WriteLine($"  connects-to: {{ address: {remoteAddress}, hostname: {con.RemoteHostName}, protocol: {con.Service}, ciphers: {tls?.CipherSuites}, sni: {tls?.ServerNameIndication}, shared: {shared} }}");                            
-                            Console.WriteLine($"     services:");
-                            foreach(var app in applications)
+                            foreach (var con in hostRecord.Connections)
                             {
-                                Console.WriteLine($"       - {app}");
+                                var tls = GetTlsForConnection(hostRecord, con);
+                                var remoteAddress = con.RemoteHostAddress;
+                                var applications = serviceDb.GetApplications(remoteAddress, out var shared);
+
+                                Console.WriteLine($"  connects-to: {{ address: {remoteAddress}, hostname: {con.RemoteHostName}, services: {con.InternetServices}, ciphers: {tls?.CipherSuites}, sni: {tls?.ServerNameIndication}, shared: {shared} }}");
+                                Console.WriteLine($"     services:");
+                                foreach (var app in applications)
+                                {
+                                    Console.WriteLine($"       - {app}");
+                                }
+
                             }
-                            
+                        }
+                        else
+                        {
+                            Console.WriteLine("  no connections.");
                         }
                     }
 
@@ -136,9 +143,9 @@ namespace Ethanol.ApplicationSonar
             }
         }
 
-        private TlsHandshake? GetTlsForConnection(HostContextEvent hostRecord, InitiatedConnection con)
+        private static TlsHandshakeInfo? GetTlsForConnection(HostContext hostRecord, IpConnectionInfo con)
         {
-            return hostRecord.Payload.TlsHandshakes.FirstOrDefault(t => String.Equals(t.RemoteHostAddress, con.RemoteHostAddress) && t.RemotePort == con.RemotePort);
+            return hostRecord.TlsHandshakes?.FirstOrDefault(t => String.Equals(t.RemoteHostAddress, con.RemoteHostAddress) && t.RemotePort == con.RemotePort);
         }
 
         Uri GetUri(string input)

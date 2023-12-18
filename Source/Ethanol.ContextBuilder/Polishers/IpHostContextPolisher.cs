@@ -1,7 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
+using Ethanol.DataObjects;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
     public static class IpHostContextPolisherCatalogEntry
     {
-        public static IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>> GetContextPolisher(this ContextTransformCatalog catalog)
+        public static IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext> GetContextPolisher(this ContextTransformCatalog catalog)
         {
             return new IpHostContextPolisher(catalog.Environment.Logger);
         }
@@ -35,12 +35,12 @@ namespace Ethanol.ContextBuilder.Polishers
     /// Additionally, by implementing the <see cref="IPipelineNode"/> interface, it suggests that this class plays a role in a processing pipeline, 
     /// as a node that performs specific transformations.
     /// </remarks>
-    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>>
+    public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext>
     {
         ILogger _logger;
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
-        private Subject<ObservableEvent<IpTargetHostContext>> _subject;
+        private Subject<HostContext> _subject;
 
         /// Represents a mechanism for retrieving an already computed result or 
         /// for signaling the completion of some asynchronous operation. 
@@ -53,7 +53,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// </summary>
         public IpHostContextPolisher(ILogger logger = null)
         {
-            _subject = new Subject<ObservableEvent<IpTargetHostContext>>();
+            _subject = new Subject<HostContext>();
             _logger = logger;
         }
 
@@ -112,9 +112,18 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var handshakes = value.Payload.Flows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
 
-                var simpleContext = new IpTargetHostContext { HostAddress = value.Payload.HostAddress.ToString(), Connections = connections, ResolvedDomains = domains, WebUrls = webUrls, TlsHandshakes = handshakes };
+                var hostContext = new HostContext 
+                { 
+                    Start = value.StartTime, End = value.EndTime, 
+                    Key = value.Payload.HostAddress.ToString(), 
+                    Connections = connections, 
+                    ResolvedDomains = domains, 
+                    WebUrls = webUrls, 
+                    TlsHandshakes = handshakes,
+                    Tags = null             
+                };
 
-                _subject.OnNext(new ObservableEvent<IpTargetHostContext>(simpleContext, value.StartTime, value.EndTime));
+                _subject.OnNext(hostContext);
             }
             catch(Exception e)
             {
@@ -153,7 +162,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// </summary>
         /// <param name="observer">The observer to subscribe.</param>
         /// <returns>An IDisposable object that can be used to unsubscribe the observer.</returns>
-        public IDisposable Subscribe(IObserver<ObservableEvent<IpTargetHostContext>> observer)
+        public IDisposable Subscribe(IObserver<HostContext> observer)
         {
             return _subject.Subscribe(observer);    
         }

@@ -1,5 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Polishers;
+using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using System.IO;
 using YamlDotNet.Serialization;
@@ -20,7 +20,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// By inheriting from the <see cref="ContextWriter{T}"/> base class, the `YamlDataWriter` ensures it adheres to a standard interface or pattern for 
     /// writing contexts, but with specialization for the YAML format.
     /// </remarks>
-    public class YamlTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
+    public class YamlTargetHostContextWriter : ContextWriter<HostContext>
     {
         private readonly TextWriter _writer;
         private readonly ISerializer _yamlSerializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).WithTypeConverter(new IPAddressYamlTypeConverter()).DisableAliases().Build();
@@ -47,7 +47,7 @@ namespace Ethanol.ContextBuilder.Writers
         }
 
         /// <inheritdoc/>
-        protected override void Write(ObservableEvent<IpTargetHostContext> value)
+        protected override void Write(HostContext value)
         {
             _writer.Write(_yamlSerializer.Serialize(value));
             _writer.WriteLine("---");

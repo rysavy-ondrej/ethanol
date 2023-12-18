@@ -46,8 +46,6 @@ public class Program : ConsoleAppBase
         var app = builder.Build();
 
         var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-        LogManager.SetLoggerFactory(loggerFactory, "Global");
-
         app.AddCommands<ContextBuilderCommand>();
         app.AddCommands<ContextProviderCommand>();
         app.AddCommands<MalwareSonarCommands>();
@@ -62,8 +60,7 @@ public class Program : ConsoleAppBase
         }
         catch (Exception ex)
         {
-            var logger = LogManager.GetCurrentClassLogger();
-            logger.LogCritical(ex, $"ERROR: {ex.Message}");
+            loggerFactory.CreateLogger<Program>().LogCritical(ex, $"ERROR: {ex.Message}");
         }
     }
 }

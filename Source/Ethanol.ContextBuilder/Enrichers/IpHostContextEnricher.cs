@@ -66,7 +66,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error in context enrichment.", value);
+                _logger?.LogError(ex, $"Error in context enrichment. Value: {value}");
                 _subject.OnError(ex);
             }
 

@@ -19,7 +19,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);
                 return true;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 entry = default;
                 return false;

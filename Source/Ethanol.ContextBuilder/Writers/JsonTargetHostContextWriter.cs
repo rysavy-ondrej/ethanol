@@ -1,5 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Polishers;
+using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
 using System;
@@ -22,7 +22,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// This writer can be configured to direct its output to different destinations based on provided arguments. It supports writing to a file or sending the data over a TCP connection.
     /// The actual method for writing the data (file or TCP) is determined based on the provided configuration.
     /// </remarks>
-    public abstract class JsonTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
+    public abstract class JsonTargetHostContextWriter : ContextWriter<HostContext>
     {
         internal static JsonTargetHostContextWriter CreateFileWriter(TextWriter writer, ILogger logger)
         {
@@ -96,7 +96,7 @@ namespace Ethanol.ContextBuilder.Writers
             /// <remarks>
             /// This method uses JSON serialization to convert the provided value into its NDJSON representation. If the value is null, no operation is performed.
             /// </remarks>
-            protected override void Write(ObservableEvent<IpTargetHostContext> value)
+            protected override void Write(HostContext value)
             {
                 if (value == null) return;
                 var valueType = value.GetType();
@@ -128,8 +128,6 @@ namespace Ethanol.ContextBuilder.Writers
             private BlockingCollection<string> _queue;
             private TimeSpan _reconnectTime;
             private int _reconnectAttempts;
-            private IPEndPoint sendTo;
-
 
             /// <summary>
             /// Initializes a new instance of the `TcpWriter` class targeting the specified endpoint.
@@ -152,7 +150,7 @@ namespace Ethanol.ContextBuilder.Writers
             /// <param name="value">The object to be serialized and sent.</param>
             /// <exception cref="System.IO.IOException">This exception is thrown if there's a problem serializing or queuing the object.</exception>
 
-            protected override void Write(ObservableEvent<IpTargetHostContext> value)
+            protected override void Write(HostContext value)
             {
                 var stringValue = JsonSerializer.Serialize(value, _jsonOptions);
                 _queue.Add(stringValue);

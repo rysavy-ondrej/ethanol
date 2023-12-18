@@ -1,12 +1,9 @@
-﻿using Ethanol.ContextBuilder;
-using Ethanol.ContextBuilder.Polishers;
-using FastEndpoints;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+﻿using FastEndpoints;
 using Npgsql;
 using NpgsqlTypes;
 using System.Data;
 using System.Text.Json;
+using Ethanol.DataObjects;
 
 namespace Ethanol.ContextProvider.Endpoints
 {
@@ -20,14 +17,18 @@ namespace Ethanol.ContextProvider.Endpoints
     [HttpGet("/api/v1/host-context/contexts")]
     public class ContextsEndpoint : Endpoint<ContextsQuery, List<HostContext>>
     {
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
         private readonly NpgsqlDataSource _datasource;
-        private readonly EthanolConfiguration _configuration;
+        private readonly string _hostContextTable;
+        private readonly string _tagsTableName;
+        private readonly int _tagsChunkSize;
 
-        public ContextsEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger logger)
+        public ContextsEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger? logger)
         {
-            _datasource = datasource;
-            _configuration = configuration;
+            _datasource = datasource ?? throw new ArgumentNullException(nameof(datasource));
+            _hostContextTable = configuration?.HostContextTable ?? throw new ArgumentNullException(nameof(configuration));
+            _tagsTableName = configuration?.TagsTable ?? throw new ArgumentNullException(nameof(configuration));
+            _tagsChunkSize = configuration?.TagsChunkSize ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger;
         }
 
@@ -49,7 +50,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 using (var cmd = connection.CreateCommand())
                 {
                     
-                    cmd.CommandText = $"SELECT * FROM \"{_configuration.HostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
+                    cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
                     _logger?.LogTrace($"Execute command: {cmd.CommandText}");
 
                     using var reader = cmd.ExecuteReader();
@@ -64,16 +65,16 @@ namespace Ethanol.ContextProvider.Endpoints
                     reader.Close();
                 }
 
-                var tagsProcessor = new TagsProcessor(connection, _configuration.TagsTable, _logger);
+                var tagsProcessor = new TagsProcessor(connection, _tagsTableName, _logger);
                 // group context by their windows:
                 var windows = hostContexts.GroupBy(r => (Start: r.Start, End: r.End));               
                 foreach (var window in windows)
                 {
                     _logger?.LogTrace($"Processing window: start={window.Key.Start}, end={window.Key.End}");
-                    foreach (var chunk in window.Chunk(_configuration.TagsChunkSize))
+                    foreach (var chunk in window.Chunk(_tagsChunkSize))
                     {
                         _logger?.LogTrace($"  Processing chunk: size={chunk.Length}");                        
-                        var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key), window.Key.Start, window.Key.End);
+                        var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key ?? string.Empty), window.Key.Start, window.Key.End);
                         foreach (var ctx in chunk)
                         {
                             var ctxTags = tags.Where(t => t.Key == ctx.Key).ToArray();
@@ -100,11 +101,17 @@ namespace Ethanol.ContextProvider.Endpoints
             var resolvedDomains = JsonSerializer.Deserialize<ResolvedDomainInfo[]>(reader.GetString("resolveddomains"));
             var webUrls = JsonSerializer.Deserialize<WebRequestInfo[]>(reader.GetString("weburls"));
             var tlsHandshakes = JsonSerializer.Deserialize<TlsHandshakeInfo[]>(reader.GetString("tlshandshakes"));
-            return new HostContext(id, key, validity.LowerBound, validity.UpperBound,
-                connections ?? Array.Empty<IpConnectionInfo>(),
-                resolvedDomains ?? Array.Empty<ResolvedDomainInfo>(),
-                webUrls ?? Array.Empty<WebRequestInfo>(),
-                tlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
+            return new HostContext
+            {
+                Id = id,
+                Key = key,
+                Start = validity.LowerBound,
+                End = validity.UpperBound,
+                Connections = connections ?? Array.Empty<IpConnectionInfo>(),
+                ResolvedDomains = resolvedDomains ?? Array.Empty<ResolvedDomainInfo>(),
+                WebUrls = webUrls ?? Array.Empty<WebRequestInfo>(),
+                TlsHandshakes = tlsHandshakes ?? Array.Empty<TlsHandshakeInfo>()
+            };
         }
     }
 }

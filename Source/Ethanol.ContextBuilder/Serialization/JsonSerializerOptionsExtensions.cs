@@ -24,7 +24,7 @@ namespace Ethanol.ContextBuilder.Serialization
 
     public static class Json
     {
-        static JsonSerializerOptions options = new JsonSerializerOptions();
+        static JsonSerializerOptions options = new JsonSerializerOptions{ PropertyNameCaseInsensitive = true };
         static Json()
         {
             options.AddIPAddressConverter();

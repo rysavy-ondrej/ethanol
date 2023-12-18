@@ -3,18 +3,20 @@
 Context Builder is an experimental tool that computes a rich information context for hosts observed in the input NetFLow data.
 It can be used as a standalone tool or integrated in the monitoring infrastructure via [Fluent Bit](https://docs.fluentbit.io/manual/).
 
+## Output
 
-## Integration via Fluent Bit
+The final output of the context builder is NDJSON (in the following example formatted for clarity):
 
-It is possible to exploit advantages of Fluent Bit to easily integrate the Context Builder to the monitoring infrastructure. 
-
-Fluent Bit provides a Data Pipeline that represents a flow of data that goes through the inputs (sources), filers, and output (sinks).
-The Context Builder can be a part of this pipeline.
-
-To integrate with Fluent Bit, we need o run the Fluent Bit and Context Builder and link them together. In this scenario 
-the Fluent Bit handles all input/output operations and it forwards prepared NetFlow data to Context Builder that emits the output back to
-Fluent Bit for further routing.
-
-To setup Context Builder and Fluent Bit in Docker (Compose) follow these steps:
-
-https://hub.docker.com/r/bitnami/fluent-bit/
+```json
+{   
+    "id":1131,
+    "key":"192.168.111.32",
+    "start":"2023-12-16T00:00:00",
+    "end":"2023-12-16T00:05:00",
+    "connections":[{"remoteHostAddress":"192.168.66.2","remoteHostName":null,"remotePort":7680,"applicationProcessName":null,"internetServices":null,"flows":8,"packetsSent":40,"octetsSent":2296,"packetsRecv":24,"octetsRecv":1056}],
+    "resolvedDomains":[],
+    "webUrls":[],
+    "tlsHandshakes":[],
+    "tags":{"ip_dependency_client":{},"ip_dependency_server":{},"open_ports":[],"tags_by_services":[],"hostml_label":[],"in_flow_tags":[],"tls_os_version":[],"activity_all":{"flows":0,"bytes":0},"activity_global":{"flows":0,"bytes":0}}
+}
+```

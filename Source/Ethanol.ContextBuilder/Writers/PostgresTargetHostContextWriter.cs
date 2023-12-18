@@ -1,6 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Polishers;
+using Ethanol.DataObjects;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
@@ -16,7 +16,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
     /// don't exist, and write context data.
     /// </remarks>
-    public class PostgresTargetHostContextWriter : ContextWriter<ObservableEvent<IpTargetHostContext>>
+    public class PostgresTargetHostContextWriter : ContextWriter<HostContext>
     {
 
         protected readonly ILogger _logger;
@@ -94,19 +94,19 @@ namespace Ethanol.ContextBuilder.Writers
         /// Writes the provided context data to the PostgreSQL table.
         /// </summary>
         /// <param name="entity">The context data to be written.</param>
-        protected override void Write(ObservableEvent<IpTargetHostContext> entity)
+        protected override void Write(HostContext entity)
         {
             using (var cmd = new NpgsqlCommand())
             {
                 cmd.Connection = _connection;
                 cmd.CommandText = $"INSERT INTO {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @connections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
 
-                cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Payload.HostAddress.ToString());
-                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.Connections);
-                cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.ResolvedDomains);
-                cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.WebUrls);
-                cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.Payload.TlsHandshakes);
-                cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.StartTime, entity.EndTime));
+                cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Key.ToString());
+                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Connections);
+                cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains);
+                cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls);
+                cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes);
+                cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, entity.End));
                 cmd.ExecuteNonQuery();
             }
         }

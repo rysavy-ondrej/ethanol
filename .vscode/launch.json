@@ -149,6 +149,25 @@
                 "ctx-infected.json",
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
+        },
+        {
+            "name": "Test Malware -- Bug Fix",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
+            "args": [
+                "test-malware",
+                "-p",
+                "Models/lightblue.mal",
+                "-i",
+                "E:/Ethanol/DATASETS/0002/sandbox.2023-12-16.ctx.ndjson",
+                "-o",
+                "E:/Ethanol/DATASETS/0002/sandbox.2023-12-16.maltest.ndjson",
+                "-t",
+                "0.5"
+            ],
+            "cwd": "${workspaceFolder}/TestData/MalwareSonar",
         }  
     ]
 }

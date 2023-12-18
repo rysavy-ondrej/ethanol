@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ethanol.DataObjects\Ethanol.DataObjects.csproj" />
     <ProjectReference Include="..\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj" />
   </ItemGroup>
 

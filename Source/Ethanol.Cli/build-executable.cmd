@@ -1,2 +1,0 @@
-dotnet publish -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -c Release
-copy .\bin\Release\net7.0\win-x64\publish\ethanol.exe ..\..\Deploy\Bin\

@@ -2,9 +2,9 @@
 using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
-using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
+using Ethanol.DataObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -139,6 +139,11 @@ public static class EthanolContextBuilder
         source.Subscribe(transformer);
         return transformer;
     }
+    public static IObservable<TResult> Transform<TSource, TResult>(this IObservable<TSource> source, IObservableTransformer<TSource, TResult> transformer)
+    {
+        source.Subscribe(transformer);
+        return transformer;
+    }
 
     /// <summary>
     /// Represents a set of builder modules consisting of readers, writers, an enricher, and a refiner.
@@ -149,9 +154,9 @@ public static class EthanolContextBuilder
     /// <param name="Refiner">A transformer to refine IpHostContextWithTags into IpTargetHostContext.</param>
     public record BuilderModules(
         IDataReader<IpFlow>[] Readers,
-        IDataWriter<ObservableEvent<IpTargetHostContext>>[] Writers,
+        IDataWriter<HostContext>[] Writers,
         IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> Enricher,
-        IObservableTransformer<ObservableEvent<IpHostContextWithTags>, ObservableEvent<IpTargetHostContext>> Refiner);
+        IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext> Refiner);
 
 
     /// <summary>
@@ -187,22 +192,6 @@ public static class EthanolContextBuilder
         int windowsCreatedCount = 0;
         int contextsCreatedCount = 0;
         int contextsWrittenCount = 0;
-
-        DateTime? currentWindowStartTime = null;
-        IEnumerable<ObservableEvent<IpHostContext>> AddPeriod(ObservableEvent<IpHostContext> evt)
-        {
-            if (currentWindowStartTime is null) currentWindowStartTime = evt.StartTime;
-
-            // if context in the new window is observed, we generate the "window period":
-            if (evt.StartTime > currentWindowStartTime) 
-            {                
-                yield return new ObservableEvent<IpHostContext>(new IpHostContext { HostAddress = IPAddress.Any, Flows = Array.Empty<IpFlow>() }, currentWindowStartTime.Value, currentWindowStartTime.Value + windowSpan);
-                currentWindowStartTime = evt.StartTime;
-            }
-
-            yield return evt;
-        }
-
         var sequencer = new SequencerTransformer<IpFlow>(inputOrderingQueueLength);
         var windowTransformer = new HoppingWindowAggregator<IpFlow>(windowSpan, null);
 
@@ -252,7 +241,6 @@ public static class EthanolContextBuilder
                  .Transform(modules.Enricher)
 
                  .Transform(modules.Refiner)
-
                  .Do(_ => contextsWrittenCount++)
 
                  .Consume(modules.Writers);

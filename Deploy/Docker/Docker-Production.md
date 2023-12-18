@@ -1,4 +1,4 @@
-# Compose Deploy
+# Ethanol Deployment in Production
 
 This document outlines the method for deploying Docker-based applications. It assumes that all required images are already available in a Docker repository.
 
@@ -38,7 +38,7 @@ Follow these steps to deploy your application:
 2. **Execute Docker Compose**:
    - Run the following command to start the deployment process:
      ```bash
-     docker-compose up
+     docker-compose up --file docker-compose.ethanol-prod.yml
      ```
    - This command fetches the latest versions of the containers and runs the entire environment.
 

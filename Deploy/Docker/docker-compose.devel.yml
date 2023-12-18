@@ -1,25 +1,6 @@
 version: '3'
 
 services:
-  fluentbit-service:
-    image: fluent/fluent-bit:2.1
-    ports:
-      - 1600:5170
-    volumes:
-      - ./log:/var/log
-      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
-    environment:
-      FLUENT_UID: 0
-      POSTGRES_IP: postgres-service
-      ETHANOL_IP: ethanol-run-service
-      ETHANOL_PORT: 5180
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ethanol
-    depends_on:
-      postgres-service:
-        condition: service_healthy        
-
   postgres-service:
     image: postgres:latest
     ports:
@@ -44,22 +25,18 @@ services:
       dockerfile: Dockerfile
     command: ["/app/run-ethanol-builder.sh"]
     ports:
-      - 1601:5180
+      - 1600:5180
     environment:
       POSTGRES_IP: postgres-service
       POSTGRES_PORT: 5432
       POSTGRES_DATABASE: ethanol
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      FLUENTBIT_IP: fluentbit-service
-      FLUENTBIT_PORT: 5175
       ETHANOL_PORT: 5180
     depends_on:
       postgres-service:
         condition: service_healthy
-      fluentbit-service:
-        condition: service_started
-
+        
   ethanol-api-service:
     build: 
       context: ../../
@@ -73,13 +50,9 @@ services:
       POSTGRES_DATABASE: ethanol
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      FLUENTBIT_IP: fluentbit-service
-      FLUENTBIT_PORT: 5175
       ETHANOL_PORT: 5180
     depends_on:
       postgres-service:
         condition: service_healthy
-      fluentbit-service:
-        condition: service_started
 volumes:
   postgres-data:

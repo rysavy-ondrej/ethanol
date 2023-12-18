@@ -1,3 +1,5 @@
+REM Description: Run 10000 times insert-bige.sql
+REM              This script is used to populate the database with a lot of records.
 set PGPASSWORD=postgres
 
 @echo off

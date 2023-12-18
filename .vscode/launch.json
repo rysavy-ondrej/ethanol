@@ -4,9 +4,9 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        // MALWARE-BUILDER
         {
-            "name": "Run Builder File-DB-DB+File",
+            "name": "Run Builder File->DB->DB+File",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -26,7 +26,7 @@
             }
         },
         {
-            "name": "Run Builder TCP-DB->File",
+            "name": "Run Builder TCP->DB->File",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -58,6 +58,7 @@
             ],
             "cwd": "${workspaceFolder}/TestData/ContextBuilder",
         },
+        // CONTEXT-PROVIDER
         {
             "name": "Start Service",
             "type": "coreclr",
@@ -79,14 +80,15 @@
                 "POSTGRES_PASSWORD": "postgres"
             }
         },
+        // MALWARE-SONAR
         {
-            "name": "Build Malware Models",
+            "name": "Learn Malware Profile",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
             "args": [
-                "build-malware-profiles",
+                "learn-malfile",
                 "-r",
                 "Train",
                 "-o",
@@ -102,11 +104,11 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
             "args": [
-                "test-malware",
+                "scan-malware",
                 "-p",
                 "Models/lightblue.mal",
                 "-i",
-                "ctx-bening.json",
+                "ContextData/ctx-bening.json",
                 "-o",
                 "malware-test-bening.json",
                 "-t",
@@ -121,13 +123,13 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
             "args": [
-                "test-malware",
+                "scan-malware",
                 "-p",
                 "Models/lightblue.mal",
                 "-i",
-                "ctx-infected.json",
+                "TempData/ctx-infected.json",
                 "-o",
-                "malware-test-infected.json",
+                "TestResults/malware-test-infected.json",
                 "-t",
                 "0.5"
             ],
@@ -142,32 +144,13 @@
             "args": [
                 "infect-context",
                 "-i",
-                "ctx-bening.json",
+                "ContextData/ctx-bening1.json",
                 "-r",
                 "Test",
                 "-o",
-                "ctx-infected.json",
+                "TempData/ctx-infected.json",
             ],
             "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-        },
-        {
-            "name": "Test Malware -- Bug Fix",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
-            "args": [
-                "test-malware",
-                "-p",
-                "Models/lightblue.mal",
-                "-i",
-                "E:/Ethanol/DATASETS/0002/sandbox.2023-12-16.ctx.ndjson",
-                "-o",
-                "E:/Ethanol/DATASETS/0002/sandbox.2023-12-16.maltest.ndjson",
-                "-t",
-                "0.5"
-            ],
-            "cwd": "${workspaceFolder}/TestData/MalwareSonar",
-        }  
+        }
     ]
 }

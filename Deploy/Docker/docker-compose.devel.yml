@@ -21,7 +21,7 @@ services:
 
   ethanol-run-service:
     build: 
-      context: ../../
+      context: ../../Source
       dockerfile: Dockerfile
     command: ["/app/run-ethanol-builder.sh"]
     ports:
@@ -39,7 +39,7 @@ services:
         
   ethanol-api-service:
     build: 
-      context: ../../
+      context: ../../Source
       dockerfile: Dockerfile
     command: ["/app/run-ethanol-provider.sh"]
     ports:

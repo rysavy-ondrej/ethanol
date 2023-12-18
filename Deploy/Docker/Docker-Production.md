@@ -1,6 +1,6 @@
 # Ethanol Deployment in Production
 
-This document outlines the method for deploying Docker-based applications. It assumes that all required images are already available in a Docker repository.
+This document outlines the method for deploying Docker-based applications. It assumes that Ethanol image was already push in a Docker Hub (https://hub.docker.com/r/rysavyondrej/ethanol).
 
 ## Prerequisites
 
@@ -29,17 +29,20 @@ Before beginning, ensure the following requirements are met:
 Follow these steps to deploy your application:
 
 1. **Prepare the Ethanol Machine**:
-   - Transfer `docker-compose.yml` and `ethanol-db-init.sql` files to the *ethanol* machine.
+   - Transfer `docker-compose.devel.yml` and `ethanol-db-init.sql` files to the *ethanol* machine.
    - Update the permissions of the SQL configuration file to make it readable by all:
+     
      ```bash
      chmod a+r ethanol-db-init.sql
      ```
 
 2. **Execute Docker Compose**:
    - Run the following command to start the deployment process:
+     
      ```bash
-     docker-compose up --file docker-compose.ethanol-prod.yml
+     docker-compose -f docker-compose.prod.yml up
      ```
+
    - This command fetches the latest versions of the containers and runs the entire environment.
 
 3. **Post-Deployment Operations**:

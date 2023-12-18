@@ -4,30 +4,25 @@ The Ethanol application leverages Docker to streamline its deployment, ensuring 
 
 ### Containers
 
-* fluentbit-service: This container contains Fluent-Bit and is responsible for data ingestion.
 * postgres-service: The PostgreSQL database where the application's data resides.
 * ethanol-service: This container processes the incoming data and helps in building the context using implemented Ethanol.ContextBuilder application.
 
 ### Open access points
 
-* fluentbit-service tcp/1600: Accepts Flowmon's JSON data. Once ingested, the records are directed to the Ethanol application for subsequent processing.
+* ethanol-run-service tcp/1600: Accepts Flowmon's JSON data. Once ingested, the records are directed to the Ethanol application for subsequent processing.
 
 * postgres-service tcp/1605: Utilized for direct communication with the PostgreSQL database. This port allows you to:
   
   1. Populate the enrichment_data table, which the Ethanol application reads to gather supplementary information about hosts.
   2. Access the host_context table where the computed context information is stored.
 
+* ethanol-api-service tcp/1610: Provides REST API for accessing the tagged context recrods stored in the database.
+ 
 ### Volume Mappings
-
-__fluentbit-service__ 
-
-* ./log:/var/log: This maps the local log folder from the host machine to the /var/log directory inside the fluentbit-service container. This means that logs written to /var/log inside the container will actually be stored on the host machine inside the log directory.
-
-* ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf: This maps a local configuration file, fluent-bit.conf, to its respective configuration path inside the Fluent Bit container. This allows you to customize the behavior of Fluent Bit using your local configuration.
 
 __postgres-service__
 
-* ./data:/var/lib/postgresql/data: This maps the local data folder to the PostgreSQL data directory inside the postgres-service container. This ensures that the database files and any changes to them persist across container restarts.
+* postgres-data:/var/lib/postgresql/data This maps the docker volume to the PostgreSQL data directory inside the postgres-service container. This ensures that the database files and any changes to them persist across container restarts.
 
 * ./ethanol-db-init.sql:/docker-entrypoint-initdb.d/ethanol.sql: This maps a local SQL file, ethanol-db-init.sql, to the initialization scripts directory in the PostgreSQL container. This script will be executed when the container starts up for the first time. It contains comands to prepare the ethanol data abse and create required tables.
 
@@ -39,7 +34,6 @@ __postgres-service__
 2. Data Processing: The Ethanol application processes this raw data to extract context-specific information.
 3. Storage: The refined and processed data is then stored in the host_context table inside the PostgreSQL container.
 
-![Docker Architecture](EthanolDockerArchitecture.png)
 
 ### Data Storage Scheme
 
@@ -100,25 +94,25 @@ Follow these steps to seamlessly deploy the Ethanol application using Docker:
 2.__Building the Application:__ Utilize Docker Compose to build the application from source:
 
 ```bash
-docker-compose build
+docker-compose -f docker-compose.devel.yml build
 ```
 
 3.__Launching the Application:__ Execute the following command to initialize and run the services as described in your Docker Compose file:
 
 ```bash
-docker-compose up
+docker-compose -f docker-compose.devel.yml up
 ```
 
 4.__Terminating the Application:__ If you wish to halt the running services, use the following command (ensure you're in the directory where you executed the `docker-compose up` command):
 
 ```bash
-docker-compose down
+docker-compose -f docker-compose.devel.yml down
 ```
 
 5.__Environment Cleanup:__ To comprehensively stop and erase all containers initiated by `docker-compose up` and to discard the containers, networks, and volumes related to your services, deploy the command below:
 
 ```bash
-docker-compose down --volumes --remove-orphans
+docker-compose -f docker-compose.devel.yml down --volumes --remove-orphans
 ```
 
 ## Usage

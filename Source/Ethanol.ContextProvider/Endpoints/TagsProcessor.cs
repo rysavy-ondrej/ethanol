@@ -59,7 +59,7 @@ class TagsProcessor
         }
         long SafeIntFromFloatString(string s)
         {
-            return Convert.ToInt64(double.TryParse(s.Trim('"') ?? string.Empty, out var p) ? p : 0f);
+            return System.Convert.ToInt64(double.TryParse(s.Trim('"') ?? string.Empty, out var p) ? p : 0f);
         }
         Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
         {

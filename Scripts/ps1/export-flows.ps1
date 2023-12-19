@@ -35,9 +35,15 @@ param (
  )  
 
 begin {
-    ssh flowmon@$FlowmonHost "mkdir /home/flowmon/ethanol"
-    $securePassword = Read-Host "Enter password for flowmon user" -AsSecureString
-    $password = ConvertFrom-SecureString $securePassword
+    
+    $rootFolder = "/data/tmp/"
+    # get random string:
+    $tempFolder = Split-Path -Path $([System.IO.Path]::GetTempFileName()) -LeafBase  
+    
+    $workingFolder = $rootFolder + $tempFolder
+
+    # create temp folder on remote host:
+    ssh flowmon@$FlowmonHost "mkdir $workingFolder"
 }
 process {
     $filePath = $InputFile
@@ -46,20 +52,25 @@ process {
         $filePathRoot = Split-Path $filePath -Parent
         $fileNameWithExtension = Split-Path $filePath -Leaf
         $fileNameWithoutExtension = $fileNameWithExtension.Split(".")[0]
+
+        Write-Host "Uploading file to: $workingFolder/$fileNameWithExtension"
         # Process file here
         Write-Progress -Activity "Processing file" -Status "Uploading file: $filePath" 
-        scp $filePath flowmon@flowmon.rysavy.fit.vutbr.cz:/home/flowmon/data/$fileNameWithExtension
+        scp $filePath flowmon@flowmon.rysavy.fit.vutbr.cz:$workingFolder/$fileNameWithExtension
 
         Write-Progress -Activity "Processing file" -Status  "Exporting flows from pcap file: $fileNameWithExtension at the remote host...this may take a while."
-        ssh flowmon@flowmon.rysavy.fit.vutbr.cz "echo $password | sudo -S flowmonexp5 -I pcap-replay:file=/home/flowmon/data/$fileNameWithExtension,speed=1 -P nbar2 -P tls:fields=MAIN#JA3#CLIENT#CERT -P dns -P http -E json > /home/flowmon/data/$fileNameWithoutExtension.flows.json"
+        ssh flowmon@flowmon.rysavy.fit.vutbr.cz "echo $password | sudo -S flowmonexp5 -I pcap-replay:file=$workingFolder/$fileNameWithExtension,speed=1 -P nbar2 -P tls:fields=MAIN#JA3#CLIENT#CERT -P dns -P http -E json > $workingFolder/$fileNameWithoutExtension.flows.json"
 
         Write-Progress -Activity "Processing file" -Status "Downloading result file: $fileNameWithoutExtension.flows.json"
-        scp flowmon@flowmon.rysavy.fit.vutbr.cz:/home/flowmon/data/$fileNameWithoutExtension.flows.json $filePathRoot
+        scp flowmon@flowmon.rysavy.fit.vutbr.cz:$workingFolder/$fileNameWithoutExtension.flows.json $filePathRoot
+
+        Write-Host "Done. File written to $filePathRoot/$fileNameWithoutExtension.flows.json"
 
         if ($true -eq $DeleteAfterDownload)
         {
-            ssh flowmon@$FlowmonHost "rm /home/flowmon/data/$fileNameWithoutExtension.*"
+            ssh flowmon@$FlowmonHost "rm $workingFolder/*; rmdir $workingFolder"
         }
+        Write-Progress -Activity "Processing file" -Status "Done"
     }
     else {
         Write-Error "File not found: $filePath"

@@ -1,3 +1,7 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
 #!csharp
 
 double MinMaxScale(double X, double X_min, double X_max, double Y_min, double Y_max)
@@ -12,3 +16,184 @@ var y = MinMaxScale(1.2,0,5,0,1);
 y.Display();
 
 System.IO.Path.GetDirectoryName(@"C:\GitHub\ethanol\Source\Ethanol.Scripts\PowerShell").Display()
+
+#!csharp
+
+using System.Text.RegularExpressions;
+
+var encoded = "wpad.redmoon.cz\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000";
+
+var str = Regex.Unescape(encoded).Trim('\0');
+str.Length.Display();
+str.Display();
+
+#!csharp
+
+          internal static ushort[] ToUShortArray(string stringArray)
+            {
+                if (stringArray == null) return null;
+
+                var hexString = (stringArray.StartsWith("0x")) ? stringArray.Substring(2) : stringArray;
+
+
+                ushort[] ushortArray = new ushort[hexString.Length / 4];
+
+                for (int i = 0; i < hexString.Length; i += 4)
+                {
+                    string hexSubstring = hexString.Substring(i, 4);
+                    ushortArray[i / 4] = System.Convert.ToUInt16(hexSubstring, 16);
+                }
+                return ushortArray;
+            }
+
+            ToUShortArray("0x00000B000A002300160017000D002B002D0033001500FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF").Display();
+
+#!csharp
+
+         public enum DnsResponseCode
+    {
+        /// <summary>
+        /// No error condition. The DNS query was processed successfully.
+        /// </summary>
+        NoError = 0,
+
+        /// <summary>
+        /// Format error. The name server was unable to interpret the query.
+        /// </summary>
+        FormErr = 1,
+
+        /// <summary>
+        /// Server failure. The name server was unable to process the query due to a problem on the server's side.
+        /// </summary>
+        ServFail = 2,
+
+        /// <summary>
+        /// Non-existent domain. The domain name referenced in the query does not exist.
+        /// </summary>
+        NXDomain = 3,
+
+        /// <summary>
+        /// Not implemented. The server does not support the requested query type.
+        /// </summary>
+        NotImp = 4,
+
+        /// <summary>
+        /// Query refused. The server refused to process the query for some policy reason.
+        /// </summary>
+        Refused = 5,
+
+        /// <summary>
+        /// Name exists when it should not. This indicates a conflict with a pre-existing condition, typically a name that already exists.
+        /// </summary>
+        YXDomain = 6,
+
+        /// <summary>
+        /// Resource record set exists when it should not. This indicates a conflict with a pre-existing set of resource records.
+        /// </summary>
+        YXRRSet = 7,
+
+        /// <summary>
+        /// Resource record set that should exist does not. Indicates that a required resource record set is missing.
+        /// </summary>
+        NXRRSet = 8,
+
+        /// <summary>
+        /// Server not authoritative for the zone or domain. The server received a query for a domain for which it is not authoritative.
+        /// </summary>
+        NotAuth = 9,
+
+        /// <summary>
+        /// Name not contained in zone. Indicates that the name is outside the scope of the zone specified in the query.
+        /// </summary>
+        NotZone = 10,
+
+        /// <summary>
+        /// Bad OPT version. Indicates a mismatch between the DNS protocol versions used by the server and the client.
+        /// </summary>
+        BadVers = 16
+    }
+    public enum DnsOpCode
+    {
+        /// <summary>
+        /// A standard query. This represents a typical DNS query where a client requests information about a domain.
+        /// </summary>
+        Query = 0,
+
+        /// <summary>
+        /// An inverse query. This is an obsolete query type where a client requests the domain name associated with a given IP address.
+        /// </summary>
+        IQuery = 1,
+
+        /// <summary>
+        /// A status query. The client is checking the status or health of the server without making a specific data request.
+        /// </summary>
+        Status = 2,
+
+        /// <summary>
+        /// A notify operation. The server notifies the secondary servers of changes to a zone.
+        /// </summary>
+        Notify = 4,
+
+        /// <summary>
+        /// An update operation. Used for dynamic updates to add, delete, or modify records in a domain.
+        /// </summary>
+        Update = 5
+    }
+      public enum DnsQueryResponseFlag
+    {
+        /// <summary>
+        /// Represents a DNS query message. When the QR bit is set to this value, the DNS message is recognized as a query.
+        /// </summary>
+        Query = 0,
+
+        /// <summary>
+        /// Represents a DNS response message. When the QR bit is set to this value, the DNS message is recognized as a response.
+        /// </summary>
+        Response = 1
+    }
+        /// The RCODE field is a 4-bit value located in the lower 4 bits of the flags field.
+        /// </summary>
+        /// <param name="flags">The flags value is obtained from the DNS message header. </param>
+        /// <returns></returns>
+        internal static DnsResponseCode ResponseCode(int flags)
+        {
+            ushort rcode = (ushort)(flags & 0x0F);
+            return (DnsResponseCode)rcode;
+        }
+
+        internal static string DnsFlags(int flags)
+        {
+            return flags.ToString();
+        }
+
+        /// <summary>
+        /// The opcode field is a 4-bit value located in bits 11 to 14 of the flags field.
+        /// </summary>
+        /// <param name="flags">The flags value is obtained from the DNS message header. </param>
+        /// <returns></returns>
+        internal static DnsOpCode DnsOpcode(int flags)
+        {
+            ushort opcode = (ushort)((flags >> 11) & 0x0F);
+            return (DnsOpCode)opcode;
+        }
+        /// <summary>
+        /// The QR bit is located in bit 15 of the flags field.
+        /// </summary>
+        /// <param name="flags">The flags value is obtained from the DNS message header. </param>
+        /// <returns></returns>
+        internal static DnsQueryResponseFlag QueryResponse(int flags)
+        {
+            bool qrBit = ((flags >> 15) & 0x01) == 1;
+            return qrBit ? DnsQueryResponseFlag.Response : DnsQueryResponseFlag.Query;
+        }
+
+#!csharp
+
+ResponseCode(33152).Display();
+DnsOpcode(33152).Display();
+QueryResponse(33152).Display();
+
+#!csharp
+
+var t = 4;
+1234.ToString($"X{t}").Display();

@@ -101,12 +101,12 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the content type of the TLS message.
         /// </summary>
-        public string ContentType { get; set; }
+        public TlsContentType ContentType { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the TLS handshake message.
         /// </summary>
-        public string HandshakeType { get; set; }
+        public TlsHandshakeType HandshakeType { get; set; }
 
         /// <summary>
         /// Gets or sets the time taken for the TLS handshake to be established.
@@ -149,4 +149,26 @@ namespace Ethanol.ContextBuilder.Context
         public int ServerNameLength { get; set; }
     }
 
+    public enum TlsHandshakeType
+    {
+        HelloRequest = 0,
+        ClientHello = 1,
+        ServerHello = 2,
+        Certificate = 11,
+        ServerKeyExchange = 12,
+        CertificateRequest = 13,
+        ServerHelloDone = 14,
+        CertificateVerify = 15,
+        ClientKeyExchange = 16,
+        Finished = 20
+    }
+
+    public enum TlsContentType
+    {
+        ChangeCipherSpec = 20,
+        Alert = 21,
+        Handshake = 22,
+        ApplicationData = 23,
+        Heartbeat = 24
+    }
 }

@@ -3,7 +3,7 @@
     /// <summary>
     /// Specifies the identified application protocols. 
     /// </summary>
-    public enum ApplicationProtocols
+    public enum ApplicationProtocol
     {
         /// <summary>
         /// The DNS request with response.

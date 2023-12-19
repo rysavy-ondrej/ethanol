@@ -25,7 +25,106 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 return false;
             }
         }
-        #region FLOWMON IPFIX Fields
+
+        [JsonPropertyName("@type")]
+        public string RecordType { get; set; }
+
+        [JsonPropertyName("iana:octetDeltaCount")]
+        public int IanaOctetDeltaCount { get; set; }
+
+        [JsonPropertyName("iana:packetDeltaCount")]
+        public int IanaPacketDeltaCount { get; set; }
+
+        [JsonPropertyName("iana:protocolIdentifier")]
+        public string IanaProtocolIdentifier { get; set; }
+
+        [JsonPropertyName("iana:ipClassOfService")]
+        public int IanaIpClassOfService { get; set; }
+
+        [JsonPropertyName("iana:sourceTransportPort")]
+        public int IanaSourceTransportPort { get; set; }
+
+        [JsonPropertyName("iana:sourceIPv4Address")]
+        public string IanaSourceIPv4Address { get; set; }
+
+        [JsonPropertyName("iana:sourceIPv6Address")]
+        public string IanaSourceIPv6Address { get; set; }
+
+        [JsonPropertyName("iana:ingressInterface")]
+        public int IanaIngressInterface { get; set; }
+
+        [JsonPropertyName("iana:destinationTransportPort")]
+        public int IanaDestinationTransportPort { get; set; }
+
+        [JsonPropertyName("iana:destinationIPv4Address")]
+        public string IanaDestinationIPv4Address { get; set; }
+                
+        [JsonPropertyName("iana:destinationIPv6Address")]
+        public string IanaDestinationIPv6Address { get; set; }
+
+        [JsonPropertyName("iana:egressInterface")]
+        public int IanaEgressInterface { get; set; }
+
+        [JsonPropertyName("iana:bgpSourceAsNumber")]
+        public int IanaBgpSourceAsNumber { get; set; }
+
+        [JsonPropertyName("iana:bgpDestinationAsNumber")]
+        public int IanaBgpDestinationAsNumber { get; set; }
+
+        [JsonPropertyName("iana:samplingInterval")]
+        public int IanaSamplingInterval { get; set; }
+
+        [JsonPropertyName("iana:samplingAlgorithm")]
+        public int IanaSamplingAlgorithm { get; set; }
+
+        [JsonPropertyName("iana:sourceMacAddress")]
+        public string IanaSourceMacAddress { get; set; }
+
+        [JsonPropertyName("iana:postDestinationMacAddress")]
+        public string IanaPostDestinationMacAddress { get; set; }
+
+        [JsonPropertyName("iana:ipVersion")]
+        public int IanaIpVersion { get; set; }
+
+        [JsonPropertyName("iana:flowStartMilliseconds")]
+        public DateTime IanaFlowStartMilliseconds { get; set; }
+
+        [JsonPropertyName("iana:flowEndMilliseconds")]
+        public DateTime IanaFlowEndMilliseconds { get; set; }
+
+        [JsonPropertyName("iana:applicationId")]
+        public int IanaApplicationId { get; set; }
+
+        [JsonPropertyName("flowmon:npmJitterDev")]
+        public int FlowmonNpmJitterDev { get; set; }
+
+        [JsonPropertyName("flowmon:npmJitterAvg")]
+        public int FlowmonNpmJitterAvg { get; set; }
+
+        [JsonPropertyName("flowmon:npmJitterMin")]
+        public int FlowmonNpmJitterMin { get; set; }
+
+        [JsonPropertyName("flowmon:npmJitterMax")]
+        public int FlowmonNpmJitterMax { get; set; }
+
+        [JsonPropertyName("flowmon:npmDelayDev")]
+        public int FlowmonNpmDelayDev { get; set; }
+
+        [JsonPropertyName("flowmon:npmDelayAvg")]
+        public int FlowmonNpmDelayAvg { get; set; }
+
+        [JsonPropertyName("flowmon:npmDelayMin")]
+        public int FlowmonNpmDelayMin { get; set; }
+
+        [JsonPropertyName("flowmon:npmDelayMax")]
+        public int FlowmonNpmDelayMax { get; set; }
+
+        [JsonPropertyName("flowmon:npnRoundTripTime")]
+        public int FlowmonNpnRoundTripTime { get; set; }
+
+        [JsonPropertyName("flowmon:npmServerResponseTime")]
+        public int FlowmonNpmServerResponseTime { get; set; }
+
         [JsonPropertyName("flowmon:dnsId")]
         public int FlowmonDnsId { get; set; }
 
@@ -71,21 +170,20 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [JsonPropertyName("flowmon:dnsQclass")]
         public int FlowmonDnsQclass { get; set; }
 
+        [JsonPropertyName("iana:tcpControlBits")]
+        public string IanaTcpControlBits { get; set; }
+
+        [JsonPropertyName("flowmon:npmTcpRetransmission")]
+        public int FlowmonNpmTcpRetransmission { get; set; }
+
+        [JsonPropertyName("flowmon:npmTcpOutOfOrder")]
+        public int FlowmonNpmTcpOutOfOrder { get; set; }
 
         [JsonPropertyName("flowmon:httpHost")]
         public string FlowmonHttpHost { get; set; }
 
         [JsonPropertyName("flowmon:httpMethodMask")]
         public int FlowmonHttpMethodMask { get; set; }
-
-        [JsonPropertyName("flowmon:tcpSynSize")]
-        public int FlowmonTcpSynSize { get; set; }
-
-        [JsonPropertyName("flowmon:tcpSynTtl")]
-        public int FlowmonTcpSynTtl { get; set; }
-
-        [JsonPropertyName("iana:tcpWindowSize")]
-        public int IanaTcpWindowSize { get; set; }
 
         [JsonPropertyName("flowmon:tlsContentType")]
         public int FlowmonTlsContentType { get; set; }
@@ -139,7 +237,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string FlowmonTlsEllipticCurves { get; set; }
 
         [JsonPropertyName("flowmon:tlsEcPointFormats")]
-        public int FlowmonTlsEcPointFormats { get; set; }
+        public string FlowmonTlsEcPointFormats { get; set; }
 
         [JsonPropertyName("flowmon:tlsClientKeyLength")]
         public int FlowmonTlsClientKeyLength { get; set; }
@@ -171,111 +269,47 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [JsonPropertyName("flowmon:tlsJa3Fingerprint")]
         public string FlowmonTlsJa3Fingerprint { get; set; }
 
-        [JsonPropertyName("flowmon:npmJitterDev")]
-        public int FlowmonNpmJitterDev { get; set; }
+        [JsonPropertyName("flowmon:httpUrl")]
+        public string FlowmonHttpUrl { get; set; }
 
-        [JsonPropertyName("flowmon:npmJitterAvg")]
-        public int FlowmonNpmJitterAvg { get; set; }
+        [JsonPropertyName("flowmon:httpStatusCode")]
+        public int FlowmonHttpStatusCode { get; set; }
 
-        [JsonPropertyName("flowmon:npmJitterMin")]
-        public int FlowmonNpmJitterMin { get; set; }
+        [JsonPropertyName("flowmon:httpUaOs")]
+        public int FlowmonHttpUaOs { get; set; }
 
-        [JsonPropertyName("flowmon:npmJitterMax")]
-        public int FlowmonNpmJitterMax { get; set; }
+        [JsonPropertyName("flowmon:httpUaOsMaj")]
+        public int FlowmonHttpUaOsMaj { get; set; }
 
-        [JsonPropertyName("flowmon:npmDelayDev")]
-        public int FlowmonNpmDelayDev { get; set; }
+        [JsonPropertyName("flowmon:httpUaOsMin")]
+        public int FlowmonHttpUaOsMin { get; set; }
 
-        [JsonPropertyName("flowmon:npmDelayAvg")]
-        public int FlowmonNpmDelayAvg { get; set; }
+        [JsonPropertyName("flowmon:httpUaOsBld")]
+        public int FlowmonHttpUaOsBld { get; set; }
 
-        [JsonPropertyName("flowmon:npmDelayMin")]
-        public int FlowmonNpmDelayMin { get; set; }
+        [JsonPropertyName("flowmon:httpUaApp")]
+        public int FlowmonHttpUaApp { get; set; }
 
-        [JsonPropertyName("flowmon:npmDelayMax")]
-        public int FlowmonNpmDelayMax { get; set; }
+        [JsonPropertyName("flowmon:httpUaAppMaj")]
+        public int FlowmonHttpUaAppMaj { get; set; }
 
-        [JsonPropertyName("flowmon:npmTcpRetransmission")]
-        public int FlowmonNpmTcpRetransmission { get; set; }
+        [JsonPropertyName("flowmon:httpUaAppMin")]
+        public int FlowmonHttpUaAppMin { get; set; }
 
-        [JsonPropertyName("flowmon:npmTcpOutOfOrder")]
-        public int FlowmonNpmTcpOutOfOrder { get; set; }
+        [JsonPropertyName("flowmon:httpUaAppBld")]
+        public int FlowmonHttpUaAppBld { get; set; }
 
-        [JsonPropertyName("flowmon:npnRoundTripTime")]
-        public int FlowmonNpnRoundTripTime { get; set; }
+        [JsonPropertyName("flowmon:tcpSynSize")]
+        public int FlowmonTcpSynSize { get; set; }
 
-        [JsonPropertyName("flowmon:npmServerResponseTime")]
-        public long FlowmonNpmServerResponseTime { get; set; }
-        #endregion
-        #region IANA IPFIX Fields
-        [JsonPropertyName("@type")]
-        public string Type { get; set; }
+        [JsonPropertyName("flowmon:tcpSynTtl")]
+        public int FlowmonTcpSynTtl { get; set; }
 
-        [JsonPropertyName("iana:octetDeltaCount")]
-        public int IanaOctetDeltaCount { get; set; }
-
-        [JsonPropertyName("iana:packetDeltaCount")]
-        public int IanaPacketDeltaCount { get; set; }
-
-        [JsonPropertyName("iana:protocolIdentifier")]
-        public string IanaProtocolIdentifier { get; set; }
-
-        [JsonPropertyName("iana:ipClassOfService")]
-        public int IanaIpClassOfService { get; set; }
-
-        [JsonPropertyName("iana:tcpControlBits")]
-        public string IanaTcpControlBits { get; set; }
-
-        [JsonPropertyName("iana:sourceTransportPort")]
-        public int IanaSourceTransportPort { get; set; }
-
-        [JsonPropertyName("iana:sourceIPv4Address")]
-        public string IanaSourceIPv4Address { get; set; }
-
-        [JsonPropertyName("iana:ingressInterface")]
-        public int IanaIngressInterface { get; set; }
-
-        [JsonPropertyName("iana:destinationTransportPort")]
-        public int IanaDestinationTransportPort { get; set; }
-
-        [JsonPropertyName("iana:destinationIPv4Address")]
-        public string IanaDestinationIPv4Address { get; set; }
-
-        [JsonPropertyName("iana:egressInterface")]
-        public int IanaEgressInterface { get; set; }
-
-        [JsonPropertyName("iana:bgpSourceAsNumber")]
-        public int IanaBgpSourceAsNumber { get; set; }
-
-        [JsonPropertyName("iana:bgpDestinationAsNumber")]
-        public int IanaBgpDestinationAsNumber { get; set; }
-
-        [JsonPropertyName("iana:samplingInterval")]
-        public int IanaSamplingInterval { get; set; }
-
-        [JsonPropertyName("iana:samplingAlgorithm")]
-        public int IanaSamplingAlgorithm { get; set; }
-
-        [JsonPropertyName("iana:sourceMacAddress")]
-        public string IanaSourceMacAddress { get; set; }
-
-        [JsonPropertyName("iana:postDestinationMacAddress")]
-        public string IanaPostDestinationMacAddress { get; set; }
-
-        [JsonPropertyName("iana:ipVersion")]
-        public int IanaIpVersion { get; set; }
-
-        [JsonPropertyName("iana:flowStartMilliseconds")]
-        public DateTime IanaFlowStartMilliseconds { get; set; }
-
-        [JsonPropertyName("iana:flowEndMilliseconds")]
-        public DateTime IanaFlowEndMilliseconds { get; set; }
-
-        [JsonPropertyName("iana:applicationId")]
-        public int IanaApplicationId { get; set; }
-        #endregion
-  
+        [JsonPropertyName("iana:tcpWindowSize")]
+        public int IanaTcpWindowSize { get; set; }
     }
+
+
 }
 
 

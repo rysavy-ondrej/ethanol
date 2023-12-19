@@ -19,5 +19,10 @@
         /// Represents a flow that is bidirectional, encompassing both request and response.
         /// </summary>
         BidirectionFlow,
+        
+        /// <summary>
+        /// Represents a flow that is unidirectional, either request or response.
+        /// </summary>
+        UnidirectionalFlow
     }
 }

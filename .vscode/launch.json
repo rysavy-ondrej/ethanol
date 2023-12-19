@@ -88,7 +88,7 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
             "args": [
-                "learn-malfile",
+                "learn-malware",
                 "-r",
                 "Train",
                 "-o",

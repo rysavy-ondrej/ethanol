@@ -1,7 +1,7 @@
 ﻿using Ethanol;
 using Microsoft.Extensions.Logging;
 
-
+[Command("service", "The REST API service for accesing the context objects.")]
 internal class ContextProviderCommand : ConsoleAppBase
 {
     private readonly ILogger _logger;
@@ -13,7 +13,7 @@ internal class ContextProviderCommand : ConsoleAppBase
         this._environment = environment ?? throw new ArgumentNullException(nameof(environment));
     }
 
-    [Command("start-service", "Starts the API for accesing the context objects.")]
+    [Command("start", "Starts the API for accesing the context objects.")]
     public void RunBuilderCommand(
         [Option("c", "The configuration file used to configure the service.")] string configurationFile
     )

@@ -23,6 +23,7 @@ using System.Reactive.Linq;
 /// builder process. The command processes input options and starts the application based on the 
 /// provided configuration file and optional progress reporting.
 /// </remarks>
+[Command("builder", "Context builder related commands.")]
 internal class ContextBuilderCommand : ConsoleAppBase
 {
     private readonly ILogger _logger;
@@ -50,7 +51,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
     /// and can optionally report progress if enabled. The process involves setting up data flows, 
     /// context building, and other operations as defined in the configuration.
     /// </remarks>
-    [Command("run-builder", "Runs the context builder command according to the configuration file.")]
+    [Command("run", "Runs the context builder command according to the configuration file.")]
     public async Task RunBuilderCommand(
 
     [Option("c", "The path to the configuration file used for processing setup.")]
@@ -88,7 +89,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
     /// </summary>
     /// <param name="windowSpan">Configuration of the window size for the builder. Default is 5 minutes.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    [Command("exec-builder", "Executes the context builder that reads data on stdin and produces contexts to stdout.")]
+    [Command("exec", "Executes the context builder that reads data on stdin and produces contexts to stdout.")]
     public async Task ExecBuilderCommand(
         [Option("w", "Configuration of the window size for the builder. Default is 5 minutes.")]
         string windowSpan="00:05:00")

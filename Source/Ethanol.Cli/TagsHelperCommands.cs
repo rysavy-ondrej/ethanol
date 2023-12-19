@@ -9,6 +9,7 @@ using Npgsql;
 /// <summary>
 /// This class implements commands available in the CLI application.
 /// </summary>
+[Command("tags", "Provides commands for working with tags.")]
 public class TagsHelperCommands : ConsoleAppBase
 {
 

@@ -46,10 +46,10 @@ public class Program : ConsoleAppBase
         var app = builder.Build();
 
         var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-        app.AddCommands<ContextBuilderCommand>();
-        app.AddCommands<ContextProviderCommand>();
-        app.AddCommands<MalwareSonarCommands>();
-        app.AddCommands<TagsHelperCommands>();
+        app.AddSubCommands<ContextBuilderCommand>();
+        app.AddSubCommands<ContextProviderCommand>();
+        app.AddSubCommands<MalwareSonarCommands>();
+        app.AddSubCommands<TagsHelperCommands>();
 
         // >>>
         // RUN

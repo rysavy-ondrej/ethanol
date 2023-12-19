@@ -24,16 +24,16 @@ function Compare-FileContent {
 }
 
 Write-Host  "● Test 1: run-builder" -ForegroundColor Yellow -BackgroundColor DarkGreen
-Write-Host  "  EXEC: $ethanolExe run-builder -c context-builder.plain.config.json" -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host  "  EXEC: $ethanolExe builder run -c context-builder.plain.config.json" -ForegroundColor Yellow -BackgroundColor DarkGreen
 Write-Host
-Get-Content ./flows.json | & $ethanolExe run-builder -c context-builder.plain.config.json > ctx.test.1.json
+Get-Content ./flows.json | & $ethanolExe builder run -c context-builder.plain.config.json > ctx.test.1.json
 Compare-FileContent ctx.reference.1.json ctx.test.1.json
 
 
 Write-Host  "● Test 2: exec-builder" -ForegroundColor Yellow -BackgroundColor DarkGreen
-Write-Host  "  EXEC: $ethanolExe exec-builder" -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host  "  EXEC: $ethanolExe builder exec" -ForegroundColor Yellow -BackgroundColor DarkGreen
 Write-Host
-Get-Content ./flows.json | & $ethanolExe exec-builder > ctx.test.2.json
+Get-Content ./flows.json | & $ethanolExe builder exec > ctx.test.2.json
 Compare-FileContent ctx.reference.2.json ctx.test.2.json
 
 # TODO: implement also tests for TCP input and DB output...

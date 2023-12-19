@@ -1,92 +1,136 @@
-# Ethanol CLI
+# Ethanol CLI Documentation
 
-Ethanol CLI is a command line interface designed to streamline the running of applications and services associated with Ethanol projects. It enables users to easily start applications, access context objects through an API, and manage configurations via a configuration file.
+Ethanol CLI is a command-line interface that simplifies the operation of applications and services associated with Ethanol projects. It allows users to easily start applications, access context objects through APIs, and manage configurations.
 
 ## Installation
 
-[Include detailed installation instructions here]
+Ethanol CLI is distributed as standalone executable files for different platforms, available in the [Deploy folder](../../Deploy/Bin). Use the appropriate build script for your target OS:
 
-## Usage
+| Operating System | Build Script |
+|------------------|--------------|
+| Windows OS       | [build-executable.cmd](../build-executable.cmd) |
+| Linux OS         | [build-executable.sh](../build-executable.sh)   |
 
-### General
+## Usage Instructions
 
-To use the Ethanol CLI, open a terminal window and navigate to the directory where `ethanol.exe` is located. The general usage pattern is as follows:
+### General Usage
 
-```bash
-.\ethanol.exe <Command>
-```
-
-### Run Builder
-
-The `run-builder` command initializes and starts the application with the necessary configurations provided by the user.
+Navigate to the directory containing `ethanol.exe` and execute commands using the following pattern:
 
 ```bash
-.\ethanol.exe run-builder [options...]
+ethanol <Command> [options...]
+
+Commands:
+  builder exec                          Executes the context builder that reads data on stdin and produces contexts to stdout.
+  builder run                           Runs the context builder command according to the configuration file.
+  malware infect                        Modify the input context by 'infecting' it with the malware from malware reports in the given folder.
+  malware learn                         Learn malware models from specified malware reports.
+  malware scan                          Tests the specified context for the presence of malware indicators.
+  service start                         Starts the API for accesing the context objects.
+  tags insert-netify                    Inserts netify tags from the provided CSV files into the specified table in an SQL database.
+  help                                  Display help.
+  version                               Display version.
 ```
 
-#### Options:
+### Context Builder Commands
 
-- `-c, --configuration-file <String>`: Specifies the path to the configuration file that will be used to configure the processing. This option is required.
+#### Run Builder
 
-#### Examples:
+Initializes and starts the application with user-provided configurations.
 
-To start the application with a specific configuration file:
+| Option | Description |
+|--------|-------------|
+| `-c, --configuration-file <String>` | Path to the configuration file (Required) |
+
+**Example:** Start the application with a specific configuration file:
 
 ```bash
-.\ethanol.exe run-builder -c "C:\path\to\your\config.json"
+ethanol builder run -c "C:\path\to\your\config.json"
 ```
 
-This will launch the builder using settings defined in `config.json`. 
-The configuration file for Ethanol CLI is structured in JSON format, which makes it easy to read and write. See the description of [configuration file structure](doc/BuilderConfig.md).
-See also an [example](config/context-builder.config.json) of the configuration file.
+#### Exec Builder
 
-### Start Service
+Executes the context builder, reading input NDJSON with flow records and producing the context output.
 
-The `start-service` command spins up the API service, allowing access to context objects, as defined in the provided configuration file.
+**Example:** Execute with a specific configuration file, processing standard input:
 
 ```bash
-.\ethanol.exe start-service [options...]
+cat INPUT-FLOWS.ndjson | ethanol builder exec > OUTPUT-CTX.ndjson
 ```
 
-#### Options:
+### Context Provider Commands
 
-- `-c, --configuration-file <String>`: Specifies the path to the configuration file that will be used to configure the service. This option is required.
+#### Start Service
 
-#### Examples:
+Launches the API service, enabling access to context objects.
 
-To start the API service with a designated configuration file:
+| Option | Description |
+|--------|-------------|
+| `-c, --configuration-file <String>` | Path to the configuration file (Required) |
+
+**Example:** Start the API service with a designated configuration file:
 
 ```bash
-.\ethanol.exe start-service -c "C:\path\to\service-config.json"
+ethanol service start -c "C:\path\to\service-config.json"
 ```
 
-This will start the service and the API will be configured according to `service-config.json`. The configuration file has [well-defined structure](doc/BuilderConfig.md). See also an [example](config/context-builder.config.json) of the configuration file.
+### Malware Sonar Commands
 
+#### Scan Malware
 
-## Other Commands
+Analyzes the specified context for the presence of malware indicators.
 
-### Help
+| Option | Description |
+|--------|-------------|
+| `-p, --path-malware-profile-file <String>` | Path to the malware profile file (Required) |
+| `-i, --input-path <String>` | Path to the input folder or file (Required) |
+| `-o, --output-file-path <String>` | Path for the output JSON report (Required) |
+| `-t, --threshold-score <Double>` | Threshold score for malware presence (Optional, Default: 1.0) |
 
-Displays help information about the Ethanol CLI or any specific command. To see a list of available commands:
+**Example:** Execute with a specific configuration file, processing standard input:
 
 ```bash
-.\ethanol.exe help
+ethanol malware scan -p .\Models\lightblue.mal -i .\ContextData\ctx-bening1.json -o .\TestResults\ctx-bening1.tested.json
 ```
 
-For help with a specific command:
+#### Learn Malware
+
+Learns malware models from specified malware reports.
+
+| Option | Description |
+|--------|-------------|
+| `-r, --root-report-folder <String>` | Path to the root folder with malware reports (Required) |
+| `-o, --output-profile-path <String>` | Path for the output malware profiles (Required) |
+
+**Example:** Execute with a specific configuration file, processing standard input:
 
 ```bash
-.\ethanol.exe <Command> help
+ethanol malware learn -r Train -o Models/profile.mal
 ```
 
-### Version
+### Other Commands
 
-Shows the current version of Ethanol CLI installed on your machine.
+#### Help
+
+Displays help information about CLI commands and specific commands.
+
+**Example:** Display general help or help for a specific command:
 
 ```bash
-.\ethanol.exe version
+ethanol help
+ethanol <Command> help
 ```
 
-## License
+#### Version
 
-Ethanol CLI is released under the [LICENSE](LICENSE) file in the root directory of this source tree.
+Shows the current version of the Ethanol CLI.
+
+**Example:** Check the installed version of Ethanol CLI:
+
+```bash
+ethanol version
+```
+
+## Licensing
+
+Ethanol CLI is released under the [LICENSE](LICENSE) included in the source tree's root directory.

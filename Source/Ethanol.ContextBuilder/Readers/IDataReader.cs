@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Ethanol.ContextBuilder.Pipeline;
-using Microsoft.Extensions.Primitives;
 
 namespace Ethanol.ContextBuilder.Readers
 {

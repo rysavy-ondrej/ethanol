@@ -5,6 +5,7 @@ using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using Ethanol.DataObjects;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -184,7 +185,7 @@ public static class EthanolContextBuilder
     /// <returns>
     /// A task representing the asynchronous operation of the pipeline. This task can be awaited to ensure the pipeline's completion.
     /// </returns>
-    public static async Task<BuilderStatistics> Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, IObserver<BuilderStatistics> builderStatsObserver = null)
+    public static async Task<BuilderStatistics> Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, CancellationToken cancellationToken, IObserver<BuilderStatistics> builderStatsObserver, ILogger logger)
     {
 
         int flowsLoadedCount = 0;
@@ -245,11 +246,19 @@ public static class EthanolContextBuilder
 
                  .Consume(modules.Writers);
 
-        var _readerTasks = modules.Readers.Select(x => x.ReadAllAsync(CancellationToken.None)).ToArray();
+        // >>>>>>>> TODO: double check this: Really need to run all readers in parallel?
+        // execute the pipeline:
+        var _readerTasks = modules.Readers.Select(x =>
+        {
+            logger?.LogInformation($"Starting input reader {x}");
+            return Task.Run(async () => await x.ReadAllAsync(cancellationToken));
+        }).ToArray();
+        // <<<<<<<<
 
-        progressReportSubscription?.Dispose();
+
+        // wait for finish:
         await task;
-
+        progressReportSubscription?.Dispose();
         return CreateReport(0);
     }
 

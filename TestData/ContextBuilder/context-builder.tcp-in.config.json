@@ -26,19 +26,6 @@
 		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
 	},
 
-	"enrichers": {
-		"netify" : {
-			"postgres": {
-				"server": "${POSTGRES_IP}",
-				"port": "${POSTGRES_PORT}",
-				"database": "${POSTGRES_DATABASE}",
-				"user": "${POSTGRES_USER}",
-				"password": "${POSTGRES_PASSWORD}",
-				"tablename": "netify_data"
-			}
-		}
-	},
-
 	"output": [{
 		"stdout": {
 			"format": "json"

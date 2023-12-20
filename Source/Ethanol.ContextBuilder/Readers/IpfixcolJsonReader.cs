@@ -203,7 +203,7 @@ namespace Ethanol.ContextBuilder.Readers
 
             public async Task RunAsync(TcpListener listener, CancellationToken cancellation)
             {
-                _logger?.LogInformation($"TCP server listening on {_endpoint}");
+                _logger?.LogInformation($"TCP server (IpfixcolJsonReader) listening on {_endpoint}");
                 try
                 {
                     // Wait for incoming client connections
@@ -216,7 +216,7 @@ namespace Ethanol.ContextBuilder.Readers
                             var tcs = new TaskCompletionSource<object>();
                             _clientsTasks.Add(tcs.Task);
                             // Start as a background task... 
-                            var _ = Task.Factory.StartNew(async () =>
+                            var _ = Task.Run(async () =>
                             {
                                 await ReadInputData(client, cancellation);
                                 _clientsTasks.Remove(tcs.Task);

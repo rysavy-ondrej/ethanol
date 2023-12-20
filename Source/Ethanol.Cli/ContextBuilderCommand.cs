@@ -87,9 +87,9 @@ internal class ContextBuilderCommand : ConsoleAppBase
             
             // 3.set-up pipeline:
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-            
+
             // 4.execute:
-            var stats = await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+            var stats = await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, Context.CancellationToken, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null, _logger);
             _logger?.LogInformation($"Builder finished: {stats.ToString()}");
         }
         catch(Exception ex)
@@ -122,7 +122,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-            var stats = await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, null);
+            var stats = await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, Context.CancellationToken, null, _logger);
             _logger?.LogInformation($"Builder finished: {stats.ToString()}");
         }
         catch(Exception ex)

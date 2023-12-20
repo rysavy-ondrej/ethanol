@@ -179,7 +179,7 @@ namespace Ethanol.ContextBuilder.Readers
             public override string ToString()
             {
                 var file = _filePath ?? "stdin";
-                return $"{nameof(IpfixcolJsonReader)}({file})";
+                return $"{nameof(FlowmonJsonReader)}({file})";
             }
         }
         class TcpReader : FlowmonJsonReader
@@ -201,7 +201,7 @@ namespace Ethanol.ContextBuilder.Readers
 
             public async Task RunAsync(TcpListener listener, CancellationToken cancellation)
             {
-                _logger?.LogInformation($"TCP server listening on {_endpoint}");
+                _logger?.LogInformation($"TCP server (FlowmonJsonReader) listening on {_endpoint}");
                 try
                 {
                     // Wait for incoming client connections
@@ -214,7 +214,7 @@ namespace Ethanol.ContextBuilder.Readers
                             var tcs = new TaskCompletionSource<object>();
                             _clientsTasks.Add(tcs.Task);
                             // Start as a background task... 
-                            var _ = Task.Factory.StartNew(async () =>
+                            var _ = Task.Run(async () =>
                             {
                                 await ReadInputData(client, cancellation);
                                 _clientsTasks.Remove(tcs.Task);
@@ -242,7 +242,7 @@ namespace Ethanol.ContextBuilder.Readers
                 // gets the reader from stream:
                 var reader = new StreamReader(stream);
                 string jsonString;
-                while(!cancellation.IsCancellationRequested &&  (jsonString = await ReadJsonStringAsync(reader)) != null)
+                while(!cancellation.IsCancellationRequested && (jsonString = await ReadJsonStringAsync(reader)) != null)
                 {
                     // read input tcp data and if suceffuly deserialized put the object in the buffer
                     // to be available to TryGetNextRecord method.
@@ -303,6 +303,10 @@ namespace Ethanol.ContextBuilder.Readers
                     logger?.LogError($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
                     return null;
                 }
+            }
+            public override string ToString()
+            {
+                return $"{nameof(FlowmonJsonReader)}(tcp={_endpoint}))";
             }
         }
     }

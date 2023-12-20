@@ -1,12 +1,25 @@
 {
-	"input": {
-		"tcp": {
-			"listen": "0.0.0.0",
-			"port": "5180",
-			"format": "flowmon-json"
+	"input": [
+		{
+			"stdin": {
+				"format": "flowmon-json"
+			}
+		},
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5180",
+				"format": "flowmon-json"
+			}
+		},
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5181",
+				"format": "ipfixcol-json"
+			}
 		}
-	},
-
+	],
 	"builder": {
 		"windowsize": "00:05:00",
 		"windowhop": "00:05:00",
@@ -26,10 +39,9 @@
 		}
 	},
 
-	"output": {
-
+	"output": [{
 		"stdout": {
 			"format": "json"
 		}
-	}
+	}]
 }

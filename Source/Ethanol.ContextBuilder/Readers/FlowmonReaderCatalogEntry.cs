@@ -16,9 +16,16 @@ namespace Ethanol.Catalogs
         /// <param name="catalog">The <see cref="FlowReaderCatalog"/> instance.</param>
         /// <param name="reader">The <see cref="TextReader"/> to read the Flowmon file.</param>
         /// <returns>An instance of <see cref="IDataReader{IpFlow}"/> for reading Flowmon data from a file.</returns>
-        public static IDataReader<IpFlow> GetFlowmonFileReader(this FlowReaderCatalog catalog, TextReader reader)
+        /// <summary>
+        /// Gets a Flowmon file reader from the catalog.
+        /// </summary>
+        /// <param name="catalog">The flow reader catalog.</param>
+        /// <param name="reader">The text reader.</param>
+        /// <param name="filePath">The file path or null if stdin is used.</param>
+        /// <returns>The Flowmon file reader.</returns>
+        public static IDataReader<IpFlow> GetFlowmonFileReader(this FlowReaderCatalog catalog, TextReader reader, string filePath)
         {
-            return FlowmonJsonReader.CreateFileReader(reader, catalog.Environment.Logger);
+            return FlowmonJsonReader.CreateFileReader(reader, filePath, catalog.Environment.Logger);
         }
 
         /// <summary>

@@ -1,18 +1,21 @@
 {
-	"input": {
-		"stdin": {
-			"format": "ipfixcol-json"
+	"input": [
+		{
+			"stdin": {
+				"format": "ipfixcol-json"
+			}
 		}
-	},
-
+	],
 	"builder": {
 		"windowsize": "00:05:00",
 		"windowhop": "00:05:00",
 		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
 	},
-	"output": {
-		"stdout": {
-			"format": "json"
+	"output": [ 
+		{
+			"stdout": {
+				"format": "json"
+			}
 		}
-	}
+	]
 }

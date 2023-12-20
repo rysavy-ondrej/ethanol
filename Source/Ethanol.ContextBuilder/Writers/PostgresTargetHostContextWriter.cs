@@ -110,5 +110,10 @@ namespace Ethanol.ContextBuilder.Writers
                 cmd.ExecuteNonQuery();
             }
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(PostgresTargetHostContextWriter)}({_connection.ConnectionString}))";
+        }
     }
 }

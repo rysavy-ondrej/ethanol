@@ -184,7 +184,7 @@ public static class EthanolContextBuilder
     /// <returns>
     /// A task representing the asynchronous operation of the pipeline. This task can be awaited to ensure the pipeline's completion.
     /// </returns>
-    public static async Task Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, IObserver<BuilderStatistics> builderStatsObserver = null)
+    public static async Task<BuilderStatistics> Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, IObserver<BuilderStatistics> builderStatsObserver = null)
     {
 
         int flowsLoadedCount = 0;
@@ -249,6 +249,8 @@ public static class EthanolContextBuilder
 
         progressReportSubscription?.Dispose();
         await task;
+
+        return CreateReport(0);
     }
 
     /// <summary>

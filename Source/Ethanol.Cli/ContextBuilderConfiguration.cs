@@ -7,6 +7,17 @@ public class ContextBuilderConfiguration
 {
     internal static Root LoadFromFile(string configurationFilePath)
     {
+        try
+        {
+            return LoadFromFileInternal(configurationFilePath);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to load configuration file {configurationFilePath}", ex);
+        }
+    }
+    static Root LoadFromFileInternal(string configurationFilePath)
+    {
         var configurationBuilder = new ConfigurationBuilder();
         var configuration = configurationBuilder.AddJsonFile(configurationFilePath).AddEnvironmentVariables().EnableSubstitutions("${", "}", UnresolvedVariableBehaviour.IgnorePattern).Build();
 
@@ -78,7 +89,7 @@ public class ContextBuilderConfiguration
     public class Root
     {
         [JsonPropertyName("input")]
-        public Input? Input { get; set; }
+        public List<Input>? Input { get; set; }
 
         [JsonPropertyName("builder")]
         public ContextBuilder? Builder { get; set; }
@@ -87,7 +98,7 @@ public class ContextBuilderConfiguration
         public Enrichers? Enrichers { get; set; }
 
         [JsonPropertyName("output")]
-        public Output? Output { get; set; }
+        public List<Output>? Output { get; set; }
     }
     public class Enrichers
     {

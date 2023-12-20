@@ -45,9 +45,9 @@ namespace Ethanol.ContextBuilder.Readers
             return new TcpReader(listenAt, logger);
         }
 
-        public static FlowmonJsonReader CreateFileReader(TextReader reader, ILogger logger)
+        public static FlowmonJsonReader CreateFileReader(TextReader reader, string filePath, ILogger logger)
         {
-            return new FileReader(reader, logger);
+            return new FileReader(reader, filePath, logger);
         }
 
         /// <summary>
@@ -77,6 +77,27 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 _logger?.LogWarning($"Cannot deserialize entry: {e.Message}");
                 entry = default;
+                return false;
+            }
+        }
+        /// <summary>
+        /// Tries to deserialize the input string into an IpFlow object.
+        /// </summary>
+        /// <param name="input">The input string to deserialize.</param>
+        /// <param name="ipFlow">When this method returns, contains the deserialized IpFlow object if the deserialization was successful, or the default IpFlow object if the deserialization failed.</param>
+        /// <returns><c>true</c> if the deserialization was successful; otherwise, <c>false</c>.</returns>
+        bool TryDeserializeFlow(string input, out IpFlow ipFlow)
+        {
+            try
+            {
+                var entry = JsonSerializer.Deserialize<Flowmonexp5Entry>(input, _serializerOptions);
+                ipFlow = entry.ToFlow();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger?.LogWarning($"Cannot deserialize flow: {e.Message}");
+                ipFlow = default;
                 return false;
             }
         }
@@ -110,15 +131,16 @@ namespace Ethanol.ContextBuilder.Readers
         class FileReader : FlowmonJsonReader
         {
             private readonly TextReader _reader;
+            private readonly string _filePath;
 
             /// <summary>
             /// Initializes the reader with underlying <see cref="TextReader"/>.
             /// </summary>
             /// <param name="reader">The text reader device (input file or standard input).</param>
-            public FileReader(TextReader reader, ILogger logger) : base(logger)
+            public FileReader(TextReader reader, string filePath, ILogger logger) : base(logger)
             {
                 _reader = reader;
-
+                _filePath = filePath;
             }
 
             /// <inheritdoc/>
@@ -137,9 +159,9 @@ namespace Ethanol.ContextBuilder.Readers
                     // end of file?
                     if (line == null) return null;
                     
-                    if (TryDeserialize(line, out var currentEntry))
+                    if (TryDeserializeFlow(line, out var ipFlow))
                     {
-                        return currentEntry.ToFlow();
+                        return ipFlow;
                     }
                 }
                 return null;
@@ -156,7 +178,8 @@ namespace Ethanol.ContextBuilder.Readers
 
             public override string ToString()
             {
-                return $"{nameof(FlowmonJsonReader)}(Reader={_reader})";
+                var file = _filePath ?? "stdin";
+                return $"{nameof(IpfixcolJsonReader)}({file})";
             }
         }
         class TcpReader : FlowmonJsonReader
@@ -223,9 +246,8 @@ namespace Ethanol.ContextBuilder.Readers
                 {
                     // read input tcp data and if suceffuly deserialized put the object in the buffer
                     // to be available to TryGetNextRecord method.
-                    if (this.TryDeserialize(jsonString, out var currentEntry))
+                    if (this.TryDeserializeFlow(jsonString, out var ipflow))
                     {
-                        var ipflow = currentEntry.ToFlow();
                         _queue.Add(ipflow);
                     }
                     else

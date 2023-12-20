@@ -1,0 +1,53 @@
+<ipfixcol2>
+<inputPlugins>
+<input>
+    <name>UDP input</name>
+    <plugin>udp</plugin>
+    <params>
+        <localPort>4739</localPort>
+        <localIPAddress></localIPAddress>
+        <!-- Optional parameters -->
+        <connectionTimeout>600</connectionTimeout>
+        <templateLifeTime>1800</templateLifeTime>
+        <optionsTemplateLifeTime>1800</optionsTemplateLifeTime>
+    </params>
+</input>
+</inputPlugins>
+<outputPlugins>
+<output>
+    <name>JSON output</name>
+    <plugin>json</plugin>
+    <params>
+        <tcpFlags>formatted</tcpFlags>
+        <timestamp>formatted</timestamp>
+        <protocol>formatted</protocol>
+        <ignoreUnknown>true</ignoreUnknown>
+        <ignoreOptions>true</ignoreOptions>
+        <nonPrintableChar>true</nonPrintableChar>
+        <octetArrayAsUint>true</octetArrayAsUint>
+        <numericNames>false</numericNames>
+        <splitBiflow>false</splitBiflow>
+        <detailedInfo>false</detailedInfo>
+        <templateInfo>false</templateInfo>
+        <outputs>
+            <send>
+                <name>Send to ethanol builder</name>
+                <ip>IP-OF-ETHANOL-DOCKER-HOST</ip>
+                <port>1601</port>
+                <protocol>tcp</protocol>
+                <blocking>no</blocking>
+            </send>
+            
+            <file>
+                <name>Store to local files</name>
+                <path>./flow/%Y/%m/%d/</path>
+                <prefix>json.</prefix>
+                <timeWindow>300</timeWindow>
+                <timeAlignment>yes</timeAlignment>
+                <compression>none</compression>
+            </file>
+        </outputs>
+    </params>
+</output>
+</outputPlugins>
+</ipfixcol2>

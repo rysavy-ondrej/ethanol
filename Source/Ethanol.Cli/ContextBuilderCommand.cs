@@ -66,21 +66,35 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var configurationFilePath = Path.GetFullPath(configurationFile);
             _logger?.LogInformation($"Running context builder with configuration file: '{configurationFilePath}'");
             var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
+
             // 2.create modules: 
             var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
+
+            if (readers.Length == 0) throw new ArgumentException("No 'input' configuration specified in configuration file.");
+
+            _logger?.LogInformation($"Reader(s): {String.Join(',', readers.Select(w => w.ToString()))}");
+
             var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
+
+            if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
+
+            _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
+
             var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
             var polisher = _environment.ContextTransform.GetContextPolisher();
             var filter = GetFilter(contextBuilderConfiguration.Builder);
             var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
+            
             // 3.set-up pipeline:
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
+            
             // 4.execute:
-            await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+            var stats = await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null);
+            _logger?.LogInformation($"Builder finished: {stats.ToString()}");
         }
         catch(Exception ex)
         {
-            _logger.LogCritical(ex, $"ERROR: {ex.Message}");
+            _logger.LogCritical(ex, $"Cannot run builder: {ex.Message}");
         }
     }
 
@@ -92,23 +106,44 @@ internal class ContextBuilderCommand : ConsoleAppBase
     [Command("exec", "Executes the context builder that reads data on stdin and produces contexts to stdout.")]
     public async Task ExecBuilderCommand(
         [Option("w", "Configuration of the window size for the builder. Default is 5 minutes.")]
-        string windowSpan="00:05:00")
-    {
+        string windowSpan="00:05:00",
+        [Option("f", "Input format. Default is flowmon-json.")]
+        string inputFormat="flowmon-json",
+        [Option("i", "Input file path. If not specified, 'stdin' is used.")]
+        string? inputFilePath=null       
+        )
+        {
         try
         {
-            var readers = new[] { _environment.FlowReader.GetFlowmonFileReader(Console.In) };
-            var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out) };
+            var readers = new[] { GetStdinReaderFormat(inputFormat, inputFilePath) };
+            var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out, null) };
             var enricher = _environment.ContextTransform.GetVoidEnricher(); 
             var polisher = _environment.ContextTransform.GetContextPolisher();
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
-
             var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-            await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, null);
+            var stats = await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, null);
+            _logger?.LogInformation($"Builder finished: {stats.ToString()}");
         }
         catch(Exception ex)
         {
-            _logger.LogCritical(ex, $"ERROR: {ex.Message}");
+            _logger.LogCritical(ex, $"Cannot execute builder: {ex.Message}");
+        }
+    }
+
+    private IDataReader<IpFlow> GetStdinReaderFormat(string inputFormat, string? filePath = null)
+    {
+        if (filePath != null && !File.Exists(filePath)) throw new ArgumentException($"Input file '{filePath}' does not exist.");
+
+        var textReader = filePath != null ? new StreamReader(filePath) : Console.In;
+        switch (inputFormat)
+        {
+            case "flowmon-json":
+                return _environment.FlowReader.GetFlowmonFileReader(textReader, filePath);
+            case "ipfixcol-json":
+                return _environment.FlowReader.GetIpfixcolFileReader(textReader, filePath);
+            default:
+                throw new ArgumentException($"Invalid or missing stdin format specified '{inputFormat}'.");
         }
     }
 
@@ -150,27 +185,31 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
     }
 
-    private static IDataReader<IpFlow>[] CreateInputReaders(ContextBuilderConfiguration.Input? inputConfiguration, EthanolEnvironment environment)
+    private static IDataReader<IpFlow>[] CreateInputReaders(IEnumerable<ContextBuilderConfiguration.Input>? inputConfigurations, EthanolEnvironment environment)
     {
-        if (inputConfiguration == null)
+        if (inputConfigurations == null)
         {
-            return new[] { environment.FlowReader.GetFlowmonFileReader(Console.In) };
+            throw new ArgumentException("No input configuration specified in configuration file.");
         }
 
-        var inputReaders = new List<IDataReader<IpFlow>>();
+        var inputReaders = inputConfigurations.SelectMany(c => CreateInputReader(c, environment)).ToArray();
+        return inputReaders;
+    }
+    private static IEnumerable<IDataReader<IpFlow>> CreateInputReader(ContextBuilderConfiguration.Input inputConfiguration, EthanolEnvironment environment)
+    {
         // build the pipeline based on the configuration:
         if (inputConfiguration?.Stdin != null)
         {
             switch(inputConfiguration.Stdin.Format?.ToLowerInvariant() ?? string.Empty)
             {
                 case "flowmon-json":
-                    inputReaders.Add(environment.FlowReader.GetFlowmonFileReader(Console.In));
+                    yield return environment.FlowReader.GetFlowmonFileReader(Console.In, null);
                     break;
                 case "ipfixcol-json":
-                    inputReaders.Add(environment.FlowReader.GetIpfixcolFileReader(Console.In));
+                    yield return environment.FlowReader.GetIpfixcolFileReader(Console.In, null);
                     break;
                 default:
-                    throw new ArgumentException($"Invalid or missing stdin format specified in configuration file: {inputConfiguration.Stdin.Format}");
+                    throw new ArgumentException($"Invalid or missing stdin format '{inputConfiguration.Stdin.Format}' specified in configuration file.");
             }
         }
         if (inputConfiguration?.Tcp != null)        
@@ -182,34 +221,36 @@ internal class ContextBuilderCommand : ConsoleAppBase
             switch(inputConfiguration.Tcp.Format?.ToLowerInvariant() ?? string.Empty)
             {
                 case "flowmon-json":
-                    inputReaders.Add(environment.FlowReader.GetFlowmonTcpReader(listenAt));
+                    yield return environment.FlowReader.GetFlowmonTcpReader(listenAt);
                     break;
                 case "ipfixcol-json":
-                    inputReaders.Add(environment.FlowReader.GetIpfixcolTcpReader(listenAt));
+                    yield return environment.FlowReader.GetIpfixcolTcpReader(listenAt);
                     break;
                 default:
-                    throw new ArgumentException($"Invalid or missing tcp format specified in configuration file: {inputConfiguration.Tcp.Format}");
+                    throw new ArgumentException($"Invalid or missing tcp format specified '{inputConfiguration.Tcp.Format}' in configuration file.");
             }
         }
-        return inputReaders.ToArray();
     }
-    private static ContextWriter<HostContext>[] CreateOutputWriters(ContextBuilderConfiguration.Output? outputConfiguration, EthanolEnvironment environment)
+    private static ContextWriter<HostContext>[] CreateOutputWriters(IEnumerable<ContextBuilderConfiguration.Output>? outputConfiguration, EthanolEnvironment environment)
     {
         if (outputConfiguration == null)
         {
-            return new[] { environment.ContextWriter.GetJsonFileWriter(Console.Out) };
+            throw new ArgumentException("No output configuration specified in configuration file.");
         }
-
-        var outputWriters = new List<ContextWriter<HostContext>>();
+        var outputWriters = outputConfiguration.SelectMany(c => CreateOutputWriter(c, environment)).ToArray();
+        return outputWriters;
+    }
+     private static IEnumerable<ContextWriter<HostContext>> CreateOutputWriter(ContextBuilderConfiguration.Output outputConfiguration, EthanolEnvironment environment)
+     {
         if (outputConfiguration?.Stdout != null)
         {
             if (outputConfiguration.Stdout.Format == "json")
             {
-                outputWriters.Add(environment.ContextWriter.GetJsonFileWriter(Console.Out));
+                yield return environment.ContextWriter.GetJsonFileWriter(Console.Out, null);
             }
             if (outputConfiguration.Stdout.Format == "yaml")
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Output format 'yaml' is currently not supported.");
             }
         }
         if (outputConfiguration?.Postgres != null)
@@ -217,8 +258,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var connection = new NpgsqlConnection(outputConfiguration.Postgres.GetConnectionString());
             var tableName = outputConfiguration.Postgres.TableName;
             connection.Open();
-            outputWriters.Add(environment.ContextWriter.GetPostgresWriter(connection, tableName));
+            yield return environment.ContextWriter.GetPostgresWriter(connection, tableName);
         }
-        return outputWriters.ToArray();
     }
 }

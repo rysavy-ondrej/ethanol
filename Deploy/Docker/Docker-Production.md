@@ -59,3 +59,73 @@ This file should be uploaded to the `~/ethanol` folder on the Flowmon host. To g
 ```bash
 sudo flowmonexp5 ~/ethanol/probe-ethanol.json | while(true); do nc --send-only IP-OF-ETHANOL-DOCKER-HOST 1600; sleep 5; done
 ```
+
+## Export Netflows from ipfixcol
+
+The JSON formatted IFPIX records can be exported from the IPFIX collector [ipfixcol2](https://github.com/CESNET/ipfixcol2).
+In order to start the collector, run it with the configuration file provided.
+
+```bash
+ipfixcol2 -c ethanol-ipfixcol2-config.xml
+```
+
+The possible contents of the [configuration file](ethanol-ipfixcol2-config.xml) are shown below. Note that 
+the IPFIX collector listens on port *4739* and sends the JSON formatted output to the 
+to the tcp endpoint *IP-OF-ETHANOL-DOCKER-HOST:1601*. It also writes the JSON to 
+to a collection of output files in the specified folder.
+
+```xml
+<ipfixcol2>
+<inputPlugins>
+<input>
+    <name>UDP input</name>
+    <plugin>udp</plugin>
+    <params>
+        <localPort>4739</localPort>
+        <localIPAddress></localIPAddress>
+        <!-- Optional parameters -->
+        <connectionTimeout>600</connectionTimeout>
+        <templateLifeTime>1800</templateLifeTime>
+        <optionsTemplateLifeTime>1800</optionsTemplateLifeTime>
+    </params>
+</input>
+</inputPlugins>
+<outputPlugins>
+<output>
+    <name>JSON output</name>
+    <plugin>json</plugin>
+    <params>
+        <tcpFlags>formatted</tcpFlags>
+        <timestamp>formatted</timestamp>
+        <protocol>formatted</protocol>
+        <ignoreUnknown>true</ignoreUnknown>
+        <ignoreOptions>true</ignoreOptions>
+        <nonPrintableChar>true</nonPrintableChar>
+        <octetArrayAsUint>true</octetArrayAsUint>
+        <numericNames>false</numericNames>
+        <splitBiflow>false</splitBiflow>
+        <detailedInfo>false</detailedInfo>
+        <templateInfo>false</templateInfo>
+        <outputs>
+            <send>
+                <name>Send to ethanol builder</name>
+                <ip>IP-OF-ETHANOL-DOCKER-HOST</ip>
+                <port>1601</port>
+                <protocol>tcp</protocol>
+                <blocking>no</blocking>
+            </send>
+            
+            <file>
+                <name>Store to files</name>
+                <path>./flow/%Y/%m/%d/</path>
+                <prefix>json.</prefix>
+                <timeWindow>300</timeWindow>
+                <timeAlignment>yes</timeAlignment>
+                <compression>none</compression>
+            </file>
+        </outputs>
+    </params>
+</output>
+</outputPlugins>
+</ipfixcol2>
+```

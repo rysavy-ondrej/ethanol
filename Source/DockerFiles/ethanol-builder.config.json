@@ -1,20 +1,32 @@
 {
-	"input": {
-		"tcp": {
-			"listen": "0.0.0.0",
-			"port": "${ETHANOL_PORT}",
-			"format": "flowmon-json"
+	"input": [
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "${ETHANOL_PORT}",
+				"format": "flowmon-json"
+			}
+		},
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "${ETHANOL_PORT_ALT}",
+				"format": "ipfixcol-json"
+			}
 		}
-	},
-
+	],
 	"builder": {
 		"windowsize": "00:05:00",
 		"windowhop": "00:05:00",
-		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
+		"networks": [
+			"192.168.0.0/16",
+			"172.16.0.0/16",
+			"10.0.0.0/8",
+			"147.229.0.0/16"
+		]
 	},
-
 	"enrichers": {
-		"netify" : {
+		"netify": {
 			"postgres": {
 				"server": "${POSTGRES_IP}",
 				"port": "${POSTGRES_PORT}",
@@ -25,15 +37,16 @@
 			}
 		}
 	},
-
-	"output": {
-		"postgres": {
-			"server": "${POSTGRES_IP}",
-			"port": "${POSTGRES_PORT}",
-			"database": "${POSTGRES_DATABASE}",
-			"user": "${POSTGRES_USER}",
-			"password": "${POSTGRES_PASSWORD}",
-			"tablename": "host_context"
+	"output": [
+		{
+			"postgres": {
+				"server": "${POSTGRES_IP}",
+				"port": "${POSTGRES_PORT}",
+				"database": "${POSTGRES_DATABASE}",
+				"user": "${POSTGRES_USER}",
+				"password": "${POSTGRES_PASSWORD}",
+				"tablename": "host_context"
+			}
 		}
-	}
+	]
 }

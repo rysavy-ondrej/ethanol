@@ -44,9 +44,9 @@ namespace Ethanol.ContextBuilder.Readers
             return new TcpReader(listenAt, logger);
         }
 
-        public static IpfixcolJsonReader CreateFileReader(TextReader reader, ILogger logger)
+        public static IpfixcolJsonReader CreateFileReader(TextReader reader, string filePath, ILogger logger)
         {
-            return new FileReader(reader, logger);
+            return new FileReader(reader, filePath, logger);
         }
 
         /// <summary>
@@ -79,6 +79,29 @@ namespace Ethanol.ContextBuilder.Readers
                 return false;
             }
         }
+        /// <summary>
+        /// Tries to deserialize the input string into an <see cref="IpFlow"/> object.
+        /// <p/>
+        /// This method first deserialized ipfixcol entry and then maps it to IpFlow object.
+        /// </summary>
+        /// <param name="input">The input string to deserialize.</param>
+        /// <param name="ipFlow">When this method returns, contains the deserialized <see cref="IpFlow"/> object if the deserialization was successful; otherwise, the default value.</param>
+        /// <returns><c>true</c> if the deserialization was successful; otherwise, <c>false</c>.</returns>
+        bool TryDeserializeFlow(string input, out IpFlow ipFlow)
+        {
+            try
+            {
+                var entry = JsonSerializer.Deserialize<IpfixcolEntry>(input, _serializerOptions);
+                ipFlow = entry.ToFlow();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger?.LogWarning($"Cannot deserialize flow: {e.Message}");
+                ipFlow = default;
+                return false;
+            }
+        }
 
         /// <summary>
         /// Reads a JSON string from the input stream. This method supports reading both NDJSON (Newline Delimited JSON) 
@@ -108,16 +131,17 @@ namespace Ethanol.ContextBuilder.Readers
 
         class FileReader : IpfixcolJsonReader
         {
+            private readonly string _filePath;
             private readonly TextReader _reader;
 
             /// <summary>
             /// Initializes the reader with underlying <see cref="TextReader"/>.
             /// </summary>
             /// <param name="reader">The text reader device (input file or standard input).</param>
-            public FileReader(TextReader reader, ILogger logger) : base(logger)
+            public FileReader(TextReader reader, string filePath, ILogger logger) : base(logger)
             {
+                _filePath = filePath;
                 _reader = reader;
-
             }
 
             /// <inheritdoc/>
@@ -136,20 +160,9 @@ namespace Ethanol.ContextBuilder.Readers
                     // end of file?
                     if (line == null) return null;
                     
-                    if (TryDeserialize(line, out var currentEntry))
+                    if (TryDeserializeFlow(line, out var flow))
                     {
-
-                        try
-                        {
-                            var flow = currentEntry.ToFlow();
-                            var flowJson = Json.Serialize(flow);
-                            return flow;
-                        }
-                        catch (Exception e)
-                        {
-                            _logger?.LogWarning($"Cannot map IpfixcolEntry to IpFlow object: {e.Message}");
-                            continue;
-                        }
+                        return flow;
                     }
                     else
                     {                        
@@ -167,7 +180,8 @@ namespace Ethanol.ContextBuilder.Readers
 
             public override string ToString()
             {
-                return $"{nameof(FlowmonJsonReader)}(Reader={_reader})";
+                var file = _filePath ?? "stdin";
+                return $"{nameof(IpfixcolJsonReader)}({file})";
             }
         }
         class TcpReader : IpfixcolJsonReader
@@ -234,14 +248,9 @@ namespace Ethanol.ContextBuilder.Readers
                 {
                     // read input tcp data and if suceffuly deserialized put the object in the buffer
                     // to be available to TryGetNextRecord method.
-                    if (this.TryDeserialize(jsonString, out var currentEntry))
+                    if (this.TryDeserializeFlow(jsonString, out var ipflow))
                     {
-                        var ipflow = currentEntry.ToFlow();
                         _queue.Add(ipflow);
-                    }
-                    else
-                    {
-                        _logger?.LogError($"Invalid input data: Cannot deserialize input {jsonString.Substring(0,64)}.");
                     }
                 }
                 reader.Close();
@@ -292,6 +301,10 @@ namespace Ethanol.ContextBuilder.Readers
                     logger?.LogError($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
                     return null;
                 }
+            }
+            public override string ToString()
+            {
+                return $"{nameof(IpfixcolJsonReader)}(tcp={_endpoint}))";
             }
         }
     }

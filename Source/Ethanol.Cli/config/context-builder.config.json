@@ -1,21 +1,35 @@
 {
-	"input": {
-		"tcp": {
-			"listen": "0.0.0.0",
-			"port": "5180",
-			"format": "flowmon-json"
+	"input": [
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5180",
+				"format": "flowmon-json"
+			}
 		},
-		"stdin": {
-			"format": "flowmon-json"
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5190",
+				"format": "ipfixcol-json"
+			}
+		},
+		{
+			"stdin": {
+				"format": "flowmon-json"
+			}
 		}
-	},
-
+	],
 	"builder": {
 		"windowsize": "00:05:00",
 		"windowhop": "00:05:00",
-		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
+		"networks": [
+			"192.168.0.0/16",
+			"172.16.0.0/16",
+			"10.0.0.0/8",
+			"147.229.0.0/16"
+		]
 	},
-
 	"enricher": {
 		"postgres": {
 			"server": "${POSTGRES_IP}",
@@ -26,18 +40,21 @@
 			"tablename": "netify_data"
 		}
 	},
-
-	"output": {
-		"postgres": {
-			"server": "${POSTGRES_IP}",
-			"port": "${POSTGRES_PORT}",
-			"database": "${POSTGRES_DATABASE}",
-			"user": "${POSTGRES_USER}",
-			"password": "${POSTGRES_PASSWORD}",
-			"tablename": "host_context"
+	"output": [
+		{
+			"postgres": {
+				"server": "${POSTGRES_IP}",
+				"port": "${POSTGRES_PORT}",
+				"database": "${POSTGRES_DATABASE}",
+				"user": "${POSTGRES_USER}",
+				"password": "${POSTGRES_PASSWORD}",
+				"tablename": "host_context"
+			}
 		},
-		"stdout": {
-			"format": "json"
+		{
+			"stdout": {
+				"format": "json"
+			}
 		}
-	}
+	]
 }

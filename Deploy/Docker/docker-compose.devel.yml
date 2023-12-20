@@ -26,6 +26,7 @@ services:
     command: ["/app/run-ethanol-builder.sh"]
     ports:
       - 1600:5180
+      - 1601:5181
     environment:
       POSTGRES_IP: postgres-service
       POSTGRES_PORT: 5432
@@ -33,6 +34,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       ETHANOL_PORT: 5180
+      ETHANOL_PORT_ALT: 5181
     depends_on:
       postgres-service:
         condition: service_healthy
@@ -50,7 +52,6 @@ services:
       POSTGRES_DATABASE: ethanol
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      ETHANOL_PORT: 5180
     depends_on:
       postgres-service:
         condition: service_healthy

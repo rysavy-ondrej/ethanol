@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.DataObjects;
+﻿using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
 using System;
@@ -24,9 +23,9 @@ namespace Ethanol.ContextBuilder.Writers
     /// </remarks>
     public abstract class JsonTargetHostContextWriter : ContextWriter<HostContext>
     {
-        internal static JsonTargetHostContextWriter CreateFileWriter(TextWriter writer, ILogger logger)
+        internal static JsonTargetHostContextWriter CreateFileWriter(TextWriter writer, string filePath, ILogger logger)
         {
-            return new FileWriter(writer, logger);
+            return new FileWriter(writer, filePath, logger);
         }
 
         internal static JsonTargetHostContextWriter CreateTcpWriter(IPEndPoint sendTo, ILogger logger)
@@ -57,14 +56,16 @@ namespace Ethanol.ContextBuilder.Writers
         class FileWriter : JsonTargetHostContextWriter
         {
             private readonly TextWriter _writer;
+            private readonly string _filePath;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="FileWriter"/> class using the specified <paramref name="writer"/>.
             /// </summary>
             /// <param name="writer">The underlying text writer that will be used to write the NDJSON formatted output. This can be any writer derived from <see cref="TextWriter"/>, such as a <see cref="StreamWriter"/> for writing to files or console output.</param>
-            public FileWriter(TextWriter writer, ILogger logger) : base(logger)
+            public FileWriter(TextWriter writer, string filePath, ILogger logger) : base(logger)
             {
                 _writer = writer ?? throw new ArgumentNullException(nameof(writer), "TextWriter cannot be null.");
+                _filePath = filePath;
             }
 
             /// <summary>
@@ -109,7 +110,8 @@ namespace Ethanol.ContextBuilder.Writers
             /// <returns>A string representation of the current instance.</returns>
             public override string ToString()
             {
-                return $"{nameof(JsonTargetHostContextWriter)} (Writer={_writer})";
+                var file = _filePath ?? "stdout";
+                return $"{nameof(JsonTargetHostContextWriter)}({file})";
             }
         }
 
@@ -334,6 +336,11 @@ namespace Ethanol.ContextBuilder.Writers
                 }
             }
 
+            public override string ToString()
+            {
+                return $"{nameof(JsonTargetHostContextWriter)}(tcp={_endpoint}))";
+            }
+
             /// <summary>
             /// Creates a `TcpWriter` instance based on a connection string representing the remote endpoint.
             /// </summary>
@@ -356,6 +363,8 @@ namespace Ethanol.ContextBuilder.Writers
                     return null;
                 }
             }
+
+
         }
     }
 }

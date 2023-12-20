@@ -159,18 +159,37 @@ internal class ContextBuilderCommand : ConsoleAppBase
 
         var inputReaders = new List<IDataReader<IpFlow>>();
         // build the pipeline based on the configuration:
-        if (inputConfiguration?.Stdin != null
-        && inputConfiguration.Stdin.Format == "flowmon-json")
+        if (inputConfiguration?.Stdin != null)
         {
-            inputReaders.Add(environment.FlowReader.GetFlowmonFileReader(Console.In));
+            switch(inputConfiguration.Stdin.Format?.ToLowerInvariant() ?? string.Empty)
+            {
+                case "flowmon-json":
+                    inputReaders.Add(environment.FlowReader.GetFlowmonFileReader(Console.In));
+                    break;
+                case "ipfixcol-json":
+                    inputReaders.Add(environment.FlowReader.GetIpfixcolFileReader(Console.In));
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid or missing stdin format specified in configuration file: {inputConfiguration.Stdin.Format}");
+            }
         }
-        if (inputConfiguration?.Tcp != null
-        && inputConfiguration.Tcp.Format == "flowmon-json")
+        if (inputConfiguration?.Tcp != null)        
         {
             var ip = inputConfiguration.Tcp.Listen;
             var port = inputConfiguration.Tcp.Port;
             var listenAt = IPEndPoint.TryParse($"{ip}:{port}", out var ep) ? ep : new IPEndPoint(IPAddress.Loopback, 8234);
-            inputReaders.Add(environment.FlowReader.GetFlowmonTcpReader(listenAt));
+
+            switch(inputConfiguration.Tcp.Format?.ToLowerInvariant() ?? string.Empty)
+            {
+                case "flowmon-json":
+                    inputReaders.Add(environment.FlowReader.GetFlowmonTcpReader(listenAt));
+                    break;
+                case "ipfixcol-json":
+                    inputReaders.Add(environment.FlowReader.GetIpfixcolTcpReader(listenAt));
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid or missing tcp format specified in configuration file: {inputConfiguration.Tcp.Format}");
+            }
         }
         return inputReaders.ToArray();
     }

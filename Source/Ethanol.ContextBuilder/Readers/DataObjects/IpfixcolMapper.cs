@@ -10,6 +10,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         {
             cfg.CreateMap<IpfixcolEntry, IpFlow>()
                 .ForMember(d => d.FlowType, o => o.MapFrom(s => FlowType.UnidirectionalFlow))
+                .ForMember(d => d.Version, o => o.MapFrom(s => s.IanaIpVersion))
                 .ForMember(d => d.RecvOctets, o => o.MapFrom(s => 0))
                 .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.IanaOctetDeltaCount))
                 .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => MapConvert.Flow.Address(s.IanaIpVersion, s.IanaDestinationIPv4Address, s.IanaDestinationIPv6Address)))
@@ -50,7 +51,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 .ForMember(d => d.Hostname, o => o.MapFrom(s => MapConvert.DecodeString(s.FlowmonHttpHost)))
                 .ForMember(d => d.Method, o => o.MapFrom(s => MapConvert.Http.MethodMaskString(s.FlowmonHttpMethodMask)))
                 .ForMember(d => d.ResultCode, o => o.MapFrom(s => MapConvert.Http.ResultCode(s.FlowmonHttpStatusCode)))
-                .ForMember(d => d.Url, o => o.MapFrom(s => MapConvert.Http.UrlString(s.FlowmonHttpUrl)))
+                .ForMember(d => d.Url, o => o.MapFrom(s => MapConvert.DecodeString(s.FlowmonHttpUrl)))
                 .ForMember(d => d.OperatingSystem, o => o.MapFrom(s => MapConvert.Http.OsString(s.FlowmonHttpUaOs)))
                 .ForMember(d => d.ApplicationInformation, o => o.MapFrom(s => MapConvert.Http.UaString(s.FlowmonHttpUaApp)));
 
@@ -73,7 +74,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                  .ForMember(h => h.ExtensionTypes, o => o.MapFrom(s => MapConvert.DecodeShortArray(s.FlowmonTlsExtensionTypes)))
                  .ForMember(h => h.ExtensionLengths, o => o.MapFrom(s => MapConvert.DecodeShortArray(s.FlowmonTlsExtensionLengths)))
                  .ForMember(h => h.EllipticCurves, o => o.MapFrom(s => MapConvert.StripPrefix(s.FlowmonTlsEllipticCurves)))
-                 .ForMember(h => h.EcPointFormats, o => o.MapFrom(s => MapConvert.StripPrefix(s.FlowmonTlsEcPointFormats)))
+                 .ForMember(h => h.EcPointFormats, o => o.MapFrom(s => s.FlowmonTlsEcPointFormats))
                  .ForMember(h => h.ClientKeyLength, o => o.MapFrom(s => s.FlowmonTlsClientKeyLength))
                  .ForMember(h => h.JA3Fingerprint, o => o.MapFrom(s => MapConvert.StripPrefix(s.FlowmonTlsJa3Fingerprint)))
 

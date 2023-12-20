@@ -22,6 +22,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         {
             cfg.CreateMap<Flowmonexp5Entry, IpFlow>()
                 .ForMember(d=>d.FlowType, o=> o.MapFrom(s=>FlowType.BidirectionFlow))
+                .ForMember(d => d.Version, o => o.MapFrom(s => s.L3Proto))
                 .ForMember(d => d.RecvOctets, o => o.MapFrom(s => s.BytesB))
                 .ForMember(d => d.SentOctets, o => o.MapFrom(s => s.BytesA))
                 .ForMember(d => d.DestinationAddress, o => o.MapFrom(s => MapConvert.Flow.Address(s.L3Proto, s.L3Ipv4Dst, s.L3Ipv6Dst)))

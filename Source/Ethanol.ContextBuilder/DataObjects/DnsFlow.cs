@@ -44,7 +44,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Represents the time-to-live (TTL) value of the DNS response, indicating how long the record should be cached.
         /// </summary>
-        public int ResponseTTL { get; set; }
+        public long ResponseTTL { get; set; }
 
         /// <summary>
         /// Represents the domain name associated with the DNS response.

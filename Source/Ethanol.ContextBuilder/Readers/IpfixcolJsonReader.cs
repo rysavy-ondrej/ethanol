@@ -69,7 +69,7 @@ namespace Ethanol.ContextBuilder.Readers
         {
             try
             {
-                entry = JsonSerializer.Deserialize<IpfixcolEntry>(input, _serializerOptions);
+                entry = JsonSerializer.Deserialize<IpfixcolEntry>(input, _serializerOptions);    
                 return true;
             }
             catch (Exception e)
@@ -129,11 +129,32 @@ namespace Ethanol.ContextBuilder.Readers
             /// <inheritdoc/>
             protected override async Task<IpFlow> ReadAsync(CancellationToken ct)
             {
-                var line = await ReadJsonStringAsync(_reader);
-                if (line == null) return null;
-                if (TryDeserialize(line, out var currentEntry))
+                while (!ct.IsCancellationRequested)
                 {
-                    return currentEntry.ToFlow();
+                    var line = await ReadJsonStringAsync(_reader);
+                    
+                    // end of file?
+                    if (line == null) return null;
+                    
+                    if (TryDeserialize(line, out var currentEntry))
+                    {
+
+                        try
+                        {
+                            var flow = currentEntry.ToFlow();
+                            var flowJson = Json.Serialize(flow);
+                            return flow;
+                        }
+                        catch (Exception e)
+                        {
+                            _logger?.LogWarning($"Cannot map IpfixcolEntry to IpFlow object: {e.Message}");
+                            continue;
+                        }
+                    }
+                    else
+                    {                        
+                        continue;
+                    }
                 }
                 return null;
             }

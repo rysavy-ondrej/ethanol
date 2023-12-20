@@ -130,14 +130,23 @@ namespace Ethanol.ContextBuilder.Readers
             /// <inheritdoc/>
             protected override async Task<IpFlow> ReadAsync(CancellationToken ct)
             {
-                var line = await ReadJsonStringAsync(_reader);
-                if (line == null) return null;
-                if (TryDeserialize(line, out var currentEntry))
+                while (!ct.IsCancellationRequested)
                 {
-                    return currentEntry.ToFlow();
+                    var line = await ReadJsonStringAsync(_reader);
+                    
+                    // end of file?
+                    if (line == null) return null;
+                    
+                    if (TryDeserialize(line, out var currentEntry))
+                    {
+                        return currentEntry.ToFlow();
+                    }
                 }
                 return null;
             }
+
+
+
             /// <inheritdoc/>
             protected override Task CloseAsync()
             {

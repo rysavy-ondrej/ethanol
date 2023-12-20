@@ -16,7 +16,7 @@
                 "-c",
                 "context-builder.config.json"
             ],
-            "cwd": "${workspaceFolder/TestData/ContextBuilder",
+            "cwd": "${workspaceFolder}/TestData/ContextBuilder",
             "env": {
                 "POSTGRES_IP": "localhost",
                 "POSTGRES_PORT": "1605",
@@ -56,7 +56,16 @@
             "args": [
                 "run-builder-tcp.ps1",
             ],
-            "cwd": "${workspaceFolder}/TestData/ContextBuilder",
+            "cwd": "${workspaceFolder}/TestData/ContextBuilder"
+        },
+        {
+            "name": "builder run -c context-builder.ipfixcol.config.json < flows.ipfixcol.json",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Source/Ethanol.Cli/bin/Debug/net7.0/ethanol.exe",
+            "args": [ "builder", "run", "-c","context-builder.ipfixcol.config.json","<","flows.ipfixcol.json" ],
+            "cwd": "${workspaceFolder}/TestData/ContextBuilder"
         },
         // CONTEXT-PROVIDER
         {

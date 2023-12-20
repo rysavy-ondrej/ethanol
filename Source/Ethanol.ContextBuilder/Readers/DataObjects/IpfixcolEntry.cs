@@ -30,7 +30,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string RecordType { get; set; }
 
         [JsonPropertyName("iana:octetDeltaCount")]
-        public int IanaOctetDeltaCount { get; set; }
+        public long IanaOctetDeltaCount { get; set; }
 
         [JsonPropertyName("iana:packetDeltaCount")]
         public int IanaPacketDeltaCount { get; set; }
@@ -96,34 +96,34 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaApplicationId { get; set; }
 
         [JsonPropertyName("flowmon:npmJitterDev")]
-        public int FlowmonNpmJitterDev { get; set; }
+        public long FlowmonNpmJitterDev { get; set; }
 
         [JsonPropertyName("flowmon:npmJitterAvg")]
-        public int FlowmonNpmJitterAvg { get; set; }
+        public long FlowmonNpmJitterAvg { get; set; }
 
         [JsonPropertyName("flowmon:npmJitterMin")]
-        public int FlowmonNpmJitterMin { get; set; }
+        public long FlowmonNpmJitterMin { get; set; }
 
         [JsonPropertyName("flowmon:npmJitterMax")]
-        public int FlowmonNpmJitterMax { get; set; }
+        public long FlowmonNpmJitterMax { get; set; }
 
         [JsonPropertyName("flowmon:npmDelayDev")]
-        public int FlowmonNpmDelayDev { get; set; }
+        public long FlowmonNpmDelayDev { get; set; }
 
         [JsonPropertyName("flowmon:npmDelayAvg")]
-        public int FlowmonNpmDelayAvg { get; set; }
+        public long FlowmonNpmDelayAvg { get; set; }
 
         [JsonPropertyName("flowmon:npmDelayMin")]
-        public int FlowmonNpmDelayMin { get; set; }
+        public long FlowmonNpmDelayMin { get; set; }
 
         [JsonPropertyName("flowmon:npmDelayMax")]
-        public int FlowmonNpmDelayMax { get; set; }
+        public long FlowmonNpmDelayMax { get; set; }
 
         [JsonPropertyName("flowmon:npnRoundTripTime")]
-        public int FlowmonNpnRoundTripTime { get; set; }
+        public long FlowmonNpnRoundTripTime { get; set; }
 
         [JsonPropertyName("flowmon:npmServerResponseTime")]
-        public int FlowmonNpmServerResponseTime { get; set; }
+        public long FlowmonNpmServerResponseTime { get; set; }
 
         [JsonPropertyName("flowmon:dnsId")]
         public int FlowmonDnsId { get; set; }
@@ -153,7 +153,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonDnsCrrClass { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrTtl")]
-        public int FlowmonDnsCrrTtl { get; set; }
+        public long FlowmonDnsCrrTtl { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrRdata")]
         public string FlowmonDnsCrrRdata { get; set; }
@@ -174,10 +174,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string IanaTcpControlBits { get; set; }
 
         [JsonPropertyName("flowmon:npmTcpRetransmission")]
-        public int FlowmonNpmTcpRetransmission { get; set; }
+        public long FlowmonNpmTcpRetransmission { get; set; }
 
         [JsonPropertyName("flowmon:npmTcpOutOfOrder")]
-        public int FlowmonNpmTcpOutOfOrder { get; set; }
+        public long FlowmonNpmTcpOutOfOrder { get; set; }
 
         [JsonPropertyName("flowmon:httpHost")]
         public string FlowmonHttpHost { get; set; }
@@ -192,7 +192,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonTlsHandshakeType { get; set; }
 
         [JsonPropertyName("flowmon:tlsSetupTime")]
-        public int FlowmonTlsSetupTime { get; set; }
+        public long FlowmonTlsSetupTime { get; set; }
 
         [JsonPropertyName("flowmon:tlsServerVersion")]
         public int FlowmonTlsServerVersion { get; set; }
@@ -237,7 +237,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string FlowmonTlsEllipticCurves { get; set; }
 
         [JsonPropertyName("flowmon:tlsEcPointFormats")]
-        public string FlowmonTlsEcPointFormats { get; set; }
+        public int FlowmonTlsEcPointFormats { get; set; }
 
         [JsonPropertyName("flowmon:tlsClientKeyLength")]
         public int FlowmonTlsClientKeyLength { get; set; }
@@ -252,10 +252,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public string FlowmonTlsSubjectOn { get; set; }
 
         [JsonPropertyName("flowmon:tlsValidityNotBefore")]
-        public int FlowmonTlsValidityNotBefore { get; set; }
+        public long FlowmonTlsValidityNotBefore { get; set; }
 
         [JsonPropertyName("flowmon:tlsValidityNotAfter")]
-        public int FlowmonTlsValidityNotAfter { get; set; }
+        public long FlowmonTlsValidityNotAfter { get; set; }
 
         [JsonPropertyName("flowmon:tlsSignatureAlg")]
         public int FlowmonTlsSignatureAlg { get; set; }
@@ -300,13 +300,13 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonHttpUaAppBld { get; set; }
 
         [JsonPropertyName("flowmon:tcpSynSize")]
-        public int FlowmonTcpSynSize { get; set; }
+        public long FlowmonTcpSynSize { get; set; }
 
         [JsonPropertyName("flowmon:tcpSynTtl")]
-        public int FlowmonTcpSynTtl { get; set; }
+        public long FlowmonTcpSynTtl { get; set; }
 
         [JsonPropertyName("iana:tcpWindowSize")]
-        public int IanaTcpWindowSize { get; set; }
+        public long IanaTcpWindowSize { get; set; }
     }
 
 

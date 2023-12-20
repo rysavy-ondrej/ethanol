@@ -41,5 +41,5 @@ Compare-FileContent ctx.reference.2.json ctx.test.2.json
 Write-Host  "● Test 3: run-builder ipfixcol" -ForegroundColor Yellow -BackgroundColor DarkGreen
 Write-Host  "  EXEC: $ethanolExe builder run -c context-builder.ipfixcol.config.json" -ForegroundColor Yellow -BackgroundColor DarkGreen
 Write-Host
-Get-Content ./flows.ipfixcol.json | & $ethanolExe builder run -c context-builder.plain.config.json > ctx.test.3.json
+Get-Content ./flows.ipfixcol.json | & $ethanolExe builder run -c context-builder.ipfixcol.config.json > ctx.test.3.json
 # Compare-FileContent ctx.reference.1.json ctx.test.1.json...

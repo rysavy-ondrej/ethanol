@@ -236,8 +236,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [JsonPropertyName("flowmon:tlsEllipticCurves")]
         public string FlowmonTlsEllipticCurves { get; set; }
 
+        /* inconsistent data type: octets vs int -- ignore in input
         [JsonPropertyName("flowmon:tlsEcPointFormats")]
-        public int FlowmonTlsEcPointFormats { get; set; }
+        public long FlowmonTlsEcPointFormats { get; set; }
+        */
 
         [JsonPropertyName("flowmon:tlsClientKeyLength")]
         public int FlowmonTlsClientKeyLength { get; set; }

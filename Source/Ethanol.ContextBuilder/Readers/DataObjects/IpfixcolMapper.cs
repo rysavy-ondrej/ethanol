@@ -74,7 +74,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                  .ForMember(h => h.ExtensionTypes, o => o.MapFrom(s => MapConvert.DecodeShortArray(s.FlowmonTlsExtensionTypes)))
                  .ForMember(h => h.ExtensionLengths, o => o.MapFrom(s => MapConvert.DecodeShortArray(s.FlowmonTlsExtensionLengths)))
                  .ForMember(h => h.EllipticCurves, o => o.MapFrom(s => MapConvert.StripPrefix(s.FlowmonTlsEllipticCurves)))
-                 .ForMember(h => h.EcPointFormats, o => o.MapFrom(s => s.FlowmonTlsEcPointFormats))
+                 .ForMember(h => h.EcPointFormats, o => o.MapFrom(s => String.Empty))
                  .ForMember(h => h.ClientKeyLength, o => o.MapFrom(s => s.FlowmonTlsClientKeyLength))
                  .ForMember(h => h.JA3Fingerprint, o => o.MapFrom(s => MapConvert.StripPrefix(s.FlowmonTlsJa3Fingerprint)))
 

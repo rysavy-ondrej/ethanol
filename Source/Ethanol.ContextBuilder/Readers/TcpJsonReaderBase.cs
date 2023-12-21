@@ -15,7 +15,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// <summary>
     /// Base class for TCP JSON readers that read and deserialize JSON data from TCP clients.
     /// </summary>
-    public abstract class TcpJsonReaderBase : IDisposable, IAsyncDisposable
+    public class TcpJsonServer<TEntryType> : IDisposable, IAsyncDisposable
     {
         private IPEndPoint _endpoint;
         private TcpListener _listener;
@@ -24,20 +24,25 @@ namespace Ethanol.ContextBuilder.Readers
         private CancellationTokenSource _cancellationTokenSource;
         private BlockingCollection<IpFlow> _queue;
         private ILogger _logger;
+        private readonly JsonNdJsonDeserializer<TEntryType> _deserializer;
         private bool _isDisposed;
 
         public IPEndPoint Endpoint => _endpoint;
 
-        protected abstract bool TryDeserializeFlow(string jsonString, out IpFlow ipflow);
-        protected abstract Task<string> ReadJsonStringAsync(StreamReader reader, CancellationToken cancellation);
-
-        public TcpJsonReaderBase(IPEndPoint endPoint, ILogger logger)
+        /// <summary>
+        /// Represents a TCP JSON server that listens for incoming connections and processes JSON data.
+        /// </summary>
+        /// <param name="endPoint">The IP endpoint to bind the server to.</param>
+        /// <param name="deserializer">The JSON deserializer used to deserialize JSON data.</param>
+        /// <param name="logger">The logger used for logging server events.</param>
+        public TcpJsonServer(IPEndPoint endPoint, JsonNdJsonDeserializer<TEntryType> deserializer, ILogger logger)
         {
             _endpoint = endPoint;
             _cancellationTokenSource = new CancellationTokenSource();
             _queue = new BlockingCollection<IpFlow>();
             _clientsTasks = new List<Task>();
             _logger = logger;
+            _deserializer = deserializer;
         }
 
         /// <summary>
@@ -102,7 +107,7 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 while (!cancellation.IsCancellationRequested)
                 {
-                    var jsonString = await ReadJsonStringAsync(reader, cancellation);
+                    var jsonString = await _deserializer.ReadJsonStringAsync(reader, cancellation);
 
                     // end of stream reached?
                     if (jsonString == null) break;
@@ -112,7 +117,7 @@ namespace Ethanol.ContextBuilder.Readers
 
                     // read input tcp data and if suceffuly deserialized put the object in the buffer
                     // to be available to TryGetNextRecord method.
-                    if (TryDeserializeFlow(jsonString, out var ipflow))
+                    if (_deserializer.TryDeserializeFlow(jsonString, out var ipflow))
                     {
                         _queue.Add(ipflow);
                     }
@@ -167,7 +172,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
-        public  async Task CloseAsync()
+        public async Task CloseAsync()
         {
             _queue.CompleteAdding();
             var activeTasks = _clientsTasks.Append(_mainLoopTask).ToArray();
@@ -210,38 +215,12 @@ namespace Ethanol.ContextBuilder.Readers
         }
 
         /// <summary>
-        /// Asynchronously releases the resources used by the <see cref="TcpJsonReaderBase"/> object.
+        /// Asynchronously releases the resources used by the <see cref="TcpJsonServer"/> object.
         /// </summary>
         /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
         public async ValueTask DisposeAsync()
         {
             await AsyncCleanupOperation();
-        }
-    }
-
-    public interface IJsonFlowSerializerReader
-    {
-        Task<string> ReadJsonStringAsync(TextReader inputStream, CancellationToken ct);
-        bool TryDeserializeFlow(string jsonString, out IpFlow ipflow);
-    }
-
-    class TcpJsonReaderInternal : TcpJsonReaderBase
-    {
-        private readonly IJsonFlowSerializerReader _parent;
-
-        public TcpJsonReaderInternal(IJsonFlowSerializerReader parent, IPEndPoint endPoint, ILogger logger) : base(endPoint, logger)
-        {
-            _parent = parent;
-        }
-
-        protected override Task<string> ReadJsonStringAsync(StreamReader reader, CancellationToken cancellation)
-        {
-            return _parent.ReadJsonStringAsync(reader, cancellation);
-        }
-
-        protected override bool TryDeserializeFlow(string jsonString, out IpFlow ipflow)
-        {
-            return _parent.TryDeserializeFlow(jsonString, out ipflow);
         }
     }
 }

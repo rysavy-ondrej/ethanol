@@ -367,3 +367,4 @@ TestData/MalwareSonar/malware-test-infected.json
 TestData/MalwareSonar/ctx-bening2.tested.json
 TestData/ContextBuilder/ctx.test.1.json
 TestData/ContextBuilder/ctx.test.2.json
+TestData/ContextBuilder/a

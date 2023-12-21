@@ -22,13 +22,17 @@ namespace Ethanol.ContextBuilder.Readers
     /// <item>Continuously fetching data from an open TCP socket using the derived <see cref="TcpReader"/> class.</item>
     /// </list>
     /// </remarks>
-    abstract class IpfixcolJsonReader : BaseFlowReader<IpFlow>, IJsonFlowSerializerReader
+    abstract class IpfixcolJsonReader : BaseFlowReader<IpFlow>
 
     {
         /// <summary>
         /// Logger instance for the class to record events and issues.
         /// </summary>
         protected ILogger _logger;
+        /// <summary>
+        /// Represents a reader for Ipfixcol JSON data.
+        /// </summary>
+        protected readonly JsonNdJsonDeserializer<IpfixcolEntry> _deserializer;
 
         /// <summary>
         /// Options used for JSON serialization processes.
@@ -48,81 +52,12 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Initializes a new instance of the <see cref="IpfixcolJsonReader"/> class.
         /// </summary>
-        IpfixcolJsonReader(ILogger logger)
+        protected IpfixcolJsonReader(ILogger logger)
         {
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
             _logger = logger;
-        }
-
-        /// <summary>
-        /// Attempts to deserialize the given input string into a FlowexpEntry instance.
-        /// </summary>
-        /// <param name="input">The JSON input string to deserialize.</param>
-        /// <param name="entry">The resulting <see cref="IpfixcolEntry"/> object if the deserialization is successful.</param>
-        /// <returns>True if deserialization is successful, otherwise false.</returns>
-        bool TryDeserialize(string input, out IpfixcolEntry entry)
-        {
-            try
-            {
-                entry = JsonSerializer.Deserialize<IpfixcolEntry>(input, _serializerOptions);    
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logger?.LogWarning($"Cannot deserialize entry: {e.Message}");
-                entry = default;
-                return false;
-            }
-        }
-        /// <summary>
-        /// Tries to deserialize the input string into an <see cref="IpFlow"/> object.
-        /// <p/>
-        /// This method first deserialized ipfixcol entry and then maps it to IpFlow object.
-        /// </summary>
-        /// <param name="input">The input string to deserialize.</param>
-        /// <param name="ipFlow">When this method returns, contains the deserialized <see cref="IpFlow"/> object if the deserialization was successful; otherwise, the default value.</param>
-        /// <returns><c>true</c> if the deserialization was successful; otherwise, <c>false</c>.</returns>
-        public bool TryDeserializeFlow(string input, out IpFlow ipFlow)
-        {
-            try
-            {
-                var entry = JsonSerializer.Deserialize<IpfixcolEntry>(input, _serializerOptions);
-                ipFlow = entry.ToFlow();
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logger?.LogWarning($"Cannot deserialize flow: {e.Message}");
-                ipFlow = default;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Reads a JSON string from the input stream. This method supports reading both NDJSON (Newline Delimited JSON) 
-        /// where each line is a complete JSON object, and multi-line formatted JSON until it reaches the end of an object.
-        /// </summary>
-        /// <param name="inputStream">The TextReader stream to read the JSON string from.</param>
-        /// <returns>A string representation of the JSON object, or null if the end of the file is reached or the content is whitespace.</returns>
-        public async Task<string> ReadJsonStringAsync(TextReader inputStream, CancellationToken ct)
-        {
-            var buffer = new StringBuilder();
-
-            while (true)
-            {
-                var line = (await inputStream.ReadLineAsync(ct))?.Trim();
-
-                // End of file?
-                if (line == null) break;
-
-                buffer.AppendLine(line);
-
-                // Check for the end of JSON object (either NDJSON or multiline JSON)
-                if ((line.StartsWith("{") && line.EndsWith("}")) || line == "}") break;
-            }
-            var record = buffer.ToString().Trim();
-            return string.IsNullOrWhiteSpace(record) ? null : record;
+            _deserializer = new JsonNdJsonDeserializer<IpfixcolEntry>(x => x.ToFlow(), logger);
         }
 
         class FileReader : IpfixcolJsonReader
@@ -151,12 +86,12 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    var line = await ReadJsonStringAsync(_reader, ct);
+                    var line = await _deserializer.ReadJsonStringAsync(_reader, ct);
                     
                     // end of file?
                     if (line == null) return null;
                     
-                    if (TryDeserializeFlow(line, out var flow))
+                    if (_deserializer.TryDeserializeFlow(line, out var flow))
                     {
                         return flow;
                     }
@@ -182,31 +117,10 @@ namespace Ethanol.ContextBuilder.Readers
         }
         class TcpReader : IpfixcolJsonReader
         {
-            TcpJsonReaderInternal _reader;
+            private readonly TcpJsonServer<IpfixcolEntry> _reader;
             public TcpReader(IPEndPoint endPoint, ILogger logger) : base(logger)
             {
-                _reader = new TcpJsonReaderInternal(this, endPoint, logger);
-            }
-            /// <summary>
-            /// Creates a new TcpReader instance by parsing the provided connection string into an IPEndPoint.
-            /// </summary>
-            /// <param name="connectionString">The connection string in the format "host:port" to be used for establishing the TCP connection.</param>
-            /// <returns>A new <see cref="TcpReader"/> instance for the given connection string, or null if an error occurs during creation.</returns>
-            internal static TcpReader CreateFromConnectionString(string connectionString, ILogger logger)
-            {
-                try
-                {
-                    // Parse the connection string into an IPEndPoint object
-                    var endpoint = IPEndPointResolver.GetIPEndPoint(connectionString);
-                    logger?.LogInformation($"Listening for incoming tcp connection, endpoint={endpoint}.");
-                    // Create the writer
-                    return new TcpReader(endpoint, logger);
-                }
-                catch (Exception ex)
-                {
-                    logger?.LogError($"Error creating TcpReader from '{connectionString}' string: {ex.Message}");
-                    return null;
-                }
+                _reader = new TcpJsonServer<IpfixcolEntry>(endPoint, _deserializer, logger);
             }
             public override string ToString()
             {

@@ -1,11 +1,12 @@
 {
   "ApplicationUrl": "http://0.0.0.0:5190",
-  "PostgresHost": "${POSTGRES_IP}",
-  "PostgresPort": "${POSTGRES_PORT}",
-  "PostgresUser": "${POSTGRES_USER}",
-  "PostgresPassword": "${POSTGRES_PASSWORD}",
-  "PostgresDatabase": "${POSTGRES_DATABASE}",
+  "PostgresHost": "localhost",
+  "PostgresPort": "1605",
+  "PostgresUser": "postgres",
+  "PostgresPassword": "postgres",
+  "PostgresDatabase": "ethanol",
+  "PostgresCommandTimeout": 60,
   "TagsTable": "enrichment_data",
   "HostContextTable": "host_context",
-  "TagsChunkSize" : 500
+  "TagsChunkSize" : 50
 }

@@ -5,7 +5,8 @@
   "PostgresUser": "${POSTGRES_USER}",
   "PostgresPassword": "${POSTGRES_PASSWORD}",
   "PostgresDatabase": "${POSTGRES_DATABASE}",
+  "PostgresCommandTimeout": 60,
   "TagsTable": "enrichment_data",
   "HostContextTable": "host_context",
-  "TagsChunkSize" : 500
+  "TagsChunkSize" : 100
 }

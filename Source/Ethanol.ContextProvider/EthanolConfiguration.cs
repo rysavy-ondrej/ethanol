@@ -41,6 +41,12 @@ public class EthanolConfiguration
     public string? HostContextTable { get; set; } = "host_context";
 
     /// <summary>
+    /// Gets or sets the timeout value (in seconds) for PostgreSQL commands.
+    /// Set to zero for infinity.
+    /// </summary>
+    public int? PostgresCommandTimeout { get; set; } = 30;
+
+    /// <summary>
     /// Gets or sets the name of the table storing tag data.
     /// </summary>
     public string? TagsTable { get; set; } = "enrichment_data";
@@ -60,7 +66,7 @@ public class EthanolConfiguration
 
     public string GetConnectionString()
     { 
-        var connectionString = $"Host={PostgresHost};Port={PostgresPort};Username={PostgresUser};Password={PostgresPassword};Database={PostgresDatabase}";
+        var connectionString = $"Host={PostgresHost};Port={PostgresPort};Username={PostgresUser};Password={PostgresPassword};Database={PostgresDatabase};CommandTimeout={PostgresCommandTimeout}";
         return connectionString;
     }
 }

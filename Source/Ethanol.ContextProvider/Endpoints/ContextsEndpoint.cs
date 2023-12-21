@@ -87,7 +87,7 @@ namespace Ethanol.ContextProvider.Endpoints
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, $"Endpoint '{nameof(ContextsEndpoint)}' cannot create a response for the query {0}.", query);
+                _logger?.LogError(ex, $"Endpoint '{nameof(ContextsEndpoint)}' cannot create a response for the query '{query}'.");
                 await SendErrorsAsync(500, ct);
             }
         }

@@ -8,24 +8,12 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
     /// <summary>
     /// Representational object for JSON record created by ipfixcol2 tool. 
     /// <para/>
-    /// The object is loaded from the output from ipfixcol2 tool. Use map to get corresponding IpfixRecord.
+    /// The object is loaded from the output from ipfixcol2 tool. 
+    /// The field specification is defined in the following file:
+    /// https://github.com/CESNET/libfds/blob/master/config/system/elements/flowmon.xml
     /// </summary>
     public class IpfixcolEntry
     {
-        public static bool TryDeserialize(string input, out IpfixcolEntry entry)
-        {
-            try
-            {
-                entry = JsonSerializer.Deserialize<IpfixcolEntry>(input);
-                return true;
-            }
-            catch (Exception)
-            {
-                entry = default;
-                return false;
-            }
-        }
-
         [JsonPropertyName("@type")]
         public string RecordType { get; set; }
 
@@ -310,8 +298,6 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         [JsonPropertyName("iana:tcpWindowSize")]
         public long IanaTcpWindowSize { get; set; }
     }
-
-
 }
 
 

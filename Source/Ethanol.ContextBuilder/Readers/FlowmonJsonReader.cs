@@ -31,7 +31,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Represents a Flowmon JSON reader that uses a JsonNdJsonDeserializer to deserialize Flowmonexp5Entry objects.
         /// </summary>
-        protected readonly JsonNdJsonDeserializer<Flowmonexp5Entry> _deserializer;
+        protected readonly JsonReaderDeserializer<Flowmonexp5Entry> _deserializer;
 
         /// <summary>
         /// Options used for JSON serialization processes.
@@ -56,7 +56,7 @@ namespace Ethanol.ContextBuilder.Readers
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
             _logger = logger;
-            _deserializer = new JsonNdJsonDeserializer<Flowmonexp5Entry>(x => x.ToFlow(), logger);
+            _deserializer = new JsonReaderDeserializer<Flowmonexp5Entry>(x => x.ToFlow(), logger);
         }
 
         class FileReader : FlowmonJsonReader

@@ -32,7 +32,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Represents a reader for Ipfixcol JSON data.
         /// </summary>
-        protected readonly JsonNdJsonDeserializer<IpfixcolEntry> _deserializer;
+        protected readonly JsonReaderDeserializer<IpfixcolEntry> _deserializer;
 
         /// <summary>
         /// Options used for JSON serialization processes.
@@ -57,7 +57,7 @@ namespace Ethanol.ContextBuilder.Readers
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
             _logger = logger;
-            _deserializer = new JsonNdJsonDeserializer<IpfixcolEntry>(x => x.ToFlow(), logger);
+            _deserializer = new JsonReaderDeserializer<IpfixcolEntry>(x => x.ToFlow(), logger);
         }
 
         class FileReader : IpfixcolJsonReader

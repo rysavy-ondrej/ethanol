@@ -14,18 +14,18 @@ namespace Ethanol.ContextBuilder.Readers
     /// Deserializer for JSON and NDJSON (Newline Delimited JSON) formats.
     /// </summary>
     /// <typeparam name="TEntryType">The type of the entry to deserialize.</typeparam>
-    public class JsonNdJsonDeserializer<TEntryType>
+    public class JsonReaderDeserializer<TEntryType>
     {
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly Func<TEntryType, IpFlow> _mapper;
         private readonly ILogger _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JsonNdJsonDeserializer{TEntryType}"/> class.
+        /// Initializes a new instance of the <see cref="JsonReaderDeserializer{TEntryType}"/> class.
         /// </summary>
         /// <param name="mapper">The function used to map the deserialized entry type to an <see cref="IpFlow"/>.</param>
         /// <param name="logger">The logger used for logging.</param>
-        public JsonNdJsonDeserializer(Func<TEntryType,IpFlow> mapper,  ILogger logger)
+        public JsonReaderDeserializer(Func<TEntryType,IpFlow> mapper,  ILogger logger)
         {
 
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -48,13 +48,34 @@ namespace Ethanol.ContextBuilder.Readers
                 ipFlow = _mapper(entry);
                 return true;
             }
+            catch (JsonException e)
+            {
+                _logger?.LogWarning($"Cannot deserialize record: {e.Message}");
+                _logger?.LogDebug($"Input fragment: ...{GetErrorSubstring(input, (int)e.BytePositionInLine)}...");
+                ipFlow = default;
+                return false;
+            }
             catch (Exception e)
             {
-                _logger?.LogWarning($"Cannot deserialize flow: {e.Message}");
+                _logger?.LogWarning($"Cannot map record to flow: {e.Message}");
                 ipFlow = default;
                 return false;
             }
         }
+
+        /// <summary>
+        /// Retrieves a substring from the given line centered around the specified position.
+        /// </summary>
+        /// <param name="line">The line of text.</param>
+        /// <param name="position">The position of the substring within the line.</param>
+        /// <returns>The substring centered around the specified position.</returns>
+        string GetErrorSubstring(string line, int position)
+        {
+            if (string.IsNullOrEmpty(line)) return string.Empty;
+            var start = System.Math.Max(0, position - 30);
+            var end = System.Math.Min(line.Length, position + 30);
+            return line.Substring(start, end - start);
+        }   
 
         /// <summary>
         /// Reads a JSON string from the input stream. This method supports reading both NDJSON (Newline Delimited JSON) 
@@ -74,12 +95,16 @@ namespace Ethanol.ContextBuilder.Readers
                 // End of file?
                 if (line == null) break;
 
-                buffer.AppendLine(line);
+                // Skip empty lines
+                if (line == string.Empty) continue;
+
+                // Add without line delimiter to get a single line JSON               
+                buffer.Append(line);
 
                 // Check for the end of JSON object (either NDJSON or multiline JSON)
                 if ((line.StartsWith("{") && line.EndsWith("}")) || line == "}") break;
             }
-            var record = buffer.ToString().Trim();
+            var record = buffer.ToString();
             return string.IsNullOrWhiteSpace(record) ? null : record;
         }
     }

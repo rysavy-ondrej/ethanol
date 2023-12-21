@@ -24,7 +24,7 @@ namespace Ethanol.ContextBuilder.Readers
         private CancellationTokenSource _cancellationTokenSource;
         private BlockingCollection<IpFlow> _queue;
         private ILogger _logger;
-        private readonly JsonNdJsonDeserializer<TEntryType> _deserializer;
+        private readonly JsonReaderDeserializer<TEntryType> _deserializer;
         private bool _isDisposed;
 
         public IPEndPoint Endpoint => _endpoint;
@@ -35,7 +35,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <param name="endPoint">The IP endpoint to bind the server to.</param>
         /// <param name="deserializer">The JSON deserializer used to deserialize JSON data.</param>
         /// <param name="logger">The logger used for logging server events.</param>
-        public TcpJsonServer(IPEndPoint endPoint, JsonNdJsonDeserializer<TEntryType> deserializer, ILogger logger)
+        public TcpJsonServer(IPEndPoint endPoint, JsonReaderDeserializer<TEntryType> deserializer, ILogger logger)
         {
             _endpoint = endPoint;
             _cancellationTokenSource = new CancellationTokenSource();

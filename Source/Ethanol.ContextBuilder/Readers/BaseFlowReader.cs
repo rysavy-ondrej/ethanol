@@ -63,25 +63,49 @@ namespace Ethanol.ContextBuilder.Readers
         /// the operation is cancelled.
         /// </summary>
         /// <returns>A task representing the asynchronous reading operation.</returns>
+        /// <exception cref="OperationCanceledException">The operation was cancelled.</exception>
         /// <remarks>
         /// Callers can await this task to be notified when the entire reading process is complete.
         /// </remarks>
         public async Task ReadAllAsync(CancellationToken ct)
         {
-            await OpenAsync();
+            await OpenAsync();;
             while (!ct.IsCancellationRequested)
             {
-                var record = await ReadAsync(ct);
-                if (record == null) break;
-                _subject.OnNext(record);
+                try
+                {
+                    var record = await ReadAsync(ct);
+                    if (record != null)
+                    {
+                        _subject.OnNext(record);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _subject.OnError(ex);
+                    break;
+                }
             }
             _subject.OnCompleted();
-            await CloseAsync();
+            await CloseAsync();            
+            // throw exception is operation has been cancelled
+            ct.ThrowIfCancellationRequested();
         }
         /// <summary>
         /// Gets a task that represents the completion of the reading process. Awaiting this task will 
         /// wait until all reading operations are complete.
         /// </summary>
+        /// <remarks>
+        /// The task is also completed before the reading process is started using 'OpenAsync' method.
+        /// </remarks>
         public Task Completed => _readingTask;
 
         /// <summary>

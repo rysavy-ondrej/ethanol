@@ -61,7 +61,7 @@ public static class EthanolContextBuilder
     /// <param name="source">The source observable sequence of IpFlow events.</param>
     /// <param name="resultSelector">A function to transform grouped IpFlow events into a context object.</param>
     /// <returns>An observable sequence of context objects.</returns>
-    public static IObservable<ObservableEvent<TContext>> IpHostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,        
+    public static IObservable<ObservableEvent<TContext>> HostContext<TContext>(this IObservable<ObservableEvent<IObservable<IpFlow>>> source,        
         Func<KeyValuePair<IPAddress, IpFlow[]>, TContext> resultSelector,
         Func<TContext> periodFunc = null
         )
@@ -187,7 +187,6 @@ public static class EthanolContextBuilder
     /// </returns>
     public static async Task<BuilderStatistics> Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, CancellationToken cancellationToken, IObserver<BuilderStatistics> builderStatsObserver, ILogger logger)
     {
-
         int flowsLoadedCount = 0;
         int flowsConsumedCount = 0;
         int windowsCreatedCount = 0;
@@ -233,7 +232,7 @@ public static class EthanolContextBuilder
 
                  .Do(_ => windowsCreatedCount++)
 
-                 .IpHostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value }, () => new IpHostContext { HostAddress = IPAddress.Any, Flows = Array.Empty<IpFlow>() })
+                 .HostContext(g => new IpHostContext { HostAddress = g.Key, Flows = g.Value }, () => new IpHostContext { HostAddress = IPAddress.Any, Flows = Array.Empty<IpFlow>() })
                  
                  .Do(_ => contextsCreatedCount++)
 
@@ -242,23 +241,32 @@ public static class EthanolContextBuilder
                  .Transform(modules.Enricher)
 
                  .Transform(modules.Refiner)
+
                  .Do(_ => contextsWrittenCount++)
 
                  .Consume(modules.Writers);
 
-        // >>>>>>>> TODO: double check this: Really need to run all readers in parallel?
-        // execute the pipeline:
+        // for multiple readers, we need to run them in parallel on the background:
         var _readerTasks = modules.Readers.Select(x =>
         {
-            logger?.LogInformation($"Starting input reader {x}");
+            logger?.LogInformation($"Starting input reader {x}.");
             return Task.Run(async () => await x.ReadAllAsync(cancellationToken));
         }).ToArray();
-        // <<<<<<<<
 
-
-        // wait for finish:
+        // wait to completion of the main pipeline:
         await task;
+        // release progress reporting when we done:
         progressReportSubscription?.Dispose();
+
+        // readers should be done as well either completed or cancelled:
+        try {
+            await Task.WhenAll(_readerTasks);
+        }
+        catch (OperationCanceledException)
+        {
+            logger?.LogInformation("Pipeline operation was cancelled.");
+        }
+
         return CreateReport(0);
     }
 

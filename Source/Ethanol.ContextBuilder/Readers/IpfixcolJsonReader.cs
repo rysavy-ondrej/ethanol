@@ -3,12 +3,8 @@ using Ethanol.ContextBuilder.Readers.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -26,7 +22,7 @@ namespace Ethanol.ContextBuilder.Readers
     /// <item>Continuously fetching data from an open TCP socket using the derived <see cref="TcpReader"/> class.</item>
     /// </list>
     /// </remarks>
-    abstract class IpfixcolJsonReader : BaseFlowReader<IpFlow>
+    abstract class IpfixcolJsonReader : BaseFlowReader<IpFlow>, IJsonFlowSerializerReader
 
     {
         /// <summary>
@@ -87,7 +83,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <param name="input">The input string to deserialize.</param>
         /// <param name="ipFlow">When this method returns, contains the deserialized <see cref="IpFlow"/> object if the deserialization was successful; otherwise, the default value.</param>
         /// <returns><c>true</c> if the deserialization was successful; otherwise, <c>false</c>.</returns>
-        bool TryDeserializeFlow(string input, out IpFlow ipFlow)
+        public bool TryDeserializeFlow(string input, out IpFlow ipFlow)
         {
             try
             {
@@ -109,13 +105,13 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         /// <param name="inputStream">The TextReader stream to read the JSON string from.</param>
         /// <returns>A string representation of the JSON object, or null if the end of the file is reached or the content is whitespace.</returns>
-        public static async Task<string> ReadJsonStringAsync(TextReader inputStream)
+        public async Task<string> ReadJsonStringAsync(TextReader inputStream, CancellationToken ct)
         {
             var buffer = new StringBuilder();
 
             while (true)
             {
-                var line = (await inputStream.ReadLineAsync())?.Trim();
+                var line = (await inputStream.ReadLineAsync(ct))?.Trim();
 
                 // End of file?
                 if (line == null) break;
@@ -155,7 +151,7 @@ namespace Ethanol.ContextBuilder.Readers
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    var line = await ReadJsonStringAsync(_reader);
+                    var line = await ReadJsonStringAsync(_reader, ct);
                     
                     // end of file?
                     if (line == null) return null;
@@ -186,101 +182,11 @@ namespace Ethanol.ContextBuilder.Readers
         }
         class TcpReader : IpfixcolJsonReader
         {
-            IPEndPoint _endpoint;
-            private TcpListener _listener;
-            private Task _mainLoopTask;
-            private List<Task> _clientsTasks;
-            private CancellationTokenSource _cancellationTokenSource;
-            private BlockingCollection<IpFlow> _queue;
-
+            TcpJsonReaderInternal _reader;
             public TcpReader(IPEndPoint endPoint, ILogger logger) : base(logger)
             {
-                _endpoint = endPoint;
-                _cancellationTokenSource = new CancellationTokenSource();
-                _queue = new BlockingCollection<IpFlow>();
-                _clientsTasks = new List<Task>();
+                _reader = new TcpJsonReaderInternal(this, endPoint, logger);
             }
-
-            public async Task RunAsync(TcpListener listener, CancellationToken cancellation)
-            {
-                _logger?.LogInformation($"TCP server (IpfixcolJsonReader) listening on {_endpoint}");
-                try
-                {
-                    // Wait for incoming client connections
-                    while (!cancellation.IsCancellationRequested)
-                    {
-                        var client = await listener.AcceptTcpClientAsync(cancellation);
-                        _logger?.LogInformation($"TCP server accepts connection from {client?.Client.RemoteEndPoint}");
-                        if (client != null)
-                        {
-                            var tcs = new TaskCompletionSource<object>();
-                            _clientsTasks.Add(tcs.Task);
-                            // Start as a background task... 
-                            var _ = Task.Run(async () =>
-                            {
-                                await ReadInputData(client, cancellation);
-                                _clientsTasks.Remove(tcs.Task);
-                                tcs.SetResult(null);
-                                client.Dispose();
-                            },  cancellation);
-                        }
-                    }
-                }
-                catch (SocketException ex)
-                {
-                    _logger?.LogError($"Socket exception: {ex.Message}");
-                }
-                finally
-                {
-                    // Stop listening for client connections when done
-                    listener.Stop();
-                    
-                }
-            }
-            private async Task ReadInputData(TcpClient client, CancellationToken cancellation)
-            {
-                // get the stream
-                var stream = client.GetStream();
-                // gets the reader from stream:
-                var reader = new StreamReader(stream);
-                string jsonString;
-                while(!cancellation.IsCancellationRequested &&  (jsonString = await ReadJsonStringAsync(reader)) != null)
-                {
-                    // read input tcp data and if suceffuly deserialized put the object in the buffer
-                    // to be available to TryGetNextRecord method.
-                    if (this.TryDeserializeFlow(jsonString, out var ipflow))
-                    {
-                        _queue.Add(ipflow);
-                    }
-                }
-                reader.Close();
-                client.Close();
-               
-            }
-
-            protected override Task OpenAsync()
-            {
-                _listener = new TcpListener(_endpoint);
-                _listener.Start();  
-                _mainLoopTask = RunAsync(_listener, _cancellationTokenSource.Token);
-                return Task.CompletedTask;
-            }
-
-            protected override Task<IpFlow> ReadAsync(CancellationToken cancellation)
-            {
-                // Take does not wait in the case the input is completed.
-                // In this case the return valus is null.
-                return Task.FromResult(_queue.Take(cancellation));
-            }
-
-            protected override Task CloseAsync()
-            {
-                _queue.CompleteAdding();
-                var activeTasks = _clientsTasks.Append(_mainLoopTask).ToArray();
-                _cancellationTokenSource.Cancel();
-                return Task.WhenAll(activeTasks);
-            }
-
             /// <summary>
             /// Creates a new TcpReader instance by parsing the provided connection string into an IPEndPoint.
             /// </summary>
@@ -304,7 +210,22 @@ namespace Ethanol.ContextBuilder.Readers
             }
             public override string ToString()
             {
-                return $"{nameof(IpfixcolJsonReader)}(tcp={_endpoint}))";
+                return $"{nameof(IpfixcolJsonReader)}(tcp={_reader.Endpoint})";
+            }
+
+            protected override Task CloseAsync()
+            {
+                return _reader.CloseAsync();
+            }
+
+            protected override Task OpenAsync()
+            {
+                return _reader.OpenAsync();
+            }
+
+            protected override Task<IpFlow> ReadAsync(CancellationToken ct)
+            {
+                return _reader.ReadAsync(ct);
             }
         }
     }

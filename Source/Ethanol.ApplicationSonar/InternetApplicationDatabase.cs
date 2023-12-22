@@ -25,7 +25,7 @@ namespace Ethanol.ApplicationSonar
         private Table<AddressIndicatorRecord, int> _addressTable;
         private IIndex<AddressIndicatorRecord, string?> _addressTableIndexOnAddress;
         private IIndex<AddressIndicatorRecord, int> _addressTableIndexOnApplication;
-        private Relation<InternetApplicationRecord, int, AddressIndicatorRecord, int> _addressToApplicationRelation;
+        //private Relation<InternetApplicationRecord, int, AddressIndicatorRecord, int> _addressToApplicationRelation;
 
         public InternetApplicationDatabase()
         {
@@ -225,27 +225,27 @@ namespace Ethanol.ApplicationSonar
         /// <summary>
         /// Gets or sets the address of the application.
         /// </summary>
-        public string ApplicationAddress { get; set; }
+        public string? ApplicationAddress { get; set; }
 
         /// <summary>
         /// Gets or sets the tag associated with the application.
         /// </summary>
-        public string ApplicationTag { get; set; }
+        public string? ApplicationTag { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the application.
         /// </summary>
-        public string ApplicationName { get; set; }
+        public string? ApplicationName { get; set; }
 
         /// <summary>
         /// Gets or sets the URL of the application.
         /// </summary>
-        public string ApplicationUrl { get; set; }
+        public string? ApplicationUrl { get; set; }
 
         /// <summary>
         /// Gets or sets the category of the application.
         /// </summary>
-        public string Category { get; set; }
+        public string? Category { get; set; }
     }
 
 }

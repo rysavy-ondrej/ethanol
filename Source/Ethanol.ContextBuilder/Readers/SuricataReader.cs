@@ -17,7 +17,7 @@ namespace Ethanol.ContextBuilder.Readers
             throw new System.NotImplementedException();
         }
 
-        protected override Task<IpFlow> ReadAsync(CancellationToken ct)
+        protected override Task<IpFlow?> ReadAsync(CancellationToken ct)
         {
             throw new System.NotImplementedException();
         }

@@ -17,7 +17,7 @@ namespace Ethanol.ContextBuilder.Helpers
         {
             using var sqlcmd = connection.CreateCommand();
             sqlcmd.CommandText = $@"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = '{tableName}');";
-            return (bool)sqlcmd.ExecuteScalar();
+            return (bool)(sqlcmd.ExecuteScalar() ?? false);
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Ethanol.ContextBuilder.Helpers
             var indexName = GetIndexName(tableName, column);
             using var cmd = connection.CreateCommand();
             cmd.CommandText = $@"SELECT EXISTS(SELECT indexname FROM pg_indexes WHERE tablename = '{tableName}' AND indexname = '{indexName}');";
-            return (bool)cmd.ExecuteScalar();
+            return (bool)(cmd.ExecuteScalar() ?? false);
 
         }
         /// <summary>

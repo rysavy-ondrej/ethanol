@@ -40,7 +40,7 @@ namespace Ethanol.Catalogs
         {
             return new VoidContextEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>>(s => 
                 new ObservableEvent<IpHostContextWithTags>(
-                    new IpHostContextWithTags { HostAddress = s.Payload.HostAddress, Flows = s.Payload.Flows, Tags = Array.Empty<TagObject>() }, s.StartTime, s.EndTime));
+                    new IpHostContextWithTags { HostAddress = s.Payload?.HostAddress, Flows = s.Payload?.Flows, Tags = Array.Empty<TagObject>() }, s.StartTime, s.EndTime));
         }
     }
 }

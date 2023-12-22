@@ -14,5 +14,5 @@ namespace Ethanol.DataObjects
     /// <param name="OctetsSent">The number of octets sent over the connection.</param>
     /// <param name="PacketsRecv">The number of packets received over the connection.</param>
     /// <param name="OctetsRecv">The number of octets received over the connection.</param>
-    public record IpConnectionInfo(string RemoteHostAddress, string? RemoteHostName, ushort RemotePort, string? ApplicationProcessName, InternetServiceTag[]? InternetServices, int Flows, int PacketsSent, long OctetsSent, int PacketsRecv, long OctetsRecv);
+    public record IpConnectionInfo(string RemoteHostAddress, string RemoteHostName, ushort RemotePort, string ApplicationProcessName, InternetServiceTag[] InternetServices, int Flows, int PacketsSent, long OctetsSent, int PacketsRecv, long OctetsRecv);
 }

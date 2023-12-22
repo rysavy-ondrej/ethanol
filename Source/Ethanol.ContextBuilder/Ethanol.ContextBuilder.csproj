@@ -3,17 +3,13 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
     <ApplicationIcon>icons8-pine-cone-100.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="icons8-pine-cone-100.ico" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Enrichers\" />
-  </ItemGroup>
-
 	
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />

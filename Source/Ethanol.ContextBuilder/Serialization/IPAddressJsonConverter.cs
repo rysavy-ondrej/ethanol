@@ -24,7 +24,7 @@ namespace Ethanol.ContextBuilder.Serialization
         /// <returns>The deserialized IP address.</returns>
         public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string ipAddressString = reader.GetString();
+            string ipAddressString = reader.GetString() ?? String.Empty;
             return IPAddress.Parse(ipAddressString);
         }
 

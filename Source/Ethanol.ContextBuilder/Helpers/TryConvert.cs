@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 
 namespace Ethanol.ContextBuilder.Helpers
 {
@@ -10,7 +11,7 @@ namespace Ethanol.ContextBuilder.Helpers
         /// <summary>
         /// Attempts to convert the specified object to a ushort. Returns true if the conversion was successful, and sets the result output parameter to the converted value on success.
         /// </summary>
-        public static bool ToUInt16(object value, out ushort result)
+        public static bool ToUInt16(object value, [NotNullWhen(true)] out ushort result)
         {
             if (value == null)
             {
@@ -18,14 +19,14 @@ namespace Ethanol.ContextBuilder.Helpers
                 return false;
             }
 
-            string strValue = value.ToString();
+            string? strValue = value.ToString();
             return ushort.TryParse(strValue, out result);
         }
 
         /// <summary>
         /// Attempts to convert the specified object to a uint. Returns true if the conversion was successful, and sets the result output parameter to the converted value on success.
         /// </summary>
-        public static bool ToUInt32(object value, out uint result)
+        public static bool ToUInt32(object value, [NotNullWhen(true)] out uint result)
         {
             if (value == null)
             {
@@ -33,14 +34,14 @@ namespace Ethanol.ContextBuilder.Helpers
                 return false;
             }
 
-            string strValue = value.ToString();
+            string? strValue = value.ToString();
             return uint.TryParse(strValue, out result);
         }
 
         /// <summary>
         /// Attempts to convert the specified object to a float. Returns true if the conversion was successful, and sets the result output parameter to the converted value on success.
         /// </summary>
-        public static bool ToFloat(object value, out float result)
+        public static bool ToFloat(object value, [NotNullWhen(true)] out float result)
         {
             if (value == null)
             {
@@ -48,14 +49,14 @@ namespace Ethanol.ContextBuilder.Helpers
                 return false;
             }
 
-            string strValue = value.ToString();
+            string? strValue = value.ToString();
             return float.TryParse(strValue, out result);
         }
 
         /// <summary>
         /// Attempts to convert the specified object to an IPAddress. Returns true if the conversion was successful, and sets the result output parameter to the converted value on success.
         /// </summary>
-        public static bool ToIPAddress(object value, out IPAddress result)
+        public static bool ToIPAddress(object value,  [NotNullWhen(true)] out IPAddress? result)
         {
             if (value == null)
             {
@@ -63,9 +64,8 @@ namespace Ethanol.ContextBuilder.Helpers
                 return false;
             }
 
-            string strValue = value.ToString();
+            string strValue = value.ToString() ?? string.Empty;
             return IPAddress.TryParse(strValue, out result);
         }
     }
-
 }

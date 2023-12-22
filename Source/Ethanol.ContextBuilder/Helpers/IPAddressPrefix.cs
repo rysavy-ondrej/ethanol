@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 /// <summary>
@@ -21,7 +22,7 @@ public class IPAddressPrefix
     /// <param name="cidrNotation">The CIDR notation string to parse, e.g., "192.168.1.0/24".</param>
     /// <param name="addressPrefix">When this method returns, contains the <see cref="IPAddressPrefix"/> equivalent of the CIDR notation contained in <paramref name="cidrNotation"/>, if the conversion succeeded, or null if the conversion failed.</param>
     /// <returns><c>true</c> if <paramref name="cidrNotation"/> was converted successfully; otherwise, <c>false</c>.</returns>
-    public static bool TryParse(string cidrNotation, out IPAddressPrefix addressPrefix)
+    public static bool TryParse(string cidrNotation, [NotNullWhen(true)] out IPAddressPrefix? addressPrefix)
     {
         addressPrefix = null;
         if (string.IsNullOrEmpty(cidrNotation))
@@ -74,9 +75,10 @@ public class IPAddressPrefix
     /// The method checks if the provided IP address belongs to the same network as defined by the prefix.
     /// It does so by applying the subnet mask to both IP addresses and comparing the results.
     /// </remarks>
-    public bool Match(IPAddress ipAddress)
+    public bool Match(IPAddress? ipAddress)
     {
-        if (ipAddress.AddressFamily != Address.AddressFamily)
+
+        if (ipAddress == null || ipAddress.AddressFamily != Address.AddressFamily)
         {
             return false;
         }

@@ -1,6 +1,4 @@
 ﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,7 +77,10 @@ namespace Ethanol.ContextBuilder.Cleaners
                 var resFlow = flow.FlowType == FlowType.ResponseFlow ? flow : reverseFlow;
 
                 var biflow = PairFlows(reqFlow, resFlow);
-                _flowSubject.OnNext(biflow);
+                if (biflow != null)
+                {
+                    _flowSubject.OnNext(biflow);
+                }
             }
             else
             {
@@ -101,9 +102,9 @@ namespace Ethanol.ContextBuilder.Cleaners
         /// <param name="reqFlow">The request flow.</param>
         /// <param name="resFlow">The response flow.</param>
         /// <returns>Returns the bidirectional flow from the given pair of flows.</returns>
-        private IpFlow PairFlows(IpFlow reqFlow, IpFlow resFlow)
+        private static IpFlow? PairFlows(IpFlow reqFlow, IpFlow resFlow)
         {
-            return ((reqFlow, resFlow)) switch
+            return (reqFlow, resFlow) switch
             {
                 (TlsFlow q, TlsFlow r) => FlowPairMapper.Map<TlsFlow>(new FlowPair<TlsFlow>(q, r)),
                 (HttpFlow q, HttpFlow r) => FlowPairMapper.Map<HttpFlow>(new FlowPair<HttpFlow>(q, r)),
@@ -123,15 +124,15 @@ namespace Ethanol.ContextBuilder.Cleaners
             return _flowSubject.Subscribe(observer);
         }
 
-        class Cache<TKey, TValue> where TValue : class
+        class Cache<TKey, TValue> where TValue : class where TKey : notnull
         {
             private readonly SortedDictionary<DateTime, List<TKey>> _timeline = new SortedDictionary<DateTime, List<TKey>>();
             private readonly IDictionary<TKey, CacheItem<TValue>> _cache = new Dictionary<TKey, CacheItem<TValue>>();
 
-            public TValue Get(TKey key)
+            public TValue? Get(TKey key)
             {
                 // Check if the item is in the cache
-                if (_cache.TryGetValue(key, out CacheItem<TValue> item))
+                if (_cache.TryGetValue(key, out CacheItem<TValue>? item))
                 {
                     // Return the cached item
                     return item.Value;
@@ -139,7 +140,7 @@ namespace Ethanol.ContextBuilder.Cleaners
                 // The item is not in the cache
                 return null;
             }
-            internal TValue GetAndRemove(TKey flowKey)
+            internal TValue? GetAndRemove(TKey flowKey)
             {
                 var item = Get(flowKey);
                 if (item != null) _cache.Remove(flowKey);
@@ -174,7 +175,7 @@ namespace Ethanol.ContextBuilder.Cleaners
                     _timeline.Remove(expDate);
                     foreach (var expFlow in expiredItem.Value)
                     {
-                        if (_cache.TryGetValue(expFlow, out CacheItem<TValue> item))
+                        if (_cache.TryGetValue(expFlow, out CacheItem<TValue>? item))
                         {
                             _cache.Remove(expFlow);
                             yield return item.Value;

@@ -36,15 +36,20 @@ namespace Ethanol.ContextBuilder.Context
 
         /// <summary>
         /// Determines the remote address in an IP flow relative to a provided host address.
+        /// It means that if flow is A->B and host is A then the result is B.
+        /// If flow is A->B and host is B then the result is A.
         /// </summary>
+        /// <remarks>If either input argument is null then the result is null.
+        /// The null result can be also get if there is not match between flow's addresses and host.</remarks> 
         /// <param name="flow">The <see cref="IpFlow"/> for which the remote address needs to be determined.</param>
         /// <param name="host">The local host's <see cref="IPAddress"/> to compare against the flow's source and destination.</param>
-        /// <returns>The remote <see cref="IPAddress"/> that corresponds to the provided host address in the flow.</returns>
-        public static IPAddress GetRemoteAddress(this IpFlow flow, IPAddress host)
+        /// <returns>The remote <see cref="IPAddress"/> that corresponds to the provided host address in the flow or null</returns>
+        public static IPAddress? GetRemoteAddress(this IpFlow flow, IPAddress host)
         {
-            return host.Equals(flow.SourceAddress) ? flow.DestinationAddress : flow.SourceAddress;
+            if (flow is null || host is null) return null;
+            if (host.Equals(flow.SourceAddress)) return flow.DestinationAddress;
+            if (host.Equals(flow.DestinationAddress)) return flow.SourceAddress;
+            return null;
         }
     }
-
-
 }

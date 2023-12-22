@@ -80,6 +80,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// <returns>True if the IP host address matches the filter; otherwise, false.</returns>
         public bool Evaluate(ObservableEvent<IpHostContext> evt)
         {
+            if (evt.Payload?.HostAddress == null) return false;
             return Match(evt.Payload.HostAddress);
         }
     }

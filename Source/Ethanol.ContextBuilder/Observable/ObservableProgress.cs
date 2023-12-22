@@ -10,7 +10,7 @@ namespace Ethanol.ContextBuilder.Observable
     /// <typeparam name="T">The type of data that the progress mechanism operates on.</typeparam>
     internal class ObservableProgress<T> : IObservable<T>, IObserver<T>
     {
-        private Subject<T> _subject;
+        private readonly Subject<T> _subject;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObservableProgress{T}"/> class.
@@ -23,7 +23,7 @@ namespace Ethanol.ContextBuilder.Observable
         /// <summary>
         /// Gets or sets an action to be executed when a new data object is received.
         /// </summary>
-        public Action OnObjectReceived { get; set; }
+        public Action? OnObjectReceived { get; set; }
 
         /// <summary>
         /// Signals the end of the progress.

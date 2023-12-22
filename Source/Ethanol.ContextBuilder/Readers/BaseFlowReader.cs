@@ -46,7 +46,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <remarks>
         /// Implementations should ensure that this method is efficient and can be called repeatedly to fetch records in quick succession.
         /// </remarks>
-        protected abstract Task<TRecord> ReadAsync(CancellationToken ct);
+        protected abstract Task<TRecord?> ReadAsync(CancellationToken ct);
 
         /// <summary>
         /// Cleans up resources and finalizes access to the data source. This could involve actions like

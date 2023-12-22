@@ -13,6 +13,7 @@ using System.Data;
 using System.Net;
 using System.Reactive;
 using System.Reactive.Linq;
+using Ethanol.ContextBuilder;
 
 /// <summary>
 /// Represents a command within a console application for running the context builder process.
@@ -156,7 +157,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
     {
         if (builder == null) return TimeSpan.FromMinutes(5);
 
-        return TimeSpan.TryParse(builder.WindowSize, out var span) ? span : throw new ArgumentException("Invalid WindowSize specified in configuration file.");
+        return TimeSpan.TryParse(builder.WindowSize, out var span) ? span : throw new ArgumentException("Invalid WindowSize specified in BUILDER section of the configuration file.");
     }
 
     private IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
@@ -168,6 +169,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
 
         if (enricher?.Netify != null && enricher.Netify.Postgres != null)
         {
+            if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in REFINER section of the configuration file.");
             return environment.ContextTransform.GetNetifyPostgresEnricher(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
         }
     
@@ -179,8 +181,8 @@ internal class ContextBuilderCommand : ConsoleAppBase
         if (builder?.Networks == null) return new HostBasedFilter();
         else
         {
-            var prefixes = builder.Networks.Select(s => IPAddressPrefix.TryParse(s, out var prefix) ? prefix : null).Where(x => x != null).ToArray();
-            var filter = (prefixes.Length != 0) ? new HostBasedFilter(prefixes) : new HostBasedFilter();
+            var prefixes = builder.Networks.Select(s => IPAddressPrefix.TryParse(s, out var prefix) ? prefix : null).Where(x => x != null).Select(x => x!).ToArray();
+            var filter = (prefixes.Length > 0) ? new HostBasedFilter(prefixes) : new HostBasedFilter();
             return filter;
         }
     }
@@ -209,7 +211,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
                     yield return environment.FlowReader.GetIpfixcolFileReader(Console.In, null);
                     break;
                 default:
-                    throw new ArgumentException($"Invalid or missing stdin format '{inputConfiguration.Stdin.Format}' specified in configuration file.");
+                    throw new ArgumentException($"Invalid or missing stdin format '{inputConfiguration.Stdin.Format}' specified in INPUT section of the configuration file.");
             }
         }
         if (inputConfiguration?.Tcp != null)        
@@ -227,7 +229,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
                     yield return environment.FlowReader.GetIpfixcolTcpReader(listenAt);
                     break;
                 default:
-                    throw new ArgumentException($"Invalid or missing tcp format specified '{inputConfiguration.Tcp.Format}' in configuration file.");
+                    throw new ArgumentException($"Invalid or missing tcp format specified '{inputConfiguration.Tcp.Format}' in INPUT section of the configuration file.");
             }
         }
     }
@@ -257,6 +259,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
         {
             var connection = new NpgsqlConnection(outputConfiguration.Postgres.GetConnectionString());
             var tableName = outputConfiguration.Postgres.TableName;
+            if (tableName == null) throw new ArgumentException("Invalid or missing postgres table configuration in OUTPUT section of the configuration file.");
             connection.Open();
             yield return environment.ContextWriter.GetPostgresWriter(connection, tableName);
         }

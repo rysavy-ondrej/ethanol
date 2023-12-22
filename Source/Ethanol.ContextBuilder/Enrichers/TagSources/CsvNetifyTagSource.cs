@@ -30,45 +30,46 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
             /// Gets or sets the tag of the application.
             /// </summary>
             [Name("tag")]
-            public string Tag { get; set; }
+            public string? Tag { get; set; }
 
             /// <summary>
             /// Gets or sets the short name of the application.
             /// </summary>
             [Name("short_name")]
-            public string ShortName { get; set; }
+            public string? ShortName { get; set; }
 
             /// <summary>
             /// Gets or sets the full name of the application.
             /// </summary>
             [Name("full_name")]
-            public string FullName { get; set; }
+            public string? FullName { get; set; }
 
             /// <summary>
             /// Gets or sets the description of the application.
             /// </summary>
             [Name("description")]
-            public string Description { get; set; }
+            public string? Description { get; set; }
 
             /// <summary>
             /// Gets or sets the URL associated with the application.
             /// </summary>
             [Name("url")]
-            public string Url { get; set; }
+            public string? Url { get; set; }
 
             /// <summary>
             /// Gets or sets the category of the application.
             /// </summary>
             [Name("category")]
-            public string Category { get; set; }
+            public string? Category { get; set; }
         }
         /// <summary>
         /// Converts the given <paramref name="record"/> into a Netify tag.
         /// </summary>
         /// <param name="record">The Netify application record to convert.</param>
         /// <returns>The converted Netify tag.</returns>
-        public static NetifyTag ConvertToTag(NetifyAppRecord record)
+        public static NetifyTag? ConvertToTag(NetifyAppRecord? record)
         {
+            if (record == null) { return null; }
             return new NetifyTag
             {
                 Tag = record.Tag,
@@ -106,13 +107,13 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
             /// Gets or sets the IP address value.
             /// </summary>
             [Name("value")]
-            public string Value { get; set; }
+            public string? Value { get; set; }
 
             /// <summary>
             /// Gets or sets the version of the IP (e.g., IPv4, IPv6).
             /// </summary>
             [Name("ip_version")]
-            public string IpVersion { get; set; }
+            public string? IpVersion { get; set; }
 
             /// <summary>
             /// Gets or sets the shared status of the IP. This is converted from potential empty or "none" string values to integers.
@@ -131,19 +132,19 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
             /// Gets or sets the platform ID associated with the IP.
             /// </summary>
             [Name("platform_id")]
-            public string PlatformId { get; set; }
+            public string? PlatformId { get; set; }
 
             /// <summary>
             /// Gets or sets the ASN (Autonomous System Number) tag.
             /// </summary>
             [Name("asn_tag")]
-            public string AsnTag { get; set; }
+            public string? AsnTag { get; set; }
 
             /// <summary>
             /// Gets or sets the label for the ASN.
             /// </summary>
             [Name("asn_label")]
-            public string AsnLabel { get; set; }
+            public string? AsnLabel { get; set; }
         }
 
         /// <summary>
@@ -178,7 +179,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
             /// Gets or sets the domain value.
             /// </summary>
             [Name("value")]
-            public string Value { get; set; }
+            public string? Value { get; set; }
 
             /// <summary>
             /// Gets or sets the application ID associated with the domain.
@@ -190,7 +191,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
             /// Gets or sets the platform ID associated with the domain.
             /// </summary>
             [Name("platform_id")]
-            public string PlatformId { get; set; }
+            public string? PlatformId { get; set; }
         }
 
         /// <summary>

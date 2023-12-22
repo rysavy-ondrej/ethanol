@@ -2,7 +2,10 @@ using System;
 
 namespace Ethanol.ContextBuilder.Context
 {
-    public struct Empty : IEquatable<Empty>
+    /// <summary>
+    /// Represents an empty value.
+    /// </summary>
+    public readonly struct Empty : IEquatable<Empty>
     {
         //
         // Summary:
@@ -34,9 +37,10 @@ namespace Ethanol.ContextBuilder.Context
         //
         // Returns:
         //     true if the specified System.Object is a Empty value; otherwise, false.
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            return true;
+            var otherEmpty = obj as Empty?;
+            return otherEmpty != null && Equals(otherEmpty.Value);
         }
         //
         // Summary:
@@ -44,7 +48,7 @@ namespace Ethanol.ContextBuilder.Context
         //
         // Returns:
         //     A hash code for the Empty value.
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return 0;
         }

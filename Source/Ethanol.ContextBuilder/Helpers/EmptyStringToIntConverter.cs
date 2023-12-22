@@ -16,8 +16,8 @@ public class EmptyStringToIntConverter : Int32Converter
     /// <param name="text">The input string to convert.</param>
     /// <param name="row">The row from which the value is being converted.</param>
     /// <param name="memberMapData">The member mapping data for the current field.</param>
-    /// <returns>The converted integer value or 0 for specific string patterns.</returns>
-    public override object ConvertFromString(string text, IReaderRow row, MemberMapData memberMapData)
+    /// <returns>The converted integer value or 0 for specific string patterns. If the string value cannot be converted to integer, it returns int (or throws an exception?).</returns>
+    public override object? ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
     {
         if (string.IsNullOrWhiteSpace(text) || string.Equals(text, "none", StringComparison.InvariantCultureIgnoreCase))
         {

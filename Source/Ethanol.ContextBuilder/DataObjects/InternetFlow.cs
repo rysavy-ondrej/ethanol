@@ -28,7 +28,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the destination IP address for the flow.
         /// </summary>
-        public IPAddress DestinationAddress { get; set; }
+        public IPAddress? DestinationAddress { get; set; }
 
         /// <summary>
         /// Gets or sets the destination port number.
@@ -44,7 +44,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the source IP address for the flow.
         /// </summary>
-        public IPAddress SourceAddress { get; set; }
+        public IPAddress? SourceAddress { get; set; }
 
         /// <summary>
         /// Gets or sets the source port number.

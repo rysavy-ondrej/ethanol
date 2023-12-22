@@ -70,7 +70,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagSources
         /// <exception cref="Exception">Thrown when the parsing encounters unexpected errors.</exception>
         static IEnumerable<CsvHostTagRecord> ParseCsv(TextReader reader)
         {
-            string line;
+            string? line;
 
             while ((line = reader.ReadLine()) != null)
             {

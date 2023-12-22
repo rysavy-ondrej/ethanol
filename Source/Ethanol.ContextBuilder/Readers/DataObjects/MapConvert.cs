@@ -16,8 +16,9 @@ public static class MapConvert
     /// </summary>
     /// <param name="encodedString">The encoded string to decode.</param>
     /// <returns>The decoded string.</returns>
-    public static string DecodeString(string encodedString)
+    public static string? DecodeString(string? encodedString)
     {
+        if (encodedString == null) return null;
         return Regex.Unescape(encodedString).Trim('\0');
     }
     /// <summary>
@@ -25,7 +26,7 @@ public static class MapConvert
     /// </summary>
     /// <param name="stringArray">The string representation of the short array.</param>
     /// <returns>The decoded ushort array.</returns>
-    public static ushort[] DecodeShortArray(string stringArray)
+    public static ushort[]? DecodeShortArray(string? stringArray)
     {
         if (stringArray == null) return null;
 
@@ -45,7 +46,7 @@ public static class MapConvert
     /// </summary>
     /// <param name="stringArray">The string representation of the byte array.</param>
     /// <returns>The decoded byte array.</returns>
-    public static byte[] DecodeByteArray(string stringArray)
+    public static byte[]? DecodeByteArray(string? stringArray)
     {
         if (stringArray == null) return null;
 
@@ -81,8 +82,9 @@ public static class MapConvert
         return TimeSpan.FromMicroseconds(microseconds);
     }
 
-    internal static string StripPrefix(string value)
+    internal static string? StripPrefix(string? value)
     {
+        if (value == null) return null;
         return value.StartsWith("0x") ? value[2..] : value;
     }
 
@@ -101,8 +103,9 @@ public static class MapConvert
         /// </summary>
         /// <param name="l4Proto">The string representation of the layer 4 protocol.</param>
         /// <returns>The corresponding <see cref="ProtocolType"/> value if the conversion is successful; otherwise, <see cref="System.Net.Sockets.ProtocolType.Unknown"/>.</returns>
-        public static ProtocolType ProtocolType(string l4Proto)
+        public static ProtocolType ProtocolType(string? l4Proto)
         {
+            if (l4Proto == null) return System.Net.Sockets.ProtocolType.Unknown;
             return Enum.TryParse<ProtocolType>(l4Proto, true, out var proto) ? proto : System.Net.Sockets.ProtocolType.Unknown;
         }
 
@@ -112,14 +115,19 @@ public static class MapConvert
         /// <param name="ipVersion">The IP address version (4 or 6).</param>
         /// <param name="value4">The value for IPv4 address.</param>
         /// <param name="value6">The value for IPv6 address.</param>
-        /// <returns>An <see cref="IPAddress"/> object representing the specified IP address version and values.</returns>
-        public static IPAddress Address(int ipVersion, string value4, string value6) =>
-        ipVersion switch
+        /// <returns>An <see cref="IPAddress"/> object representing the specified IP address version and values. 
+        /// It returns IPAddress.None or IPAddress.IPv6None if address cannot be parsed or both inputs are null.
+        /// </returns>
+        public static IPAddress Address(int ipVersion, string? value4, string? value6)
         {
-            4 => IPAddress.TryParse(value4, out var ipv4) ? ipv4 : IPAddress.None,
-            6 => IPAddress.TryParse(value6, out var ipv6) ? ipv6 : IPAddress.IPv6None,
-            _ => IPAddress.None
-        };
+            if (value4 == null && value6 == null) return IPAddress.None;
+            return ipVersion switch
+            {
+                4 => IPAddress.TryParse(value4, out var ipv4) ? ipv4 : IPAddress.None,
+                6 => IPAddress.TryParse(value6, out var ipv6) ? ipv6 : IPAddress.IPv6None,
+                _ => IPAddress.None
+            };
+        }
 
         /// <summary>
         /// Represents the application protocol used in the mapping.
@@ -165,9 +173,10 @@ public static class MapConvert
         /// Converts a string value to a URL string.
         /// </summary>
         /// <param name="value">The string value to convert.</param>
-        /// <returns>The converted URL string.</returns>
-        public static string UrlString(string value)
+        /// <returns>The converted URL string. If input value is null it returns an empty string.</returns>
+        public static string UrlString(string? value)
         {
+            if (value == null) return string.Empty;
             return value.ToString();
         }
 
@@ -259,10 +268,11 @@ public static class MapConvert
         /// </summary>
         /// <param name="rstring">The encoded DNS record data.</param>
         /// <param name="rtype">The type of DNS record.</param>
-        /// <returns>The decoded DNS record data as a string.</returns>
-        public static string DecodeDnsRecordData(string rstring, int rtype)
+        /// <returns>The decoded DNS record data as a string or an empty string.</returns>
+        public static string DecodeDnsRecordData(string? rstring, int rtype)
         {
             var rbytes = DecodeByteArray(rstring);
+            if (rbytes == null) return string.Empty;
             return RecordType(rtype) switch
             {
                 DnsRecordType.A => rbytes.Length >= 4 ? new IPAddress(rbytes[..4]).ToString() : string.Empty,
@@ -270,10 +280,6 @@ public static class MapConvert
                 _ => string.Empty,
             };
         }
-    }
-    public static class Tls
-    {
-        
     }
 }
 

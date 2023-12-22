@@ -21,7 +21,7 @@ namespace Ethanol.ContextBuilder.Observable
         /// <summary>
         /// Gets the payload or data associated with the event.
         /// </summary>
-        public TPayload Payload { get; set; }
+        public TPayload? Payload { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ObservableEvent{TPayload}"/> record 

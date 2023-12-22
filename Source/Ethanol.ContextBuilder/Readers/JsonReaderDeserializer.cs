@@ -2,6 +2,7 @@ using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -18,14 +19,14 @@ namespace Ethanol.ContextBuilder.Readers
     {
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly Func<TEntryType, IpFlow> _mapper;
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonReaderDeserializer{TEntryType}"/> class.
         /// </summary>
         /// <param name="mapper">The function used to map the deserialized entry type to an <see cref="IpFlow"/>.</param>
         /// <param name="logger">The logger used for logging.</param>
-        public JsonReaderDeserializer(Func<TEntryType,IpFlow> mapper,  ILogger logger)
+        public JsonReaderDeserializer(Func<TEntryType,IpFlow> mapper,  ILogger? logger)
         {
 
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -40,18 +41,19 @@ namespace Ethanol.ContextBuilder.Readers
         /// <param name="input">The input string to deserialize.</param>
         /// <param name="ipFlow">When this method returns, contains the deserialized IpFlow object if the deserialization was successful, or the default IpFlow object if the deserialization failed.</param>
         /// <returns><c>true</c> if the deserialization was successful; otherwise, <c>false</c>.</returns>
-        public bool TryDeserializeFlow(string input, out IpFlow ipFlow)
+        public bool TryDeserializeFlow(string input, [NotNullWhen(true)] out IpFlow? ipFlow)
         {
             try
             {
                 var entry = JsonSerializer.Deserialize<TEntryType>(input, _serializerOptions);
+                if (entry == null) throw new JsonException("Deserialized entry is null.");
                 ipFlow = _mapper(entry);
                 return true;
             }
             catch (JsonException e)
             {
                 _logger?.LogWarning($"Cannot deserialize record: {e.Message}");
-                _logger?.LogDebug($"Input fragment: ...{GetErrorSubstring(input, (int)e.BytePositionInLine)}...");
+                _logger?.LogDebug($"Input fragment: ...{GetErrorSubstring(input, (int)(e.BytePositionInLine ?? 0))}...");
                 ipFlow = default;
                 return false;
             }
@@ -84,7 +86,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <param name="inputStream">The TextReader stream to read the JSON string from.</param>
         /// <exception cref="OperationCanceledException">The operation was cancelled.</exception>
         /// <returns>A string representation of the JSON object, or null if the end of the file is reached or the content is whitespace.</returns>
-        public async Task<string> ReadJsonStringAsync(TextReader inputStream, CancellationToken ct)
+        public async Task<string?> ReadJsonStringAsync(TextReader inputStream, CancellationToken ct)
         {
             var buffer = new StringBuilder();
 

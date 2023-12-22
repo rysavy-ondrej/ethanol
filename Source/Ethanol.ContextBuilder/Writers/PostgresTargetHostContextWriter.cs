@@ -96,16 +96,22 @@ namespace Ethanol.ContextBuilder.Writers
         /// <param name="entity">The context data to be written.</param>
         protected override void Write(HostContext entity)
         {
+            if (entity.Key == null)
+            {
+                _logger?.LogWarning($"Skipping record with null key.");
+                return;
+            }
+
             using (var cmd = new NpgsqlCommand())
             {
                 cmd.Connection = _connection;
                 cmd.CommandText = $"INSERT INTO {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @connections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
 
                 cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Key.ToString());
-                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Connections);
-                cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains);
-                cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls);
-                cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes);
+                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Connections ?? Array.Empty<IpConnectionInfo>());
+                cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>());
+                cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls ?? Array.Empty<WebRequestInfo>());
+                cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
                 cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, entity.End));
                 cmd.ExecuteNonQuery();
             }

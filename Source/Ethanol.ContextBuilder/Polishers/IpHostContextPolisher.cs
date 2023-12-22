@@ -5,6 +5,7 @@ using Ethanol.DataObjects;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
@@ -37,7 +38,7 @@ namespace Ethanol.ContextBuilder.Polishers
     /// </remarks>
     public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext>
     {
-        ILogger _logger;
+        private readonly ILogger? _logger;
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<HostContext> _subject;
@@ -51,7 +52,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
         /// </summary>
-        public IpHostContextPolisher(ILogger logger = null)
+        public IpHostContextPolisher(ILogger? logger = null)
         {
             _subject = new Subject<HostContext>();
             _logger = logger;
@@ -81,51 +82,56 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <param name="value">The input observable event containing a rich IP host context.</param>
         public void OnNext(ObservableEvent<IpHostContextWithTags> value)
         {
+            if (value.Payload == null || value.Payload.HostAddress == null)
+                return;
+
             try
             {
-                var domains = value.Payload.Flows.SelectFlows<DnsFlow>()
-                    .Select(x => new ResolvedDomainInfo(x.DestinationAddress.ToString(), x.QuestionName, x.ResponseData, x.ResponseCode))
-                    .ToArray();
 
-                var domainResolver = new Resolver<string, ResolvedDomainInfo>(domains, d => d.ResponseData?.ToString() ?? String.Empty);
+                var hostFlows = (value.Payload.Flows) ?? Array.Empty<IpFlow>();
+                var domainResolver = CreateDomainResolver(hostFlows);
 
-                var processResolver = new Resolver<string, TcpFlowTag>(value.Payload.Tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag>(x => x.GetDetailsAs<TcpFlowTag>()), flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
-
-                var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(value.Payload.Tags.Where(x => x.Type == "NetifyIp").GroupBy(g => g.Key, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value, (float)x.Reliability)).ToArray())), t => t.Item1);
+                var tags = value.Payload.Tags ?? Array.Empty<TagObject>();
+                var processResolver = CreateProcessResolver(tags);
+                var serviceResolver = CreateServiceResolver(tags);
 
                 string ResolveDomain(string address)
                 {
-                    return domainResolver.Resolve(address, x => x.QueryString);
+                    return domainResolver.TryResolve(address, x => x.QueryString, out var result) ? result : String.Empty;
                 }
                 string ResolveProcessName(FlowKey flowKey)
                 {
-                    return processResolver.Resolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName);
+                    return processResolver.TryResolve($"{flowKey.SourceAddress}:{flowKey.SourcePort}-{flowKey.DestinationAddress}:{flowKey.DestinationPort}", x => x.ProcessName, out var result) ? result : String.Empty;
                 }
                 InternetServiceTag[] ResolveServices(string destinationAddress)
                 {
-                    return serviceResolver.Resolve(destinationAddress).Item2;
+                    return serviceResolver.TryResolve(destinationAddress, out var result) ? result.Item2 : Array.Empty<InternetServiceTag>();
                 }
 
-                var connections = GetConnections(value.Payload.HostAddress, value.Payload.Flows, ResolveDomain, ResolveServices).ToArray();
+                var connections = AggregateHostConnections(value.Payload.HostAddress, hostFlows, ResolveDomain, ResolveServices);
 
-                var webUrls = value.Payload.Flows.SelectFlows<HttpFlow, WebRequestInfo>(x => new WebRequestInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.Method, x.Hostname + x.Url)).ToArray();
+                var domains = CollectDistinctDomains(value.Payload.HostAddress, hostFlows.SelectFlows<DnsFlow>());
 
-                var handshakes = value.Payload.Flows.SelectFlows<TlsFlow>().Where(x => !string.IsNullOrWhiteSpace(x.JA3Fingerprint)).Select(x => new TlsHandshakeInfo(x.DestinationAddress.ToString(), ResolveDomain(x.DestinationAddress.ToString()), x.DestinationPort, ResolveProcessName(x.FlowKey), ResolveServices(x.DestinationAddress.ToString()), x.ApplicationLayerProtocolNegotiation, x.ServerNameIndication, x.JA3Fingerprint, x.IssuerCommonName, x.SubjectCommonName, x.SubjectOrganisationName, x.CipherSuites, x.EllipticCurves)).ToArray();
+                var webUrls = CollectUrls(value.Payload.HostAddress, hostFlows.SelectFlows<HttpFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
 
-                var hostContext = new HostContext 
-                { 
-                    Start = value.StartTime, End = value.EndTime, 
-                    Key = value.Payload.HostAddress.ToString(), 
-                    Connections = connections, 
-                    ResolvedDomains = domains, 
-                    WebUrls = webUrls, 
-                    TlsHandshakes = handshakes,
-                    Tags = null             
+                var handshakes = CollectTls(value.Payload.HostAddress, hostFlows.SelectFlows<TlsFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
+
+                var hostKey = SafeString(value.Payload.HostAddress);
+                var hostContext = new HostContext
+                {
+                    Start = value.StartTime,
+                    End = value.EndTime,
+                    Key = hostKey,
+                    Connections = connections.ToArray(),
+                    ResolvedDomains = domains.Distinct().ToArray(),
+                    WebUrls = webUrls.Distinct().ToArray(),
+                    TlsHandshakes = handshakes.Distinct().ToArray(),
+                    Tags = new Dictionary<string, object>()
                 };
 
                 _subject.OnNext(hostContext);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _logger?.LogError(e, "Error in context polishing for event {0}.", value);
                 _subject.OnError(e);
@@ -133,26 +139,148 @@ namespace Ethanol.ContextBuilder.Polishers
         }
 
         /// <summary>
-        /// Returns an enumerable collection of initiated IP connections, based on the specified collection of IP flows and the provided function for resolving domain names.
+        /// Collects TLS handshake information for a given host address.
         /// </summary>
-        /// <param name="flows">The collection of IP flows to use as a source for the initiated connections.</param>
-        /// <param name="resolveDomain">A function that takes an IP address as input and returns a domain name.</param>
-        /// <returns>An enumerable collection of initiated IP connections.</returns>
-        private IEnumerable<IpConnectionInfo> GetConnections(IPAddress hostAddress, IEnumerable<IpFlow> flows, Func<string, string> resolveDomain, Func<string, InternetServiceTag[]> resolveServices)
+        /// <param name="hostAddress">The IP address of the host.</param>
+        /// <param name="enumerable">The collection of TLS flows.</param>
+        /// <param name="resolveDomain">A function to resolve the domain name from an IP address.</param>
+        /// <param name="resolveProcessName">A function to resolve the process name from a flow key.</param>
+        /// <param name="resolveServices">A function to resolve the internet service tags from a domain name.</param>
+        /// <returns>An enumerable collection of TlsHandshakeInfo objects.</returns>
+        private IEnumerable<TlsHandshakeInfo> CollectTls(IPAddress hostAddress, IEnumerable<TlsFlow> enumerable, Func<string, string> resolveDomain, Func<FlowKey, string> resolveProcessName, Func<string, InternetServiceTag[]> resolveServices)
+        {
+            var hostFlows = enumerable.Where(x => hostAddress.Equals(x.SourceAddress));
+            foreach (var x in hostFlows)
+            {
+                yield return new TlsHandshakeInfo(
+                    SafeString(x.DestinationAddress),
+                    resolveDomain(SafeString(x.DestinationAddress)),
+                    x.DestinationPort,
+                    resolveProcessName(x.FlowKey),
+                    resolveServices(SafeString(x.DestinationAddress)),
+                    SafeString(x.ApplicationLayerProtocolNegotiation),
+                    SafeString(x.ServerNameIndication),
+                    SafeString(x.JA3Fingerprint),
+                    SafeString(x.IssuerCommonName),
+                    SafeString(x.SubjectCommonName),
+                    SafeString(x.SubjectOrganisationName),
+                    SafeString(x.CipherSuites),
+                    SafeString(x.EllipticCurves));
+            }
+        }
+
+        /// <summary>
+        /// Collects the URLs from the given HTTP flows that match the specified host address.
+        /// </summary>
+        /// <param name="hostAddress">The IP address of the host.</param>
+        /// <param name="httpFlows">The collection of HTTP flows.</param>
+        /// <param name="resolveDomain">A function to resolve the domain name from the destination address.</param>
+        /// <param name="resolveProcessName">A function to resolve the process name from the flow key.</param>
+        /// <param name="resolveServices">A function to resolve the internet service tags from the destination address.</param>
+        /// <returns>An enumerable collection of WebRequestInfo objects representing the collected URLs.</returns>
+        private IEnumerable<WebRequestInfo> CollectUrls(IPAddress hostAddress, IEnumerable<HttpFlow> httpFlows, Func<string, string> resolveDomain, Func<FlowKey, string> resolveProcessName, Func<string, InternetServiceTag[]> resolveServices)
+        {
+            var requests = httpFlows.Where(x => hostAddress.Equals(x.SourceAddress));
+            foreach (var request in requests)
+            {
+                yield return new WebRequestInfo(SafeString(request.DestinationAddress), resolveDomain(SafeString(request.DestinationAddress)), request.DestinationPort, resolveProcessName(request.FlowKey), resolveServices(SafeString(request.DestinationAddress)), SafeString(request.Method), SafeString(request.Hostname) + SafeString(request.Url));
+            }
+        }
+
+        /// <summary>
+        /// Collects distinct domains based on the provided host address, host flows, and domain resolution function.
+        /// </summary>
+        /// <param name="hostAddress">The IP address of the host.</param>
+        /// <param name="hostFlows">The array of IP flows associated with the host.</param>
+        /// <param name="resolveDomain">The function used to resolve a domain from a string.</param>
+        /// <returns>An enumerable collection of resolved domain information.</returns>
+        private IEnumerable<ResolvedDomainInfo> CollectDistinctDomains(IPAddress hostAddress, IEnumerable<DnsFlow> dnsFlows)
+        {
+            var questions = dnsFlows.Where(x => hostAddress.Equals(x.SourceAddress)).ToArray();
+            var answers = dnsFlows.Where(x => hostAddress.Equals(x.DestinationAddress)).ToArray();
+            foreach (var answer in answers)
+            {
+                yield return new ResolvedDomainInfo(SafeString(answer.SourceAddress), SafeString(answer.QuestionName), SafeString(answer.ResponseData), answer.ResponseCode);
+            }
+        }
+
+        /// <summary>
+        /// Creates a service resolver based on the provided tags.
+        /// </summary>
+        /// <param name="tags">The tags used to create the service resolver.</param>
+        /// <returns>The created service resolver.</returns>
+        private Resolver<string, (string, InternetServiceTag[])> CreateServiceResolver(IEnumerable<TagObject> tags)
+        {
+            var netifyTags = tags.Where(x => x.Type == "NetifyIp").GroupBy(g => g.Key ?? String.Empty, (k, v) => (k, v.Select(x => new InternetServiceTag(x.Value ?? String.Empty, (float)x.Reliability)).ToArray()));
+            var serviceResolver = new Resolver<string, (string, InternetServiceTag[])>(netifyTags, t => t.Item1);
+            return serviceResolver;
+        }
+
+        /// <summary>
+        /// Creates a resolver for mapping TCP flow tags to process identifiers.
+        /// </summary>
+        /// <param name="tags">The collection of tags to be used for resolving.</param>
+        /// <returns>A resolver object that maps TCP flow tags to process identifiers.</returns>
+        private Resolver<string, TcpFlowTag> CreateProcessResolver(IEnumerable<TagObject> tags)
+        {
+#pragma warning disable CS8603 // Possible null reference return.          
+            var flowTags = tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag>(x => x.GetDetailsAs<TcpFlowTag>()).Where(t => t != null).Select(t => t!).ToArray();
+#pragma warning restore CS8603 // Possible null reference return.
+
+            var processResolver = new Resolver<string, TcpFlowTag>(flowTags, flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
+            return processResolver;
+        }
+
+        /// <summary>
+        /// Creates a domain resolver based on the provided host flows.
+        /// </summary>
+        /// <param name="hostFlows">The host flows to create the resolver from.</param>
+        /// <returns>The created domain resolver.</returns>
+        private Resolver<string, IpDomainMap> CreateDomainResolver(IEnumerable<IpFlow> hostFlows)
+        {
+            var ipdomains = hostFlows.SelectFlows<DnsFlow>()
+                .Where(d => !String.IsNullOrEmpty(d.ResponseData) && d.ResponseCode == DnsResponseCode.NoError && (d.ResponseType == DnsRecordType.A || d.ResponseType == DnsRecordType.AAAA))
+                .Select(x => new IpDomainMap(SafeString(x.QuestionName), SafeString(x.ResponseData)))
+                .ToArray() ?? Array.Empty<IpDomainMap>();
+
+            return new Resolver<string, IpDomainMap>(ipdomains, d => SafeString(d.ResponseData));
+        }
+        record IpDomainMap(string QueryString, string ResponseData);
+
+        /// <summary>
+        /// Converts a nullable value to its string representation, or returns an empty string if the value is null.
+        /// </summary>
+        /// <typeparam name="T">The type of the nullable value.</typeparam>
+        /// <param name="value">The nullable value to convert.</param>
+        /// <returns>The string representation of the nullable value, or an empty string if the value is null.</returns>
+        string SafeString<T>(T? value)
+        {
+            return value?.ToString() ?? String.Empty;
+        }
+
+        /// <summary>
+        /// Aggregates the host connections based on the provided IP address, flows, and resolving functions.
+        /// </summary>
+        /// <param name="hostAddress">The IP address of the host.</param>
+        /// <param name="flows">The collection of IP flows.</param>
+        /// <param name="resolveDomain">The function to resolve the domain name from an IP address.</param>
+        /// <param name="resolveServices">The function to resolve the internet service tags from an IP address.</param>
+        /// <returns>The collection of aggregated host connections.</returns>
+        private IEnumerable<IpConnectionInfo> AggregateHostConnections(IPAddress hostAddress, IEnumerable<IpFlow> flows, Func<string, string> resolveDomain, Func<string, InternetServiceTag[]> resolveServices)
         {
             // Perform processing on the input flows
-            var connections = flows.Select(f => f.SourceAddress.Equals(hostAddress) 
-                ? new IpConnectionInfo(f.DestinationAddress.ToString(),null, f.DestinationPort, null, null, 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets)
-                : new IpConnectionInfo(f.SourceAddress.ToString(), null, f.SourcePort, null, null, 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
+            var connections = flows.Select(f => hostAddress.Equals(f.SourceAddress)
+                ? new IpConnectionInfo(SafeString(f.DestinationAddress), String.Empty, f.DestinationPort, String.Empty, Array.Empty<InternetServiceTag>(), 1, f.SentPackets, f.SentOctets, f.RecvPackets, f.RecvOctets)
+                : new IpConnectionInfo(SafeString(f.SourceAddress), String.Empty, f.SourcePort, String.Empty, Array.Empty<InternetServiceTag>(), 1, f.RecvPackets, f.RecvOctets, f.SentPackets, f.SentOctets)
             );
             // Return the resulting collection of initiated connections
             return connections.GroupBy(key => (key.RemoteHostAddress, key.RemotePort),
                         (key, val) =>
                         {
                             var address = key.RemoteHostAddress;
-                                return new IpConnectionInfo(address, resolveDomain(address), key.RemotePort, null, resolveServices(address),
-                                    val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
-                                    val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
+                            return new IpConnectionInfo(address, resolveDomain(address), key.RemotePort, String.Empty, resolveServices(address),
+                                val.Count(), val.Sum(x => x.PacketsSent), val.Sum(x => x.OctetsSent),
+                                val.Sum(x => x.PacketsRecv), val.Sum(x => x.OctetsRecv));
                         }
                     );
         }
@@ -164,7 +292,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <returns>An IDisposable object that can be used to unsubscribe the observer.</returns>
         public IDisposable Subscribe(IObserver<HostContext> observer)
         {
-            return _subject.Subscribe(observer);    
+            return _subject.Subscribe(observer);
         }
 
         /// <summary>
@@ -172,7 +300,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// </summary>
         /// <typeparam name="TKey">The type of the key used to index the values.</typeparam>
         /// <typeparam name="TValue">The type of the values to be stored and indexed.</typeparam>
-        class Resolver<TKey, TValue>
+        class Resolver<TKey, TValue> where TKey : notnull
         {
             Dictionary<TKey, TValue> _dictionary = new Dictionary<TKey, TValue>();
             /// <summary>
@@ -192,9 +320,9 @@ namespace Ethanol.ContextBuilder.Polishers
             /// </summary>
             /// <param name="key">The key of type <typeparamref name="TKey"/> used to resolve the value.</param>
             /// <returns>The value of type <typeparamref name="TValue"/> that corresponds to the specified key, or the default value of <typeparamref name="TValue"/> if the key is not found.</returns>
-            public TValue Resolve(TKey key)
+            public bool TryResolve(TKey key, [NotNullWhen(true)] out TValue? value)
             {
-                return _dictionary.TryGetValue(key, out var value) ? value : default;
+                return _dictionary.TryGetValue(key, out value) && value != null;
             }
             /// <summary>
             /// Resolves a value of type <typeparamref name="TResult"/> by the specified key, using the specified selector function to transform the resolved value.
@@ -203,10 +331,19 @@ namespace Ethanol.ContextBuilder.Polishers
             /// <param name="key">The key of type <typeparamref name="TKey"/> used to resolve the value.</param>
             /// <param name="select">A <see cref="Func{T, TResult}"/> that transforms the resolved value of type <typeparamref name="TValue"/> into a result of type <typeparamref name="TResult"/>.</param>
             /// <returns>The transformed value of type <typeparamref name="TResult"/> that corresponds to the specified key, or the default value of <typeparamref name="TResult"/> if the key is not found.</returns>
-            public TResult Resolve<TResult>(TKey key, Func<TValue, TResult> select)
+            public bool TryResolve<TResult>(TKey key, Func<TValue, TResult> select, [NotNullWhen(true)] out TResult? result)
             {
-                return _dictionary.TryGetValue(key, out var value) ? select(value) : default;
+                if (_dictionary.TryGetValue(key, out var value))
+                {
+                    result = select(value);
+                    return result != null;
+                }
+                else
+                {
+                    result = default;
+                    return false;
+                }
             }
         }
     }
-  }
+}

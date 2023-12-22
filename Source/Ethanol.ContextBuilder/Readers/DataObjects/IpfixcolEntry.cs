@@ -15,7 +15,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
     public class IpfixcolEntry
     {
         [JsonPropertyName("@type")]
-        public string RecordType { get; set; }
+        public string? RecordType { get; set; }
 
         [JsonPropertyName("iana:octetDeltaCount")]
         public long IanaOctetDeltaCount { get; set; }
@@ -24,7 +24,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaPacketDeltaCount { get; set; }
 
         [JsonPropertyName("iana:protocolIdentifier")]
-        public string IanaProtocolIdentifier { get; set; }
+        public string? IanaProtocolIdentifier { get; set; }
 
         [JsonPropertyName("iana:ipClassOfService")]
         public int IanaIpClassOfService { get; set; }
@@ -33,10 +33,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaSourceTransportPort { get; set; }
 
         [JsonPropertyName("iana:sourceIPv4Address")]
-        public string IanaSourceIPv4Address { get; set; }
+        public string? IanaSourceIPv4Address { get; set; }
 
         [JsonPropertyName("iana:sourceIPv6Address")]
-        public string IanaSourceIPv6Address { get; set; }
+        public string? IanaSourceIPv6Address { get; set; }
 
         [JsonPropertyName("iana:ingressInterface")]
         public int IanaIngressInterface { get; set; }
@@ -45,10 +45,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaDestinationTransportPort { get; set; }
 
         [JsonPropertyName("iana:destinationIPv4Address")]
-        public string IanaDestinationIPv4Address { get; set; }
+        public string? IanaDestinationIPv4Address { get; set; }
                 
         [JsonPropertyName("iana:destinationIPv6Address")]
-        public string IanaDestinationIPv6Address { get; set; }
+        public string? IanaDestinationIPv6Address { get; set; }
 
         [JsonPropertyName("iana:egressInterface")]
         public int IanaEgressInterface { get; set; }
@@ -66,10 +66,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaSamplingAlgorithm { get; set; }
 
         [JsonPropertyName("iana:sourceMacAddress")]
-        public string IanaSourceMacAddress { get; set; }
+        public string? IanaSourceMacAddress { get; set; }
 
         [JsonPropertyName("iana:postDestinationMacAddress")]
-        public string IanaPostDestinationMacAddress { get; set; }
+        public string? IanaPostDestinationMacAddress { get; set; }
 
         [JsonPropertyName("iana:ipVersion")]
         public int IanaIpVersion { get; set; }
@@ -132,7 +132,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonDnsAddtrecCount { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrName")]
-        public string FlowmonDnsCrrName { get; set; }
+        public string? FlowmonDnsCrrName { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrType")]
         public int FlowmonDnsCrrType { get; set; }
@@ -144,13 +144,13 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long FlowmonDnsCrrTtl { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrRdata")]
-        public string FlowmonDnsCrrRdata { get; set; }
+        public string? FlowmonDnsCrrRdata { get; set; }
 
         [JsonPropertyName("flowmon:dnsCrrRdataLen")]
         public int FlowmonDnsCrrRdataLen { get; set; }
 
         [JsonPropertyName("flowmon:dnsQname")]
-        public string FlowmonDnsQname { get; set; }
+        public string? FlowmonDnsQname { get; set; }
 
         [JsonPropertyName("flowmon:dnsQtype")]
         public int FlowmonDnsQtype { get; set; }
@@ -159,7 +159,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonDnsQclass { get; set; }
 
         [JsonPropertyName("iana:tcpControlBits")]
-        public string IanaTcpControlBits { get; set; }
+        public string? IanaTcpControlBits { get; set; }
 
         [JsonPropertyName("flowmon:npmTcpRetransmission")]
         public long FlowmonNpmTcpRetransmission { get; set; }
@@ -168,7 +168,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long FlowmonNpmTcpOutOfOrder { get; set; }
 
         [JsonPropertyName("flowmon:httpHost")]
-        public string FlowmonHttpHost { get; set; }
+        public string? FlowmonHttpHost { get; set; }
 
         [JsonPropertyName("flowmon:httpMethodMask")]
         public int FlowmonHttpMethodMask { get; set; }
@@ -186,19 +186,19 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonTlsServerVersion { get; set; }
 
         [JsonPropertyName("flowmon:tlsServerRandom")]
-        public string FlowmonTlsServerRandom { get; set; }
+        public string? FlowmonTlsServerRandom { get; set; }
 
         [JsonPropertyName("flowmon:tlsServerSessionId")]
-        public string FlowmonTlsServerSessionId { get; set; }
+        public string? FlowmonTlsServerSessionId { get; set; }
 
         [JsonPropertyName("flowmon:tlsCipherSuite")]
         public int FlowmonTlsCipherSuite { get; set; }
 
         [JsonPropertyName("flowmon:tlsAlpn")]
-        public string FlowmonTlsAlpn { get; set; }
+        public string? FlowmonTlsAlpn { get; set; }
 
         [JsonPropertyName("flowmon:tlsSni")]
-        public string FlowmonTlsSni { get; set; }
+        public string? FlowmonTlsSni { get; set; }
 
         [JsonPropertyName("flowmon:tlsSniLength")]
         public int FlowmonTlsSniLength { get; set; }
@@ -207,22 +207,22 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonTlsClientVersion { get; set; }
 
         [JsonPropertyName("flowmon:tlsCipherSuites")]
-        public string FlowmonTlsCipherSuites { get; set; }
+        public string? FlowmonTlsCipherSuites { get; set; }
 
         [JsonPropertyName("flowmon:tlsClientRandom")]
-        public string FlowmonTlsClientRandom { get; set; }
+        public string? FlowmonTlsClientRandom { get; set; }
 
         [JsonPropertyName("flowmon:tlsClientSessionId")]
-        public string FlowmonTlsClientSessionId { get; set; }
+        public string? FlowmonTlsClientSessionId { get; set; }
 
         [JsonPropertyName("flowmon:tlsExtensionTypes")]
-        public string FlowmonTlsExtensionTypes { get; set; }
+        public string? FlowmonTlsExtensionTypes { get; set; }
 
         [JsonPropertyName("flowmon:tlsExtensionLengths")]
-        public string FlowmonTlsExtensionLengths { get; set; }
+        public string? FlowmonTlsExtensionLengths { get; set; }
 
         [JsonPropertyName("flowmon:tlsEllipticCurves")]
-        public string FlowmonTlsEllipticCurves { get; set; }
+        public string? FlowmonTlsEllipticCurves { get; set; }
 
         /* inconsistent data type: octets vs int -- ignore in input
         [JsonPropertyName("flowmon:tlsEcPointFormats")]
@@ -233,13 +233,13 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonTlsClientKeyLength { get; set; }
 
         [JsonPropertyName("flowmon:tlsIssuerCn")]
-        public string FlowmonTlsIssuerCn { get; set; }
+        public string? FlowmonTlsIssuerCn { get; set; }
 
         [JsonPropertyName("flowmon:tlsSubjectCn")]
-        public string FlowmonTlsSubjectCn { get; set; }
+        public string? FlowmonTlsSubjectCn { get; set; }
 
         [JsonPropertyName("flowmon:tlsSubjectOn")]
-        public string FlowmonTlsSubjectOn { get; set; }
+        public string? FlowmonTlsSubjectOn { get; set; }
 
         [JsonPropertyName("flowmon:tlsValidityNotBefore")]
         public long FlowmonTlsValidityNotBefore { get; set; }
@@ -257,10 +257,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int FlowmonTlsPublicKeyLength { get; set; }
 
         [JsonPropertyName("flowmon:tlsJa3Fingerprint")]
-        public string FlowmonTlsJa3Fingerprint { get; set; }
+        public string? FlowmonTlsJa3Fingerprint { get; set; }
 
         [JsonPropertyName("flowmon:httpUrl")]
-        public string FlowmonHttpUrl { get; set; }
+        public string? FlowmonHttpUrl { get; set; }
 
         [JsonPropertyName("flowmon:httpStatusCode")]
         public int FlowmonHttpStatusCode { get; set; }

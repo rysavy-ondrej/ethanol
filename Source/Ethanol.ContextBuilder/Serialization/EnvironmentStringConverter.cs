@@ -48,9 +48,9 @@ namespace Ethanol.ContextBuilder.Serialization
         /// <param name="emitter">The YAML emitter to write to.</param>
         /// <param name="value">The string value to write.</param>
         /// <param name="type">Type of the object to write. Expected to be string.</param>
-        public void WriteYaml(IEmitter emitter, object value, Type type)
+        public void WriteYaml(IEmitter emitter, object? value, Type type)
         {
-            emitter.Emit(new Scalar(null, null, value.ToString(), ScalarStyle.Any, true, false));
+            emitter.Emit(new Scalar(null, null, value?.ToString()??String.Empty, ScalarStyle.Any, true, false));
         }
     }
 }

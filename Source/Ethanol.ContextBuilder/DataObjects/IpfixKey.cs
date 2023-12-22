@@ -11,7 +11,7 @@ namespace Ethanol.ContextBuilder.Context
     /// It incorporates a combination of various fields that together form a unique identifier for each flow.
     /// By using this unique identifier, it becomes feasible to group, correlate, or aggregate flow data.
     /// </remarks>
-    public record FlowKey(ProtocolType Protocol, IPAddress SourceAddress, ushort SourcePort, IPAddress DestinationAddress, ushort DestinationPort)
+    public record FlowKey(ProtocolType Protocol, IPAddress? SourceAddress, ushort SourcePort, IPAddress? DestinationAddress, ushort DestinationPort)
     {
         /// <summary>
         /// Provides a string representation of the flow key.

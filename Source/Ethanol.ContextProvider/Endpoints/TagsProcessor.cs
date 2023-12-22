@@ -1,6 +1,5 @@
 ﻿using Npgsql;
 using System.Data;
-using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Context;
 
 /// <summary>
@@ -49,25 +48,26 @@ class TagsProcessor
     /// <returns>A dictionary with compacted tag representations.</returns>
     public Dictionary<string, object> ComputeCompactTags(TagObject[] tags)
     {
-        string[] CleanAndSplitString(string s)
+        string[] CleanAndSplitString(string? s)
         {
             return (s ?? String.Empty).Split(',').Select(p => p.Trim('[', ']', '{', '}', ' ', '"')).ToArray();
         }
-        string CleanAndRejoinString(string s, char sep)
+        string CleanAndRejoinString(string? s, char sep)
         {
             return String.Join(sep, CleanAndSplitString(s));
         }
-        long SafeIntFromFloatString(string s)
+        long SafeIntFromFloatString(string? s)
         {
+            if (s == null) return 0;
             return System.Convert.ToInt64(double.TryParse(s.Trim('"') ?? string.Empty, out var p) ? p : 0f);
         }
         Dictionary<string, Dictionary<string, long>> GetDependencyMapping(IEnumerable<TagObject> enumerable)
         {
             var mapping = enumerable
                 .Select(d => (key: d.Value, val: d.GetDetailsAs<DependencyMapping>()))
-                .Select(m => (ip: m.key, port: m.val.port ?? string.Empty, packets: (long)m.val.num_packets))
-                .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port, x => x.packets)))
-                .ToDictionary(x => x.ip, x => x.ports);
+                .Select(m => (ip: m.key.ToSafeString(), port: (m.val?.port).ToSafeString(), packets: (long)(m.val?.num_packets ?? 0)))
+                .GroupBy(g => g.ip, (k, e) => (ip: k, ports: e.GroupBy(t => t.port, (k, e) => (port: k, packets: e.Sum(x => x.packets))).ToDictionary(x => x.port.ToSafeString(), x => x.packets)))
+                .ToDictionary(x => x.ip.ToSafeString(), x => x.ports);
             return mapping;
         }
         ActivityAll GetActivityInformation(string flows, string bytes)
@@ -108,5 +108,12 @@ class TagsProcessor
     {
         var tags = _provider.GetMany(key, start, end);
         return tags.ToArray();
+    }
+}
+public static class ToStringExtensions
+{
+    public static string ToSafeString<T>(this T? s)
+    {
+        return s?.ToString() ?? string.Empty;
     }
 }

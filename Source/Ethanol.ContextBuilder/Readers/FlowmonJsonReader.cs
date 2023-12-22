@@ -27,7 +27,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Logger instance for the class to record events and issues.
         /// </summary>
-        protected ILogger _logger;
+        protected readonly ILogger? _logger;
         /// <summary>
         /// Represents a Flowmon JSON reader that uses a JsonNdJsonDeserializer to deserialize Flowmonexp5Entry objects.
         /// </summary>
@@ -38,12 +38,12 @@ namespace Ethanol.ContextBuilder.Readers
         /// </summary>
         protected readonly JsonSerializerOptions _serializerOptions;
 
-        public static FlowmonJsonReader CreateTcpReader(IPEndPoint listenAt, ILogger logger)
+        public static FlowmonJsonReader CreateTcpReader(IPEndPoint listenAt, ILogger? logger)
         {
             return new TcpReader(listenAt, logger);
         }
 
-        public static FlowmonJsonReader CreateFileReader(TextReader reader, string filePath, ILogger logger)
+        public static FlowmonJsonReader CreateFileReader(TextReader reader, string? filePath, ILogger? logger)
         {
             return new FileReader(reader, filePath, logger);
         }
@@ -51,7 +51,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Initializes a new instance of the <see cref="FlowmonJsonReader"/> class.
         /// </summary>
-        protected FlowmonJsonReader(ILogger logger)
+        protected FlowmonJsonReader(ILogger? logger)
         {
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
@@ -62,13 +62,13 @@ namespace Ethanol.ContextBuilder.Readers
         class FileReader : FlowmonJsonReader
         {
             private readonly TextReader _reader;
-            private readonly string _filePath;
+            private readonly string? _filePath;
 
             /// <summary>
             /// Initializes the reader with underlying <see cref="TextReader"/>.
             /// </summary>
             /// <param name="reader">The text reader device (input file or standard input).</param>
-            public FileReader(TextReader reader, string filePath, ILogger logger) : base(logger)
+            public FileReader(TextReader reader, string? filePath, ILogger? logger) : base(logger)
             {
                 _reader = reader;
                 _filePath = filePath;
@@ -82,7 +82,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
 
             /// <inheritdoc/>
-            protected override async Task<IpFlow> ReadAsync(CancellationToken ct)
+            protected override async Task<IpFlow?> ReadAsync(CancellationToken ct)
             {
                 while (!ct.IsCancellationRequested)
                 {
@@ -117,7 +117,7 @@ namespace Ethanol.ContextBuilder.Readers
         class TcpReader : FlowmonJsonReader
         {
             private readonly TcpJsonServer<Flowmonexp5Entry> _reader;
-            public TcpReader(IPEndPoint endPoint, ILogger logger) : base(logger)
+            public TcpReader(IPEndPoint endPoint, ILogger? logger) : base(logger)
             {
                 _reader = new TcpJsonServer<Flowmonexp5Entry>(endPoint, _deserializer, logger);
             }
@@ -136,7 +136,7 @@ namespace Ethanol.ContextBuilder.Readers
                 return _reader.OpenAsync();
             }
 
-            protected override Task<IpFlow> ReadAsync(CancellationToken ct)
+            protected override Task<IpFlow?> ReadAsync(CancellationToken ct)
             {
                 return _reader.ReadAsync(ct);
             }

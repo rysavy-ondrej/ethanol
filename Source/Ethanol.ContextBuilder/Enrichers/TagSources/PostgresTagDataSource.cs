@@ -24,7 +24,7 @@ using System.Threading.Tasks;
 /// </remarks>
 public class PostgresTagDataSource : ITagDataSource<TagObject>
 {
-    ILogger _logger;
+    private readonly ILogger? _logger;
     private readonly NpgsqlConnection _connection;
     private readonly string _tableName;
 
@@ -35,7 +35,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// </summary>
     /// <param name="connectionString"></param>
     /// <returns></returns>
-    public static ITagDataSource<TagObject> Create(string connectionString, string tableName)
+    public static ITagDataSource<TagObject>? Create(string connectionString, string tableName)
     {
         try
         {
@@ -62,7 +62,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// </summary>
     /// <param name="connectionString"></param>
     /// <param name="tableName">The name of the table to read records from.</param>
-    public PostgresTagDataSource(NpgsqlConnection connection, string tableName, ILogger logger = null)
+    public PostgresTagDataSource(NpgsqlConnection connection, string tableName, ILogger? logger = null)
     {
         _connection = connection;
         _tableName = tableName;
@@ -249,7 +249,8 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     public static int BulkInsert(NpgsqlConnection connection, string tableName, IEnumerable<TagObject> records)
     {
 
-        string Truncate(string input, int maxsize) => input.Substring(0, System.Math.Min(input.Length, maxsize));
+        string Truncate(string? input, int maxsize) => input?.Substring(0, System.Math.Min(input.Length, maxsize)) ?? string.Empty;
+
         var recordCount = 0;
         using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, validity, details) FROM STDIN (FORMAT BINARY)"))
         {

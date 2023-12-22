@@ -18,12 +18,12 @@ namespace Ethanol.ContextBuilder.Readers
     public class TcpJsonServer<TEntryType> : IDisposable, IAsyncDisposable
     {
         private IPEndPoint _endpoint;
-        private TcpListener _listener;
-        private Task _mainLoopTask;
+        private TcpListener? _listener;
+        private Task? _mainLoopTask;
         private List<Task> _clientsTasks;
         private CancellationTokenSource _cancellationTokenSource;
         private BlockingCollection<IpFlow> _queue;
-        private ILogger _logger;
+        private ILogger? _logger;
         private readonly JsonReaderDeserializer<TEntryType> _deserializer;
         private bool _isDisposed;
 
@@ -35,7 +35,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <param name="endPoint">The IP endpoint to bind the server to.</param>
         /// <param name="deserializer">The JSON deserializer used to deserialize JSON data.</param>
         /// <param name="logger">The logger used for logging server events.</param>
-        public TcpJsonServer(IPEndPoint endPoint, JsonReaderDeserializer<TEntryType> deserializer, ILogger logger)
+        public TcpJsonServer(IPEndPoint endPoint, JsonReaderDeserializer<TEntryType> deserializer, ILogger? logger)
         {
             _endpoint = endPoint;
             _cancellationTokenSource = new CancellationTokenSource();
@@ -61,14 +61,14 @@ namespace Ethanol.ContextBuilder.Readers
                     _logger?.LogInformation($"TCP server {_endpoint} has accepted connection from {client?.Client.RemoteEndPoint}");
                     if (client != null)
                     {
-                        var tcs = new TaskCompletionSource<object>();
+                        var tcs = new TaskCompletionSource();
                         _clientsTasks.Add(tcs.Task);
                         // Start as a background task... 
                         var _ = Task.Run(async () =>
                         {
                             await ReadInputData(client, cancellation);
                             _clientsTasks.Remove(tcs.Task);
-                            tcs.SetResult(null);
+                            tcs.SetResult();
                             client.Dispose();
                         }, cancellation);
                     }
@@ -156,14 +156,14 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
-        public Task<IpFlow> ReadAsync(CancellationToken cancellation)
+        public Task<IpFlow?> ReadAsync(CancellationToken cancellation)
         {
             try
             {
                 // Take does not wait in the case the input is completed.
                 // In this case the return valus is null.
                 var flow = _queue.Take(cancellation);
-                return Task.FromResult(flow);
+                return Task.FromResult<IpFlow?>(flow);
             }
             catch (OperationCanceledException)
             {
@@ -175,7 +175,7 @@ namespace Ethanol.ContextBuilder.Readers
         public async Task CloseAsync()
         {
             _queue.CompleteAdding();
-            var activeTasks = _clientsTasks.Append(_mainLoopTask).ToArray();
+            var activeTasks = _clientsTasks.Append(_mainLoopTask ?? Task.CompletedTask).ToArray();
 
             // Cancel the reading process in all open incoming connections:
             _cancellationTokenSource.Cancel();

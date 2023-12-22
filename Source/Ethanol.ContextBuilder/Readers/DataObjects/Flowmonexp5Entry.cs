@@ -58,10 +58,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int InveaDnsCrrClass { get; set; }
 
         [JsonPropertyName("INVEA_DNS_CRR_NAME")]
-        public string InveaDnsCrrName { get; set; }
+        public string? InveaDnsCrrName { get; set; }
 
         [JsonPropertyName("INVEA_DNS_CRR_RDATA")]
-        public string InveaDnsCrrRdata { get; set; }
+        public string? InveaDnsCrrRdata { get; set; }
 
         [JsonPropertyName("INVEA_DNS_CRR_RDATA_LEN")]
         public int InveaDnsCrrRdataLen { get; set; }
@@ -85,7 +85,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int InveaDnsQclass { get; set; }
 
         [JsonPropertyName("INVEA_DNS_QNAME")]
-        public string InveaDnsQname { get; set; }
+        public string? InveaDnsQname { get; set; }
 
         [JsonPropertyName("INVEA_DNS_QTYPE")]
         public int InveaDnsQtype { get; set; }
@@ -94,16 +94,16 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int InveaDnsQuestionCount { get; set; }
 
         [JsonPropertyName("L3_IPV4_DST")]
-        public string L3Ipv4Dst { get; set; }
+        public string? L3Ipv4Dst { get; set; }
 
         [JsonPropertyName("L3_IPV4_SRC")]
-        public string L3Ipv4Src { get; set; }
+        public string? L3Ipv4Src { get; set; }
 
         [JsonPropertyName("L3_IPV6_DST")]
-        public string L3Ipv6Dst { get; set; }
+        public string? L3Ipv6Dst { get; set; }
 
         [JsonPropertyName("L3_IPV6_SRC")]
-        public string L3Ipv6Src { get; set; }
+        public string? L3Ipv6Src { get; set; }
 
         [JsonPropertyName("L3_PROTO")]
         public int L3Proto { get; set; }
@@ -139,19 +139,19 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int NbarAppId { get; set; }
 
         [JsonPropertyName("NBAR_NAME")]
-        public string NbarName { get; set; }
+        public string? NbarName { get; set; }
 
         [JsonPropertyName("TLS_CIPHER_SUITE")]
         public int TlsCipherSuite { get; set; }
 
         [JsonPropertyName("TLS_CIPHER_SUITES")]
-        public string TlsCipherSuites { get; set; }
+        public string? TlsCipherSuites { get; set; }
 
         [JsonPropertyName("TLS_CLIENT_RANDOM")]
-        public string TlsClientRandom { get; set; }
+        public string? TlsClientRandom { get; set; }
 
         [JsonPropertyName("TLS_CLIENT_SESSION_ID")]
-        public string TlsClientSessionId { get; set; }
+        public string? TlsClientSessionId { get; set; }
 
         [JsonPropertyName("TLS_CLIENT_VERSION")]
         public int TlsClientVersion { get; set; }
@@ -160,28 +160,28 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int TlsContentType { get; set; }
 
         [JsonPropertyName("TLS_EC_POINT_FORMATS")]
-        public string TlsEcPointFormats { get; set; }
+        public string? TlsEcPointFormats { get; set; }
 
         [JsonPropertyName("TLS_ELLIPTIC_CURVES")]
-        public string TlsEllipticCurves { get; set; }
+        public string? TlsEllipticCurves { get; set; }
 
         [JsonPropertyName("TLS_EXTENSION_LENGTHS")]
-        public string TlsExtensionLengths { get; set; }
+        public string? TlsExtensionLengths { get; set; }
 
         [JsonPropertyName("TLS_EXTENSION_TYPES")]
-        public string TlsExtensionTypes { get; set; }
+        public string? TlsExtensionTypes { get; set; }
 
         [JsonPropertyName("TLS_HANDSHAKE_TYPE")]
         public int TlsHandshakeType { get; set; }
 
         [JsonPropertyName("TLS_JA3_FINGERPRINT")]
-        public string TlsJa3Fingerprint { get; set; }
+        public string? TlsJa3Fingerprint { get; set; }
 
         [JsonPropertyName("TLS_SERVER_RANDOM")]
-        public string TlsServerRandom { get; set; }
+        public string? TlsServerRandom { get; set; }
 
         [JsonPropertyName("TLS_SERVER_SESSION_ID")]
-        public string TlsServerSessionId { get; set; }
+        public string? TlsServerSessionId { get; set; }
 
         [JsonPropertyName("TLS_SERVER_VERSION")]
         public int TlsServerVersion { get; set; }
@@ -190,10 +190,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long TlsSetupTime { get; set; }
 
         [JsonPropertyName("TLS_ALPN")]
-        public string TlsAlpn { get; set; }
+        public string? TlsAlpn { get; set; }
 
         [JsonPropertyName("TLS_SNI")]
-        public string TlsSni { get; set; }
+        public string? TlsSni { get; set; }
 
         [JsonPropertyName("TLS_SNI_LENGTH")]
         public int TlsSniLength { get; set; }
@@ -202,7 +202,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int TlsClientKeyLength { get; set; }
 
         [JsonPropertyName("TLS_ISSUER_CN")]
-        public string TlsIssuerCn { get; set; }
+        public string? TlsIssuerCn { get; set; }
 
         [JsonPropertyName("TLS_PUBLIC_KEY_ALG")]
         public long TlsPublicKeyAlg { get; set; }
@@ -214,10 +214,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long TlsSignatureAlg { get; set; }
 
         [JsonPropertyName("TLS_SUBJECT_CN")]
-        public string TlsSubjectCn { get; set; }
+        public string? TlsSubjectCn { get; set; }
 
         [JsonPropertyName("TLS_SUBJECT_ON")]
-        public string TlsSubjectOn { get; set; }
+        public string? TlsSubjectOn { get; set; }
 
         [JsonPropertyName("TLS_VALIDITY_NOT_AFTER")]
         public long TlsValidityNotAfter { get; set; }
@@ -229,19 +229,19 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int HttpMethodMask { get; set; }
 
         [JsonPropertyName("HTTP_REQUEST_AGENT")]
-        public string HttpRequestAgent { get; set; }
+        public string? HttpRequestAgent { get; set; }
 
         [JsonPropertyName("HTTP_REQUEST_HOST")]
-        public string HttpRequestHost { get; set; }
+        public string? HttpRequestHost { get; set; }
 
         [JsonPropertyName("HTTP_REQUEST_REFERER")]
-        public Uri HttpRequestReferer { get; set; }
+        public Uri? HttpRequestReferer { get; set; }
 
         [JsonPropertyName("HTTP_REQUEST_URL")]
-        public string HttpRequestUrl { get; set; }
+        public string? HttpRequestUrl { get; set; }
 
         [JsonPropertyName("HTTP_REQUEST_URL_SHORT")]
-        public string HttpRequestUrlShort { get; set; }
+        public string? HttpRequestUrlShort { get; set; }
 
         [JsonPropertyName("HTTP_RESPONSE_STATUS_CODE")]
         public int HttpResponseStatusCode { get; set; }

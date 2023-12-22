@@ -34,7 +34,7 @@ namespace Ethanol.ContextBuilder.Serialization
         /// <param name="type">Type of the object to convert. Expected to be <see cref="IPAddress"/>.</param>
         /// <returns>The deserialized IP address.</returns>
         /// <exception cref="YamlException">Thrown when the provided YAML value is not a valid IP address.</exception>
-        public object ReadYaml(IParser parser, Type type)
+        public object? ReadYaml(IParser parser, Type type)
         {
             var scalar = parser.Consume<Scalar>();
             if (scalar.Value == null)
@@ -42,7 +42,7 @@ namespace Ethanol.ContextBuilder.Serialization
                 return null;
             }
 
-            IPAddress ipAddress;
+            IPAddress? ipAddress;
             if (!IPAddress.TryParse(scalar.Value, out ipAddress))
             {
                 throw new YamlException($"Invalid IP address: {scalar.Value}");
@@ -57,10 +57,10 @@ namespace Ethanol.ContextBuilder.Serialization
         /// <param name="emitter">The YAML emitter to write to.</param>
         /// <param name="value">The IP address value to write.</param>
         /// <param name="type">Type of the object to write. Expected to be <see cref="IPAddress"/>.</param>
-        public void WriteYaml(IEmitter emitter, object value, Type type)
+        public void WriteYaml(IEmitter emitter, object? value, Type type)
         {
-            var ipAddress = (IPAddress)value;
-            emitter.Emit(new Scalar(null, null, ipAddress.ToString(), ScalarStyle.Any, true, false));
+            var ipAddressString = value?.ToString() ?? string.Empty;
+            emitter.Emit(new Scalar(null, null, ipAddressString, ScalarStyle.Any, true, false));
         }
     }
 }

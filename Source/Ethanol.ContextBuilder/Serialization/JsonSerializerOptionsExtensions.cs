@@ -33,11 +33,11 @@ namespace Ethanol.ContextBuilder.Serialization
         {
             return JsonSerializer.Serialize<T>(value, options);
         }
-        public static T Deserialize<T>(string value)
+        public static T? Deserialize<T>(string value)
         {
             return JsonSerializer.Deserialize<T>(value, options);
         }
-        public static T Deserialize<T>(Stream stream)
+        public static T? Deserialize<T>(Stream stream)
         {
             return JsonSerializer.Deserialize<T>(stream, options);
         }

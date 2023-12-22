@@ -7,7 +7,7 @@ namespace Ethanol.ContextBuilder.Writers
 {
     public static class JsonContextWriterCatalogEntry
     {
-        public static ContextWriter<HostContext> GetJsonFileWriter(this ContextWriterCatalog catalog, TextWriter writer, string filePath)
+        public static ContextWriter<HostContext> GetJsonFileWriter(this ContextWriterCatalog catalog, TextWriter writer, string? filePath)
         {
             return JsonTargetHostContextWriter.CreateFileWriter(writer, filePath, catalog.Environment.Logger);
         }

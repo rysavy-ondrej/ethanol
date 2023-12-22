@@ -7,10 +7,22 @@ using System.Linq;
 using System.Net;
 
 
+/// <summary>
+/// Provides tags associated with remote hosts for a specified time range using a <see cref="ITagDataSource{T}"/>.
+/// </summary>
+/// <typeparam name="TagObject">The type of the tag object.</typeparam>
+/// <typeparam name="IpHostContext">The type of the IP host context.</typeparam>
 public class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
 {
+    /// <summary>
+    /// The data source for retrieving tags.
+    /// </summary>
     private readonly ITagDataSource<TagObject> _tagDataSource;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NetifyTagProvider"/> class.
+    /// </summary>
+    /// <param name="tagDataSource">The tag data source.</param>
     public NetifyTagProvider(ITagDataSource<TagObject> tagDataSource)
     {
         _tagDataSource = tagDataSource ?? throw new ArgumentNullException(nameof(tagDataSource));
@@ -19,14 +31,19 @@ public class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
     /// <summary>
     /// Retrieves the tags associated with the provided <see cref="IpHostContext"/>.
     /// </summary>
+    /// <param name="value">The observable event containing the IP host context.</param>
+    /// <returns>The tags associated with the IP host context.</returns>
     public IEnumerable<TagObject> GetTags(ObservableEvent<IpHostContext> value)
     {
+        if (value.Payload == null || value.Payload.HostAddress == null || value.Payload.Flows == null || value.Payload.Flows.Length == 0)
+            return Enumerable.Empty<TagObject>();
+
         var host = value.Payload.HostAddress;
         var start = value.StartTime;
         var end = value.EndTime;
         var flows = value.Payload.Flows;
-        var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Distinct();
-        return GetRemoteTags(remoteHosts, start, end);
+        var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Where(x=> x!= null).Distinct();
+        return GetRemoteTags(remoteHosts!, start, end);
     }
 
     /// <summary>

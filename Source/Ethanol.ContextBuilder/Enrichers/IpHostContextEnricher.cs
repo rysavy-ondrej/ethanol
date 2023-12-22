@@ -1,6 +1,5 @@
 ﻿using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -14,7 +13,10 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// </summary>
     public class IpHostContextEnricher : IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>>
     {
-        ILogger _logger;
+        /// <summary>
+        /// The logger used for logging purposes.
+        /// </summary>
+        private readonly ILogger? _logger;
         /// Represents a subject that can both observe items of type <see cref="ObservableEvent<RawHostContext>"/> 
         /// as well as produce them. This is often used to represent both the source and terminator of an observable sequence.
         private readonly Subject<ObservableEvent<IpHostContextWithTags>> _subject;
@@ -30,13 +32,16 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
         /// </summary>
         /// <param name="tagQueryable">Provides querying capabilities for tags.</param>
-        public IpHostContextEnricher(ITagDataProvider<TagObject, IpHostContext> tagProvider, ILogger logger = null)
+        public IpHostContextEnricher(ITagDataProvider<TagObject, IpHostContext> tagProvider, ILogger? logger = null)
         {
             _subject = new Subject<ObservableEvent<IpHostContextWithTags>>();
             _tagProvider = tagProvider;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Gets a task that represents the completion of the operation.
+        /// </summary>
         public Task Completed => _tcs.Task;
 
         /// <summary>
@@ -62,14 +67,13 @@ namespace Ethanol.ContextBuilder.Enrichers
             try
             {
                 var tags = _tagProvider.GetTags(value);
-                _subject.OnNext(new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = value.Payload.HostAddress, Flows = value.Payload.Flows, Tags = tags.ToArray() }, value.StartTime, value.EndTime));
+                _subject.OnNext(new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = value.Payload?.HostAddress, Flows = value.Payload?.Flows, Tags = tags.ToArray() }, value.StartTime, value.EndTime));
             }
             catch (Exception ex)
             {
                 _logger?.LogError(ex, $"Error in context enrichment. Value: {value}");
                 _subject.OnError(ex);
             }
-
         }
 
         /// <summary>

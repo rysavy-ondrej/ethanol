@@ -11,25 +11,25 @@
         /// Gets or initializes the tag or label uniquely associated with the web application.
         /// This is often a concise identifier used for quick referencing.
         /// </summary>
-        public string Tag { get; init; }
+        public string? Tag { get; init; }
 
         /// <summary>
         /// Gets or initializes a short, typically abbreviated, name for the web application.
         /// This name is useful for places where space might be limited or for quick referencing.
         /// </summary>
-        public string ShortName { get; init; }
+        public string? ShortName { get; init; }
 
         /// <summary>
         /// Gets or initializes the full, formal name or title of the web application.
         /// This provides a clear understanding of the application's branding or naming.
         /// </summary>
-        public string FullName { get; init; }
+        public string? FullName { get; init; }
 
         /// <summary>
         /// Gets or initializes the category or type to which the web application belongs.
         /// Categories help in classifying applications based on their primary function or 
         /// the industry they cater to, e.g., "Finance", "Gaming", "Productivity", etc.
         /// </summary>
-        public string Category { get; init; }
+        public string? Category { get; init; }
     }
 }

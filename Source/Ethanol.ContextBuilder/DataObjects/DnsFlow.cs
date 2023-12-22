@@ -9,7 +9,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Represents a unique identifier associated with the DNS request or response.
         /// </summary>
-        public string Identifier { get; set; }
+        public string? Identifier { get; set; }
 
         /// <summary>
         /// Gets or sets the count of questions in the DNS request or response.
@@ -49,7 +49,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Represents the domain name associated with the DNS response.
         /// </summary>
-        public string ResponseName { get; set; }
+        public string? ResponseName { get; set; }
 
         /// <summary>
         /// Represents the response code of the DNS query, indicating the success or failure of the query.
@@ -59,7 +59,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Represents additional data or information associated with the DNS response.
         /// </summary>
-        public string ResponseData { get; set; }
+        public string? ResponseData { get; set; }
 
         /// <summary>
         /// Represents the type of the DNS question record.
@@ -74,12 +74,12 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Represents the domain name associated with the DNS question.
         /// </summary>
-        public string QuestionName { get; set; }
+        public string? QuestionName { get; set; }
 
         /// <summary>
         /// Represents flags associated with the DNS query or response, providing additional metadata or control information.
         /// </summary>
-        public string Flags { get; set; }
+        public string? Flags { get; set; }
 
         /// <summary>
         /// Represents the operation code (opcode) of the DNS message, indicating the kind of query or operation being requested.

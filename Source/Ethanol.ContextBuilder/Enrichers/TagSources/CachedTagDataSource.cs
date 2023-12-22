@@ -24,23 +24,25 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
     public IEnumerable<TagDataType> Get(string tagKey, DateTime start, DateTime end)
     {
         string cacheKey = $"Get_{tagKey}_{start}_{end}";
-        return _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
+        var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
         {
             var data = _dataSource.Get(tagKey, start, end).ToArray();
             entry.SetSize(1+data.Length);
             return data;
         });
+        return item ?? Enumerable.Empty<TagDataType>();
     }
 
     public IEnumerable<TagDataType> Get(string tagKey, string tagType, DateTime start, DateTime end)
     {
         string cacheKey = $"Get_{tagKey}_{tagType}_{start}_{end}";
-        return _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
+        var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
         {
             var data = _dataSource.Get(tagKey, tagType, start, end).ToArray();
             entry.SetSize(1+data.Length);
             return data;
         });
+        return item ?? Enumerable.Empty<TagDataType>();
     }
      
     public Task<IEnumerable<TagDataType>> GetAsync(string tagKey, DateTime start, DateTime end)
@@ -56,11 +58,12 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
     public IEnumerable<TagDataType> GetMany(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)
     {
         string cacheKey = $"GetMany_{String.Join("_", tagKeys)}_{tagType}_{start}_{end}";
-        return _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
+        var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
         {
             var data = _dataSource.GetMany(tagKeys, tagType, start, end).ToArray();
             entry.SetSize(1+data.Length);
             return data;
         });
+        return item ?? Enumerable.Empty<TagDataType>();
     }
 }

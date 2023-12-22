@@ -20,7 +20,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the recognized application protocol tag associated with the flow.
         /// </summary>
-        public string ApplicationTag { get; set; }
+        public string? ApplicationTag { get; set; }
 
         /// <summary>
         /// Gets or sets the starting time of the flow.

@@ -1,6 +1,3 @@
-using Ethanol;
-using Ethanol.ContextBuilder;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Net;
@@ -25,14 +22,14 @@ public static class IPEndPointResolver
             throw new ArgumentException("Input string must contain at most one colon to separate the host and port.");
         }
 
-        IPAddress address;
+        IPAddress? address;
         if (!IPAddress.TryParse(parts[0], out address))
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(parts[0]);
             address = hostEntry.AddressList.FirstOrDefault() ?? IPAddress.None;
         }
  
-        int resolvedPort = (parts.Length == 2 ? int.Parse(parts[1]) : defaultPort);
+        int resolvedPort = parts.Length == 2 ? int.Parse(parts[1]) : defaultPort;
        
         return new IPEndPoint(address, resolvedPort);
     }

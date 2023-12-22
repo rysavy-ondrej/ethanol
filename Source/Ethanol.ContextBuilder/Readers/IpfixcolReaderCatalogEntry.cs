@@ -17,7 +17,7 @@ namespace Ethanol.Catalogs
         /// <param name="reader">The text reader.</param>
         /// <param name="filePath">The file path or null if stdin is used.</param>
         /// <returns>An instance of <see cref="IDataReader{IpFlow}"/> for reading IPFIXCOL files.</returns>
-        public static IDataReader<IpFlow> GetIpfixcolFileReader(this FlowReaderCatalog catalog, TextReader reader, string filePath)
+        public static IDataReader<IpFlow> GetIpfixcolFileReader(this FlowReaderCatalog catalog, TextReader reader, string? filePath)
         {
             return IpfixcolJsonReader.CreateFileReader(reader, filePath, catalog.Environment.Logger);
         }

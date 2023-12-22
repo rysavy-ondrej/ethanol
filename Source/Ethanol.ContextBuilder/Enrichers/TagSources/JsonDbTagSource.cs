@@ -42,7 +42,7 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <returns>A collection of tags that match the specified criteria.</returns>
     public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
     {
-        return _queryable.Where(x => x.Key.ToString() == tagKey && x.StartTime <= start && x.EndTime >= end);
+        return _queryable.Where(x => tagKey.Equals(x.Key?.ToString()) && x.StartTime <= start && x.EndTime >= end);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <returns>A collection of <see cref="TagObject"/> that matches the provided criteria.</returns>
     public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
     {
-        return _queryable.Where(x => x.Key.ToString() == tagKey && x.Type == tagType && x.StartTime <= start && x.EndTime >= end);
+        return _queryable.Where(x => tagKey.Equals(x.Key?.ToString()) && x.Type == tagType && x.StartTime <= start && x.EndTime >= end);
     }
 
     /// <summary>

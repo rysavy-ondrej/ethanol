@@ -29,18 +29,18 @@ namespace Ethanol.ContextBuilder.Context
         /// Gets or sets the category or classification of the tag. This provides a high-level 
         /// categorization to understand the kind or domain of the tag.
         /// </summary>
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         /// <summary>
         /// Gets or sets the unique identifier for the tag within its type. This key 
         /// allows for easy identification and differentiation of tags.
         /// </summary>
-        public string Key { get; set; }
+        public string? Key { get; set; }
         /// <summary>
         /// Gets or sets the descriptive information or data associated with the tag. This 
         /// value typically elaborates on the nature or specifics of the tag.
         /// </summary>
-        public string Value { get; set; }
+        public string? Value { get; set; }
 
         /// <summary>
         /// Gets or sets the score indicating the trustworthiness or confidence level 
@@ -63,7 +63,7 @@ namespace Ethanol.ContextBuilder.Context
         /// typically stored as a serialized JSON string. This can include any extra 
         /// attributes, metadata, or deeper context about the tag.
         /// </summary>
-        public dynamic Details { get; set; }
+        public dynamic? Details { get; set; }
 
         /// <summary>
         /// Retrieves the details of the tag object as a specified type.
@@ -75,8 +75,13 @@ namespace Ethanol.ContextBuilder.Context
         /// it returns the details directly. Otherwise, it serializes the Details into JSON 
         /// and then deserializes it into the specified type.
         /// </remarks>
-        public T GetDetailsAs<T>()
+        public T? GetDetailsAs<T>()
         {
+            if (Details == null)
+            {
+                return default;
+            }
+
             if (typeof(T) == Details.GetType())
             {
                 return (T)Details;

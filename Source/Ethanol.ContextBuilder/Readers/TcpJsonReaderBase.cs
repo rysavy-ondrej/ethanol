@@ -17,16 +17,47 @@ namespace Ethanol.ContextBuilder.Readers
     /// </summary>
     public class TcpJsonServer<TEntryType> : IDisposable, IAsyncDisposable
     {
+        /// <summary>
+        /// Gets or sets the IP endpoint for the TCP JSON reader.
+        /// </summary>
         private IPEndPoint _endpoint;
+        /// <summary>
+        /// The TCP listener used for reading JSON data.
+        /// </summary>
         private TcpListener? _listener;
+        /// <summary>
+        /// Represents the main loop task for reading JSON data over TCP.
+        /// </summary>
         private Task? _mainLoopTask;
+        /// <summary>
+        /// The list of tasks representing the clients.
+        /// </summary>
         private List<Task> _clientsTasks;
+        /// <summary>
+        /// The cancellation token source used for cancelling asynchronous operations.
+        /// </summary>
         private CancellationTokenSource _cancellationTokenSource;
+        /// <summary>
+        /// A blocking collection to store IP flows. The records are read from the TCP stream and put in this queue. 
+        /// The TryGetNextRecord method reads the records from this queue.
+        /// </summary>
         private BlockingCollection<IpFlow> _queue;
+        /// <summary>
+        /// Gets or sets the logger for the TcpJsonReaderBase class.
+        /// </summary>
         private ILogger? _logger;
+        /// <summary>
+        /// The deserializer used for JSON reading.
+        /// </summary>
         private readonly JsonReaderDeserializer<TEntryType> _deserializer;
+        /// <summary>
+        /// Gets or sets a value indicating whether the object has been disposed.
+        /// </summary>
         private bool _isDisposed;
 
+        /// <summary>
+        /// Gets the <see cref="System.Net.IPEndPoint"/> representing the TCP server endpoint.
+        /// </summary>
         public IPEndPoint Endpoint => _endpoint;
 
         /// <summary>
@@ -140,6 +171,10 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
+        /// <summary>
+        /// Opens the TCP server listener asynchronously.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task OpenAsync()
         {
             try
@@ -156,6 +191,12 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
+        /// <summary>
+        /// Reads an <see cref="IpFlow"/> asynchronously from the queue of flows. 
+        /// Reading the source TCP stream is performed in a separate task and the result is put in a blocking queue.
+        /// </summary>
+        /// <param name="cancellation">The cancellation token to cancel the operation.</param>
+        /// <returns>A task representing the asynchronous operation. The task result is an <see cref="IpFlow"/> or null if the input is completed.</returns>
         public Task<IpFlow?> ReadAsync(CancellationToken cancellation)
         {
             try
@@ -172,6 +213,10 @@ namespace Ethanol.ContextBuilder.Readers
             }
         }
 
+        /// <summary>
+        /// Closes the TCP connection and cancels the reading process in all open incoming connections.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task CloseAsync()
         {
             _queue.CompleteAdding();

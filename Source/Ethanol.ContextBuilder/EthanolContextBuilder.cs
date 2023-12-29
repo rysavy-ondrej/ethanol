@@ -282,15 +282,15 @@ namespace Ethanol.ContextBuilder
 
             var pipelineTask = Produce(modules.Readers)
 
-                     .Where(OnlyValidUnicastFlows)
+                     .Do(_ => flowsLoadedCount++)
+
+                     .Where(OnlyValidUnicastFlows).Where(flow => FilterFlows(filter, flow))
 
                      .Select(t => new ObservableEvent<IpFlow>(t, t.TimeStart, t.TimeStart + t.TimeDuration))
 
-                     .Do(_ => flowsLoadedCount++)
+                     .Do(_ => flowsConsumedCount++)
 
                      .OrderSequence(sequencer)
-
-                     .Do(_ => flowsConsumedCount++)
 
                      .HoppingWindow(windowTransformer)
 
@@ -347,6 +347,17 @@ namespace Ethanol.ContextBuilder
             if (IPAddress.Any.Equals(f.Payload?.HostAddress)) return true;
             return filter.Evaluate(f);
         }
+        /// <summary>
+        /// Filters the given IP flow based on the provided host-based filter.
+        /// </summary>
+        /// <param name="filter">The host-based filter to apply.</param>
+        /// <param name="flow">The IP flow to filter.</param>
+        /// <returns><c>true</c> if the flow matches the filter; otherwise, <c>false</c>.</returns>
+        private static bool FilterFlows(IHostBasedFilter filter, IpFlow? flow)
+        {
+            if (flow == null || flow.SourceAddress == null || flow.DestinationAddress == null) return false;
+            return filter.Match(flow.SourceAddress) || filter.Match(flow.DestinationAddress);
+        }
 
         /// <summary>
         /// Determines whether the given IP flow represents a valid unicast flow.
@@ -390,6 +401,11 @@ namespace Ethanol.ContextBuilder
             /// <summary>Gets or sets the number of flows that have been consumed by the system.</summary>
             public int ConsumedFlows { get; set; }
 
+            /// <summary>
+            /// Gets or sets the number of dropped flows becasue they did not pass the input filter.
+            /// </summary>
+            public int DroppedFlows => LoadedFlows - ConsumedFlows;
+        
             /// <summary>Gets or sets the number of flows currently buffered in the system.</summary>
             public int BufferedFlows { get; set; }
 
@@ -422,6 +438,7 @@ namespace Ethanol.ContextBuilder
 
             /// <summary>Gets or sets the total number of flows processed across all windows.</summary>
             public int TotalFlowsInAllWindows { get; set; }
+
         }
 
     }

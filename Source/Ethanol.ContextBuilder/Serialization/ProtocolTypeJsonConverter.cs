@@ -65,7 +65,6 @@ namespace Ethanol.ContextBuilder.Serialization
                 writer.WriteStringValue(value.ToString());
             }
         }
-
 }
 
 

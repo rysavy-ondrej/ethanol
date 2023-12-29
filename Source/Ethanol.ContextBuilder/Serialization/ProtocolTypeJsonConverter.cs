@@ -33,6 +33,14 @@ namespace Ethanol.ContextBuilder.Serialization
 
                     case JsonTokenType.String:
                         var stringValue = reader.GetString();
+                        
+                        if (stringValue == null) throw new JsonException($"Unable to convert Null to {nameof(ProtocolType)}");
+
+                        if (stringValue.StartsWith("IPv6-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            stringValue = stringValue.Substring(5);
+                        }
+
                         if (Enum.TryParse<ProtocolType>(stringValue, true, out var protocolType))
                         {
                             return protocolType;

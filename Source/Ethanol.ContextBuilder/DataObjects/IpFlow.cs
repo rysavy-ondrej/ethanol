@@ -40,7 +40,7 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the Octet Delta Count, representing the number of octets (bytes) sent between two network devices during this flow.
         /// </summary>
-        public int SentOctets { get; set; }
+        public long SentOctets { get; set; }
 
         /// <summary>
         /// Gets or sets the Packet Delta Count, representing the number of packets received between two network devices during this flow.
@@ -50,6 +50,6 @@ namespace Ethanol.ContextBuilder.Context
         /// <summary>
         /// Gets or sets the Octet Delta Count, representing the number of octets (bytes) received between two network devices during this flow.
         /// </summary>
-        public int RecvOctets { get; set; }
+        public long RecvOctets { get; set; }
     }
 }

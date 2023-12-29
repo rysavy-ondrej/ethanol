@@ -33,6 +33,7 @@ namespace Ethanol.ContextBuilder.Readers
             _logger = logger;
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
+            _serializerOptions.Converters.Add(new ProtocolTypeJsonConverter());
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace Ethanol.ContextBuilder.Readers
             catch (JsonException e)
             {
                 _logger?.LogWarning($"Cannot deserialize record: {e.Message}");
-                _logger?.LogDebug($"Input fragment: ...{GetErrorSubstring(input, (int)(e.BytePositionInLine ?? 0))}...");
+                _logger?.LogWarning($"Input fragment: ...{GetErrorSubstring(input, (int)(e.BytePositionInLine ?? 0))}...");
                 ipFlow = default;
                 return false;
             }

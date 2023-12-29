@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -24,7 +25,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaPacketDeltaCount { get; set; }
 
         [JsonPropertyName("iana:protocolIdentifier")]
-        public string? IanaProtocolIdentifier { get; set; }
+        public ProtocolType IanaProtocolIdentifier { get; set; }
 
         [JsonPropertyName("iana:ipClassOfService")]
         public int IanaIpClassOfService { get; set; }

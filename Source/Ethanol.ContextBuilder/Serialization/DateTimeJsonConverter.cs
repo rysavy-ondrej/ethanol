@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace Ethanol.ContextBuilder.Serialization
 {
+
     /// <summary>
     /// Provides a custom JSON converter for <see cref="DateTime"/> type. This class facilitates custom 
     /// serialization and deserialization logic for DateTime objects when using the System.Text.Json library.

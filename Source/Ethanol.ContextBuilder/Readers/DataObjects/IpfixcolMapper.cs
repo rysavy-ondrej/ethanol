@@ -17,7 +17,7 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
                 .ForMember(d => d.DestinationPort, o => o.MapFrom(s => s.IanaDestinationTransportPort))
                 .ForMember(d => d.RecvPackets, o => o.MapFrom(s => 0))
                 .ForMember(d => d.SentPackets, o => o.MapFrom(s => s.IanaPacketDeltaCount))
-                .ForMember(d => d.Protocol, o => o.MapFrom(s => MapConvert.Flow.ProtocolType(s.IanaProtocolIdentifier)))
+                .ForMember(d => d.Protocol, o => o.MapFrom(s => s.IanaProtocolIdentifier))
                 .ForMember(d => d.ApplicationTag, o => o.MapFrom(s => MapConvert.Flow.ApplicationName(s.IanaApplicationId)))
                 .ForMember(d => d.SourceAddress, o => o.MapFrom(s => MapConvert.Flow.Address(s.IanaIpVersion, s.IanaSourceIPv4Address, s.IanaSourceIPv6Address)))
                 .ForMember(d => d.SourcePort, o => o.MapFrom(s => s.IanaSourceTransportPort))

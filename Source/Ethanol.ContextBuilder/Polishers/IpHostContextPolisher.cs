@@ -110,7 +110,7 @@ namespace Ethanol.ContextBuilder.Polishers
 
                 var connections = AggregateHostConnections(value.Payload.HostAddress, hostFlows, ResolveDomain, ResolveServices);
 
-                var domains = CollectDistinctDomains(value.Payload.HostAddress, hostFlows.SelectFlows<DnsFlow>());
+                var domains = CollectDomains(value.Payload.HostAddress, hostFlows.SelectFlows<DnsFlow>());
 
                 var webUrls = CollectUrls(value.Payload.HostAddress, hostFlows.SelectFlows<HttpFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
 
@@ -194,14 +194,44 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <param name="hostFlows">The array of IP flows associated with the host.</param>
         /// <param name="resolveDomain">The function used to resolve a domain from a string.</param>
         /// <returns>An enumerable collection of resolved domain information.</returns>
-        private IEnumerable<ResolvedDomainInfo> CollectDistinctDomains(IPAddress hostAddress, IEnumerable<DnsFlow> dnsFlows)
+        private IEnumerable<ResolvedDomainInfo> CollectDomains(IPAddress hostAddress, IEnumerable<DnsFlow> dnsFlows)
         {
+            /* This is not working as we need to deal with both unidirectional and bidirestiobal flows!
             var questions = dnsFlows.Where(x => hostAddress.Equals(x.SourceAddress)).ToArray();
             var answers = dnsFlows.Where(x => hostAddress.Equals(x.DestinationAddress)).ToArray();
             foreach (var answer in answers)
             {
                 yield return new ResolvedDomainInfo(SafeString(answer.SourceAddress), SafeString(answer.QuestionName), SafeString(answer.ResponseData), answer.ResponseCode);
             }
+            */
+
+            string GetOtherAddress(DnsFlow flow)
+            {
+                return hostAddress.Equals(flow.SourceAddress) ? SafeString(flow.DestinationAddress) : SafeString(flow.SourceAddress);
+            }
+
+            ResolvedDomainInfo GetDomainInfo(DnsFlow flow)
+            {
+                return new ResolvedDomainInfo(GetOtherAddress(flow), SafeString(flow.QuestionName), SafeString(flow.ResponseData), flow.ResponseCode);
+            }
+
+            IEnumerable<ResolvedDomainInfo> RemoveQueries(IEnumerable<ResolvedDomainInfo> queries)
+            {
+                var unique = queries.Distinct();
+                if (unique.Count() == 1)
+                {
+                    return unique;
+                }
+                else
+                {
+                    return unique.Where(x => !String.IsNullOrEmpty(x.ResponseData));
+                }
+            }
+
+            return dnsFlows
+                .Select(dns => GetDomainInfo(dns))
+                .GroupBy(dns => dns.QueryString)
+                .SelectMany(g => RemoveQueries(g));
         }
 
         /// <summary>

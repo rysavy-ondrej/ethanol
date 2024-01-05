@@ -14,7 +14,7 @@ The API provides various endpoints catering to diverse needs, such as counting c
 **Parameters**:
 - `start` (Optional): Specifies the start of the desired interval.
 - `end` (Optional): Specifies the end of the desired interval.
-- `ip` (Optional): A specific IP address to filter by, fetching contexts associated with this particular host.
+- `hostkey` (Optional): A specific IP address to filter by, fetching contexts associated with this particular host.
 
 **Sample Request**:
 ```
@@ -36,7 +36,7 @@ Gets the context for the specified window. This API is suitable for a low amount
 **Parameters**:
 - `start` (Optional): Start of the desired interval.
 - `end` (Optional): End of the desired interval.
-- `ip` (Optional): An IP address to filter by, obtaining contexts specific to this host.
+- `hostkey` (Optional): An IP address to filter by, obtaining contexts specific to this host.
 
 **Sample Request**:
 ```
@@ -67,7 +67,7 @@ The response has the format [NDJSON](https://ndjson.org/) and is returned as a c
 **Parameters**:
 - `start` (Optional): Start of the desired interval.
 - `end` (Optional): End of the desired interval.
-- `ip` (Optional): An IP address to filter by, obtaining contexts specific to this host.
+- `hostkey` (Optional): An IP address to filter by, obtaining contexts specific to this host.
 
 **Sample Request**:
 ```

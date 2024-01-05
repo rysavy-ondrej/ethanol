@@ -26,7 +26,9 @@ GET /api/v1/host-context/contexts/count?start=2023-03-10T18:00:00&end=2023-03-10
 19
 ```
 
-### 2. Enumerate Detailed Host-contexts within a Specific Interval
+### 2. Enumerate Detailed Host-contexts within a Specific Interval (Low Performance)
+
+Gets the context for the specified window. This API is suitable for a low amount of data as it fetches and retrieves data in a single response as a single JSON.
 
 **Endpoint**: `/api/v1/host-context/contexts`  
 **HTTP Method**: `GET`
@@ -54,7 +56,35 @@ GET /api/v1/host-context/contexts?start=2023-03-10T18:00:00&end=2023-03-10T19:35
 ]
 ```
 
-### 3. Fetch Details of the Last Available Context Window
+### 3. Enumerate Detailed Host-contexts within a Specific Interval
+
+Retrieves the context for the specified window. This API is suitable for larger amounts of data.
+The response has the format [NDJSON](https://ndjson.org/) and is returned as a chunked HTTP response. 
+
+**Endpoint**: `/api/v1/host-context/context-stream`  
+**HTTP Method**: `GET`
+
+**Parameters**:
+- `start` (Optional): Start of the desired interval.
+- `end` (Optional): End of the desired interval.
+- `ip` (Optional): An IP address to filter by, obtaining contexts specific to this host.
+
+**Sample Request**:
+```
+GET /api/v1/host-context/context-stream?start=2023-03-10T18:00:00&end=2023-03-10T19:35:00&hostkey=192.168.111.19
+```
+
+
+**Sample Response**:
+```json
+{ "id": 66, "key": "192.168.111.19", "start": "2023-03-10T18:35:00", "end": "2023-03-10T18:40:00", ...host context objects... }
+{ "id": 86, "key": "192.168.111.19", "start": "2023-03-10T18:40:00", "end": "2023-03-10T18:45:00", ...host context objects... }
+...
+{ "id": 126, "key": "192.168.111.19", "start": "2023-03-10T19:15:00", "end": "2023-03-10T19:20:00", ...host context objects... }
+...
+```
+
+### 4. Fetch Details of the Last Available Context Window
 
 Gain insights into the last window interval available for context data.
 

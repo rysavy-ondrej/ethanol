@@ -22,7 +22,7 @@ public abstract class FlowJsonFormatManipulator
                 }
             }
         }
-        return "{" + String.Join(',', fields) + "}";
+        return "{" + String.Join(',', fields) + "}\n";
     }
 
     string ToJsonString(JsonElement element)

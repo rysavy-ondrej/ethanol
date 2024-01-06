@@ -15,11 +15,11 @@ internal class FlowFile
         this._flowJsonFormat = flowJsonFormat;
     }
 
-    public static FlowFile LoadFromFile(string flowFilePath, FlowJsonFormatManipulator flowJsonFormat)
+    public static FlowFile LoadFromFile(string flowFilePath, FlowJsonFormatManipulator flowJsonFormat, int flowCount)
     {
         var flows = new List<string>();
         using var reader = new StreamReader(flowFilePath);
-        while (true)
+        for(int i = 0; i < flowCount; i++)
         {
             var record = ReadJsonString(reader);
             if (record == null) break;

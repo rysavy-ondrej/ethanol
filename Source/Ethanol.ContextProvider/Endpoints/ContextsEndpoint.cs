@@ -83,6 +83,7 @@ namespace Ethanol.ContextProvider.Endpoints
                         }
                     }
                 }
+                connection.Close();
                 await SendAsync(hostContexts, 200, ct);
             }
             catch (Exception ex)

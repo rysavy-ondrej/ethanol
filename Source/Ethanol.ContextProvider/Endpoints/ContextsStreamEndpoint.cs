@@ -46,7 +46,8 @@ namespace Ethanol.ContextProvider.Endpoints
             try
             {
                 using var connection = _datasource.OpenConnection();
-                var tagsProcessor = new TagsProcessor(_datasource.OpenConnection(), _tagsTableName, _logger);
+                using var tagConnection = _datasource.OpenConnection();
+                var tagsProcessor = new TagsProcessor(tagConnection, _tagsTableName, _logger);
 
                 _logger?.LogInformation($"Using connection: `{connection.ConnectionString}` to access database.");
                 using (var cmd = connection.CreateCommand())
@@ -71,6 +72,8 @@ namespace Ethanol.ContextProvider.Endpoints
                     }
                     reader.Close();
                 }
+                connection.Close();
+                tagConnection.Close();
             }
             catch (Exception ex)
             {

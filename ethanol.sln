@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.DataObjects", "Sour
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethanol.MalwareSonar", "Source\Ethanol.MalwareSonar\Ethanol.MalwareSonar.csproj", "{10CBA62E-0D08-4FC7-98BC-D56B6E7D7FE6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethanol.StressTest", "Source\Ethanol.StressTest\Ethanol.StressTest.csproj", "{2FE48173-81B9-4BD2-8366-10D18C963A3D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{10CBA62E-0D08-4FC7-98BC-D56B6E7D7FE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10CBA62E-0D08-4FC7-98BC-D56B6E7D7FE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10CBA62E-0D08-4FC7-98BC-D56B6E7D7FE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FE48173-81B9-4BD2-8366-10D18C963A3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FE48173-81B9-4BD2-8366-10D18C963A3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FE48173-81B9-4BD2-8366-10D18C963A3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FE48173-81B9-4BD2-8366-10D18C963A3D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,6 +64,7 @@ Global
 		{90042A27-DCD5-4A36-B2E2-91F7E966DC3B} = {40CCD2E3-A94F-4D52-B132-E618537FA0C1}
 		{AEC06364-7A74-463D-BB24-EDE513E04B59} = {40CCD2E3-A94F-4D52-B132-E618537FA0C1}
 		{10CBA62E-0D08-4FC7-98BC-D56B6E7D7FE6} = {40CCD2E3-A94F-4D52-B132-E618537FA0C1}
+		{2FE48173-81B9-4BD2-8366-10D18C963A3D} = {40CCD2E3-A94F-4D52-B132-E618537FA0C1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7A3F6658-E5E2-487E-83B5-037CC961D121}

@@ -47,3 +47,16 @@ option.Converters.Add(new IntFromFloatJsonConverter());
 
 var data = JsonSerializer.Deserialize<InternetApplicationRecord>(str, option);
 data.Display();
+
+#!csharp
+
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
+var t = JsonValue.Create(true);
+
+var str = JsonValue.Create("147.229.7.2");
+var num = JsonValue.Create(147.229);
+Console.WriteLine(t.ToJsonString());
+Console.WriteLine(str.ToJsonString());
+Console.WriteLine(num.ToJsonString());

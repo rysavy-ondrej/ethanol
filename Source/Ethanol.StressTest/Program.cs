@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using System;
+using System.Reactive.Linq;
 
 /// <summary>
 /// The program class containing the main entry point.
@@ -89,32 +90,67 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         var random = new Random();
         var sw = new Stopwatch();
         sw.Start();
+        long sentFlowCount = 0;
+        long lastSentFlowCount = 0;
+        double lastMiliseconds = 0.0;
+        void printProgress(long obj)
+        {
+            var actualFps = (sentFlowCount - lastSentFlowCount) / ((sw.ElapsedMilliseconds - lastMiliseconds) / 1000.0);
+            lastSentFlowCount = sentFlowCount;
+            lastMiliseconds = sw.ElapsedMilliseconds;     
+            var averageFps = sentFlowCount / (sw.ElapsedMilliseconds / 1000.0);
+            var elapsed = TimeSpan.FromSeconds(sw.ElapsedMilliseconds / 1000.0);
+
+
+            Console.Write($"flows: {sentFlowCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
+        }
+
+        var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);
+
+
+        Console.WriteLine($"Start generating flows:");
 
         var client = new TcpClient();
         client.Connect(tcpIpEndpoint);
         using var stream = client.GetStream();
-        while(Context.CancellationToken.IsCancellationRequested == false && sw.ElapsedMilliseconds < (timeout?.TotalMilliseconds ?? long.MaxValue))
+        try
         {
-            var flow = flows.GetNextFlow();
-            if (flow == null) break;
-            var flowBytes = Encoding.UTF8.GetBytes(flow);
-            stream.Write(flowBytes, 0, flowBytes.Length);
-
-            if (interRecordDelay > 0)
+            while (Context.CancellationToken.IsCancellationRequested == false && sw.ElapsedMilliseconds < (timeout?.TotalMilliseconds ?? long.MaxValue))
             {
-                var delay = (int)(interRecordDelay * 1000);
-                if (delay>10)
+                var flow = flows.GetNextFlow();
+                if (flow == null) break;
+                var flowBytes = Encoding.UTF8.GetBytes(flow);
+                stream.Write(flowBytes, 0, flowBytes.Length);
+                sentFlowCount++;
+                if (interRecordDelay > 0)
                 {
-                    var waitTime = delay + random.Next(-delay/10, delay/10);
-                    Thread.Sleep(waitTime);
-                }
-                else
-                {
-                    Thread.Sleep(delay);
+                    var delay = (int)(interRecordDelay * 1000);
+                    if (delay > 10)
+                    {
+                        var waitTime = delay + random.Next(-delay / 10, delay / 10);
+                        Thread.Sleep(waitTime);
+                    }
+                    else
+                    {
+                        Thread.Sleep(delay);
+                    }
                 }
             }
         }
-        client.Close();
+        catch(SocketException ex)
+        {
+            _logger.LogError(ex, $"Socket exception: {ex.Message}");
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, $"Exception: {ex.Message}");
+        }
+        finally
+        {
+            client.Close();
+            _logger.LogInformation($"Sent {sentFlowCount} flows in {sw.ElapsedMilliseconds} ms.");
+        }
+        
     }
 
     private FlowJsonFormatManipulator getFormatter(string? flowFormat)

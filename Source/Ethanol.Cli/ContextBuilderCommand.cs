@@ -14,6 +14,7 @@ using System.Net;
 using System.Reactive;
 using System.Reactive.Linq;
 using Ethanol.ContextBuilder;
+using System.Diagnostics;
 
 /// <summary>
 /// Represents a command within a console application for running the context builder process.
@@ -151,7 +152,27 @@ internal class ContextBuilderCommand : ConsoleAppBase
     private void OnProgressUpdate(EthanolContextBuilder.BuilderStatistics report)
     {
         _logger.LogInformation($"{report}.");
+        var memoryUsage = GetMemoryUsage();
+        _logger.LogInformation($"MemoryUsage {{ Physical = {memoryUsage.Physical:F2}MB, Allocated = {memoryUsage.Allocated:F2}MB, PhysicalPeak = {memoryUsage.PhysicalPeak:F2}MB. }}");
     }
+
+    /// <summary>
+    /// Retrieves the memory usage of the current process.
+    /// </summary>
+    /// <returns>A tuple containing the private memory size, GC memory, and peak working set size.</returns>
+    private MemoryUsage GetMemoryUsage()
+    {
+        var proc = Process.GetCurrentProcess();
+        var phyMem = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
+        var phyMemPeak = proc.PeakWorkingSet64 / (1024.0 * 1024.0);
+        var gcMem = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
+        return new MemoryUsage(phyMem, gcMem, phyMemPeak);
+    }
+
+    /// <summary>
+    /// Represents the memory usage information.
+    /// </summary>
+    public record MemoryUsage(double Physical, double Allocated, double PhysicalPeak);
 
     private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder? builder)
     {

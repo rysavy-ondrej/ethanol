@@ -12,6 +12,7 @@
     <PackageReference Include="ConfigurationSubstitutor" Version="1.5.1" />
     <PackageReference Include="ConsoleAppFramework" Version="4.2.4" />
     <PackageReference Include="ZLogger" Version="1.7.1" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

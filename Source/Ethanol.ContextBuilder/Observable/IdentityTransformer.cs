@@ -22,6 +22,8 @@ namespace Ethanol.ContextBuilder.Observable
 
         public Task Completed => _tcs.Task;
 
+        public IPerformanceCounters Counters => PerformanceCounters.Default;
+
         /// <summary>
         /// Notifies subscribers that the provider has finished sending push-based notifications.
         /// </summary>
@@ -59,5 +61,4 @@ namespace Ethanol.ContextBuilder.Observable
             return _subject.Subscribe(observer);
         }
     }
-
 }

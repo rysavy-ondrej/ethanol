@@ -1,7 +1,11 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.Catalogs;
+using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Observable;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -28,6 +32,8 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// This provides a way to manually control the lifetime of a Task, signaling its completion.
         private TaskCompletionSource _tcs = new TaskCompletionSource();
 
+        private PerformanceCounters _counters = new();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IpHostContextEnricher"/> class.
         /// </summary>
@@ -43,6 +49,9 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// Gets a task that represents the completion of the operation.
         /// </summary>
         public Task Completed => _tcs.Task;
+
+        
+        public IPerformanceCounters Counters => _counters;
 
         /// <summary>
         /// Signals that the enrichment process has completed.
@@ -66,8 +75,14 @@ namespace Ethanol.ContextBuilder.Enrichers
         {
             try
             {
+                Stopwatch sw = new();
+                sw.Start();
+                _counters.InputCount++;
                 var tags = _tagProvider.GetTags(value);
+                sw.Stop();
+                _counters.RecordOperationTime(sw.ElapsedMilliseconds);
                 _subject.OnNext(new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = value.Payload?.HostAddress, Flows = value.Payload?.Flows, Tags = tags.ToArray() }, value.StartTime, value.EndTime));
+                _counters.OutputCount++;
             }
             catch (Exception ex)
             {
@@ -84,6 +99,59 @@ namespace Ethanol.ContextBuilder.Enrichers
         public IDisposable Subscribe(IObserver<ObservableEvent<IpHostContextWithTags>> observer)
         {
             return _subject.Subscribe(observer);
+        }
+
+        class PerformanceCounters : IPerformanceCounters
+        {
+            public double InputCount;
+
+            public double OutputCount;
+
+            public double OperationMaxTime;
+
+            public double OperationMinTime;
+            
+            public double OperationAverageTime;
+
+            public string Name => nameof(IpHostContextEnricher);
+
+            public string Category => "Performance Counters";
+
+            public IEnumerable<string> Keys => new [] { nameof(InputCount), nameof(OutputCount), nameof(OperationMinTime), nameof(OperationMaxTime), nameof(OperationAverageTime)};
+
+            public int Count => 5;
+
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+            {
+                if (key == null) {  throw new ArgumentNullException(nameof(key)); }
+                switch(key)
+                {
+                    case nameof(InputCount):
+                        value = InputCount;
+                        return true;
+                    case nameof(OutputCount):
+                        value = OutputCount;
+                        return true;
+                    case nameof(OperationMinTime):
+                        value = OperationMinTime;
+                        return true;
+                    case nameof(OperationMaxTime):
+                        value = OperationMaxTime;
+                        return true;
+                    case nameof(OperationAverageTime):
+                        value = OperationAverageTime;
+                        return true;
+                }
+                value = 0.0;
+                return false;
+            }
+
+            internal void RecordOperationTime(long elapsedMilliseconds)
+            {
+                OperationMaxTime = System.Math.Max(OperationMaxTime, elapsedMilliseconds);
+                OperationMinTime = System.Math.Min(OperationMinTime, elapsedMilliseconds);
+                OperationAverageTime = (OperationAverageTime * 9 + elapsedMilliseconds) / 10;
+            }
         }
     }
 }

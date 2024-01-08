@@ -1,0 +1,423 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"languageName":"csharp","name":"csharp"}]}}
+
+#!csharp
+
+#r "nuget:System.Reactive"
+
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Threading.Tasks;
+using System.Threading;
+
+#!markdown
+
+# Reactive: Processing items in parallel
+
+#!csharp
+
+using System.Reactive.Concurrency;
+using System.Diagnostics;
+
+var sw = new Stopwatch();
+sw.Start();
+
+int SomeCpuIntensiveOperation(int x)
+{
+    Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] LongRunningTask {x} %{Environment.CurrentManagedThreadId}");
+    Thread.Sleep(TimeSpan.FromSeconds(x));
+    return x;
+}
+ThreadPool.SetMinThreads(2,2);
+ThreadPool.SetMaxThreads(5,5);
+ThreadPool.GetAvailableThreads(out var x, out var y);
+Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Available threads: {x} / {y}");
+
+
+
+var maxConcurrent = 4; // Maximum number of concurrent threads
+// var scheduler = ImmediateScheduler.Instance;     // will run on the same thread... sequential
+var scheduler = TaskPoolScheduler.Default;          // will run on different threads... parallel
+//var scheduler = ThreadPoolScheduler.Instance;     // will create anew thread for each item
+//var scheduler = NewThreadScheduler.Default;       // will create a new thread for each item
+
+Observable.Range(1, 20)
+.Do(x => Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Queued {x} %{Environment.CurrentManagedThreadId}"))
+.Select(item =>
+                Observable.Start(() =>
+                {
+                    // CPU-intensive work here
+                    return SomeCpuIntensiveOperation(item);
+                }, scheduler))
+.Merge(maxConcurrent) 
+.Subscribe(x => Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Completed {x} %{Environment.CurrentManagedThreadId}"));
+
+
+Thread.Sleep(TimeSpan.FromSeconds(30));
+
+#!csharp
+
+using System.Reactive.Concurrency;
+using System.Globalization;
+
+
+public class VirtualFlowTimeScheduler : IScheduler, IServiceProvider, IStopwatchProvider 
+{
+   private readonly SchedulerQueue<DateTimeOffset> _queue = new SchedulerQueue<DateTimeOffset>();
+
+    private sealed class VirtualTimeStopwatch : IStopwatch
+    {
+        private readonly VirtualFlowTimeScheduler _parent;
+
+        private readonly DateTimeOffset _start;
+
+        public TimeSpan Elapsed => _parent.ClockToDateTimeOffset() - _start;
+
+        public VirtualTimeStopwatch(VirtualFlowTimeScheduler parent, DateTimeOffset start)
+        {
+            _parent = parent;
+            _start = start;
+        }
+    }
+
+    public bool IsEnabled { get; private set; }
+
+    protected IComparer<DateTimeOffset> Comparer { get; }
+
+    public DateTimeOffset Clock { get; protected set; }
+
+    public DateTimeOffset Now => ToDateTimeOffset(Clock);
+
+    public VirtualFlowTimeScheduler()
+        : this(default(DateTimeOffset), (IComparer<DateTimeOffset>)Comparer<DateTimeOffset>.Default)
+    {
+    }
+
+    //
+    // Summary:
+    //     Creates a new virtual time scheduler with the specified initial clock value and
+    //     absolute time comparer.
+    //
+    // Parameters:
+    //   initialClock:
+    //     Initial value for the clock.
+    //
+    //   comparer:
+    //     Comparer to determine causality of events based on absolute time.
+    //
+    // Exceptions:
+    //   T:System.ArgumentNullException:
+    //     comparer is null.
+    public VirtualFlowTimeScheduler(DateTimeOffset initialClock, IComparer<DateTimeOffset> comparer)
+    {
+        Clock = initialClock;
+        Comparer = comparer ?? throw new ArgumentNullException("comparer");
+    }
+
+
+    protected DateTimeOffset Add(DateTimeOffset absolute, TimeSpan relative)
+    {
+        return absolute.Add(relative);
+    }
+
+    protected DateTimeOffset ToDateTimeOffset(DateTimeOffset absolute) => absolute;
+
+    protected  TimeSpan ToRelative(TimeSpan timeSpan) => timeSpan;
+
+    public IDisposable ScheduleAbsolute<TState>(TState state, DateTimeOffset dueTime, Func<IScheduler, TState, IDisposable> action)
+    {
+        Func<IScheduler, TState, IDisposable> action2 = action;
+        if (action2 == null)
+        {
+            throw new ArgumentNullException("action");
+        }
+
+        ScheduledItem<DateTimeOffset, TState> si = null;
+        Func<IScheduler, TState, IDisposable> action3 = delegate (IScheduler scheduler, TState state1)
+        {
+            _queue.Remove(si);
+            return action2(scheduler, state1);
+        };
+        si = new ScheduledItem<DateTimeOffset, TState>(this, state, action3, dueTime, Comparer);
+        _queue.Enqueue(si);
+        return si;
+    }
+
+    public IDisposable ScheduleRelative<TState>(TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException("action");
+        }
+
+        DateTimeOffset dueTime2 = Add(Clock, dueTime);
+        return ScheduleAbsolute(state, dueTime2, action);
+    }
+
+    public IDisposable Schedule<TState>(TState state, Func<IScheduler, TState, IDisposable> action)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException("action");
+        }
+
+        return ScheduleAbsolute(state, Clock, action);
+    }
+
+    public IDisposable Schedule<TState>(TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException("action");
+        }
+
+        return ScheduleRelative(state, ToRelative(dueTime), action);
+    }
+
+    public IDisposable Schedule<TState>(TState state, DateTimeOffset dueTime, Func<IScheduler, TState, IDisposable> action)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException("action");
+        }
+
+        return ScheduleRelative(state, ToRelative(dueTime - Now), action);
+    }
+
+    public void Start()
+    {
+        if (IsEnabled)
+        {
+            return;
+        }
+
+        IsEnabled = true;
+        do
+        {
+            IScheduledItem<DateTimeOffset> next = GetNext();
+            if (next != null)
+            {
+                if (Comparer.Compare(next.DueTime, Clock) > 0)
+                {
+                    Clock = next.DueTime;
+                }
+
+                next.Invoke();
+            }
+            else
+            {
+                IsEnabled = false;
+            }
+        }
+        while (IsEnabled);
+    }
+
+    public void Stop()
+    {
+        IsEnabled = false;
+    }
+
+    public void AdvanceTo(DateTimeOffset time)
+    {
+        int num = Comparer.Compare(time, Clock);
+        if (num < 0)
+        {
+            throw new ArgumentOutOfRangeException("time");
+        }
+
+        if (num == 0)
+        {
+            return;
+        }
+
+        if (!IsEnabled)
+        {
+            IsEnabled = true;
+            do
+            {
+                IScheduledItem<DateTimeOffset> next = GetNext();
+                if (next != null && Comparer.Compare(next.DueTime, time) <= 0)
+                {
+                    if (Comparer.Compare(next.DueTime, Clock) > 0)
+                    {
+                        Clock = next.DueTime;
+                    }
+
+                    next.Invoke();
+                }
+                else
+                {
+                    IsEnabled = false;
+                }
+            }
+            while (IsEnabled);
+            Clock = time;
+            return;
+        }
+
+        throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "CANT_ADVANCE_WHILE_RUNNING", "AdvanceTo"));
+    }
+
+    public void AdvanceBy(TimeSpan time)
+    {
+        var val = Add(Clock, time);
+        int num = Comparer.Compare(val, Clock);
+        if (num < 0)
+        {
+            throw new ArgumentOutOfRangeException("time");
+        }
+
+        if (num != 0)
+        {
+            if (IsEnabled)
+            {
+                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "CANT_ADVANCE_WHILE_RUNNING", "AdvanceBy"));
+            }
+
+            AdvanceTo(val);
+        }
+    }
+
+    public void SkipTo(DateTimeOffset time)
+    {
+        if (Comparer.Compare(time, Clock) < 0)
+        {
+            throw new ArgumentOutOfRangeException("time","The time must be grater than the current time.");
+        }
+        Clock = time;
+    }
+
+    public void Sleep(TimeSpan time)
+    {
+        var val = Add(Clock, time);
+        if (Comparer.Compare(val, Clock) < 0)
+        {
+            throw new ArgumentOutOfRangeException("time");
+        }
+
+        Clock = val;
+    }
+
+    protected IScheduledItem<DateTimeOffset>? GetNext()
+    {
+        while (_queue.Count > 0)
+        {
+            ScheduledItem<DateTimeOffset> scheduledItem = _queue.Peek();
+            if (scheduledItem.IsCanceled)
+            {
+                _queue.Dequeue();
+                continue;
+            }
+
+            return scheduledItem;
+        }
+
+        return null;
+    }
+
+    object? IServiceProvider.GetService(Type serviceType)
+    {
+        return GetService(serviceType);
+    }
+
+    protected virtual object? GetService(Type serviceType)
+    {
+        if (serviceType == typeof(IStopwatchProvider))
+        {
+            return this;
+        }
+
+        return null;
+    }
+
+    public IStopwatch StartStopwatch()
+    {
+        DateTimeOffset start = ClockToDateTimeOffset();
+        return new VirtualTimeStopwatch(this, start);
+    }
+
+    private DateTimeOffset ClockToDateTimeOffset()
+    {
+        return ToDateTimeOffset(Clock);
+    }
+}
+
+#!markdown
+
+# Reactive: Virtual Time Scheduler
+
+#!csharp
+
+using System;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+
+var random = new Random();
+string GetRandomIp()
+{
+    return $"{random.Next(0,255)}.{random.Next(0,255)}.{random.Next(0,255)}.{random.Next(0,255)}";
+}
+
+public record IpFlow(int Id, string src, string dst, int srcpt, int dstpt);
+var flowId = 0;
+
+Timestamped<IpFlow> GetNextFlow(TimeSpan delay)
+{
+    var now = DateTimeOffset.Now;
+    var flow = new IpFlow(++flowId, GetRandomIp(), GetRandomIp(), random.Next(1024, 65525), random.Next(10,512));
+    return new Timestamped<IpFlow>(flow, now + delay);
+}
+
+// Create a virtual time scheduler
+var virtualScheduler = new VirtualFlowTimeScheduler();
+//virtualScheduler.SkipTo(DateTimeOffset.Now - TimeSpan.FromSeconds(10));
+
+// Create a subject to act as our event source
+var subject = new Subject<Timestamped<IpFlow>>();
+
+// Define the window duration in virtual time units
+var windowDuration = TimeSpan.FromSeconds(3);
+var windowShift = TimeSpan.FromSeconds(3);
+
+DateTimeOffset GetWindowStart(DateTimeOffset timestamp)
+{
+    var seconds = timestamp.Second % windowDuration.Seconds;
+    Console.WriteLine($"WindowStart: {timestamp.Second} % {windowDuration.Seconds} = {seconds}");
+    var windowStart = timestamp.AddSeconds(-seconds);
+    return windowStart;
+}
+
+// Apply the Window operator
+var windowedObservable = subject.Window(windowDuration, windowShift, virtualScheduler).Timestamp();
+
+// Subscribe to the windowed observable
+windowedObservable.Subscribe(window =>
+{
+    Console.WriteLine($"New Window {window.Timestamp}:");
+    var flows = window.Value.Where(f => f.Value != null).Subscribe(flow => Console.WriteLine($"  Flow {flow.Value.Id}@{flow.Timestamp}: {flow}"));
+});
+
+Console.WriteLine($"VirtualTime: {virtualScheduler.Now}");
+var firstFlow = true;
+for(int i = 0; i < 30; i++)
+{
+    var flow = GetNextFlow(TimeSpan.Zero);
+    if(firstFlow)
+    {
+        var windowStart = GetWindowStart(flow.Timestamp);
+        Console.WriteLine($"Skip to {windowStart}");
+        virtualScheduler.SkipTo(windowStart);
+        firstFlow = false;
+        //subject.OnNext(new Timestamped<IpFlow>(null, windowStart));
+    }
+    else
+    {
+        virtualScheduler.AdvanceTo(flow.Timestamp);
+    }
+    subject.OnNext(flow);
+    Thread.Sleep(TimeSpan.FromMilliseconds(random.Next(100,1000)));
+}
+subject.OnCompleted();

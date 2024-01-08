@@ -41,6 +41,8 @@ namespace Ethanol.ContextBuilder.Cleaners
 
         public Task Completed => _tcs.Task;
 
+        public IPerformanceCounters Counters => PerformanceCounters.Default;
+
         /// <summary>
         /// Publishes the remaining single flows upon completion of the input stream.
         /// </summary>

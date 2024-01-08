@@ -1,7 +1,9 @@
 ﻿using Ethanol.ContextBuilder.Aggregators;
 using Ethanol.ContextBuilder.Context;
+using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
+using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using Ethanol.DataObjects;
@@ -11,6 +13,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +24,7 @@ namespace Ethanol.ContextBuilder
     /// <summary>
     /// Provides static methods for building and orchestrating a data processing pipeline in the Ethanol context.
     /// </summary>
-    public static class EthanolContextBuilder
+    public static partial class EthanolContextBuilder
     {
         /// <summary>
         /// Merges data from multiple data readers into a single observable sequence.
@@ -222,6 +226,62 @@ namespace Ethanol.ContextBuilder
 
 
         /// <summary>
+        /// Executes the context builder with the provided modules.
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result produced by the task.</typeparam>
+        public static async Task Execute(
+            IDataReader<IpFlow>[] readers,
+            IDataWriter<HostContext>[] writers,
+            IEnricher<ObservableEvent<IpHostContext>?, ObservableEvent<IpHostContextWithTags>> enricher,
+            IRefiner<ObservableEvent<IpHostContextWithTags>, HostContext> refiner,
+            TimeSpan windowSpan,
+            TimeSpan windowShift,
+            IHostBasedFilter filter,
+            ILogger? logger,
+            CancellationToken cancellationToken)
+        {
+            var scheduler = TaskPoolScheduler.Default;
+
+            // TODO: How to use scheduler in the following code?
+
+            var pipelineTask = readers
+                .Merge().Where(OnlyValidUnicastFlows).Where(flow => FilterFlows(filter, flow))
+                .Select(f => new Timestamped<IpFlow>(f, f.TimeStart))
+                .VirtualWindow(windowSpan, windowShift)
+                .Where(window => window.Payload!=null)
+                .SelectMany(window =>
+                    window.Payload
+                    .AggregateIpContexts(window.StartTime.Ticks, window.EndTime.Ticks)
+                    .Enrich(enricher)
+                    .Polish(refiner)  
+                ).Consume(writers);
+                
+            // for multiple readers, we need to run them in parallel on the background:
+            var _readerTasks = readers.Select(x =>
+            {
+                logger?.LogInformation($"Starting input reader {x}.");
+                return Task
+                    .Run(async () => await x.ReadAllAsync(cancellationToken))
+                    .ContinueWith(t => logger?.LogInformation($"Input reader {x} completed."));
+            }).ToArray();
+
+            // wait to completion of the main pipeline:
+            await pipelineTask;
+            logger?.LogInformation("Pipeline task completed.");
+
+            // readers should be done as well either completed or cancelled:
+            try
+            {
+                await Task.WhenAll(_readerTasks);
+            }
+            catch (OperationCanceledException)
+            {
+                logger?.LogInformation("Pipeline operation was cancelled.");
+            }
+        }
+
+
+        /// <summary>
         /// Orchestrates the entire data processing pipeline using the provided builder modules.
         /// This method sets up and executes the pipeline, handling data through various stages
         /// like reading, writing, enriching, and refining based on the provided modules.
@@ -246,7 +306,14 @@ namespace Ethanol.ContextBuilder
         /// <returns>
         /// A task representing the asynchronous operation of the pipeline. This task can be awaited to ensure the pipeline's completion.
         /// </returns>
-        public static async Task<BuilderStatistics> Run(BuilderModules modules, TimeSpan windowSpan, int inputOrderingQueueLength, IHostBasedFilter filter, CancellationToken cancellationToken, IObserver<BuilderStatistics>? builderStatsObserver, ILogger? logger)
+        public static async Task<BuilderStatistics> Run(
+            BuilderModules modules,
+            TimeSpan windowSpan,
+            int inputOrderingQueueLength,
+            IHostBasedFilter filter,
+            CancellationToken cancellationToken,
+            IObserver<BuilderStatistics>? builderStatsObserver,
+            ILogger? logger)
         {
             int flowsLoadedCount = 0;
             int flowsConsumedCount = 0;
@@ -267,14 +334,14 @@ namespace Ethanol.ContextBuilder
                     CreatedWindows = windowsCreatedCount,
                     ContextsBuilt = contextsCreatedCount,
                     ContextsWritten = contextsWrittenCount,
-                    CurrentWindowStart = windowTransformer.Statistics.CurrentWindowStart,
-                    CurrentTimestamp = windowTransformer.Statistics.CurrentTimestamp,
-                    DroppedFlowsInAllWindows = windowTransformer.Statistics.OutOfOrderFlowsTotal,
-                    DroppedFlowInCurrentWindow = windowTransformer.Statistics.OutOfOrderFlowsInCurrentWindow,
-                    FlowsInCurrentWindow = windowTransformer.Statistics.FlowsInCurrentWindow,
-                    TotalFlowsInAllWindows = windowTransformer.Statistics.FlowsTotal,
-                    MaxFlowBufferSize = sequencer.Statistics.MaxQueueLength,
-                    BufferedFlows = sequencer.Statistics.ActualQueueLength
+                    CurrentWindowStart = windowTransformer.Counters.TryGetValue("CurrentWindowStart", out var value) ? new DateTime((long)value) : DateTime.MinValue,
+                    CurrentTimestamp = windowTransformer.Counters.TryGetValue("CurrentTimestamp", out value) ? new DateTime((long)value) : DateTime.MinValue,
+                    DroppedFlowsInAllWindows = windowTransformer.Counters.TryGetValue("OutOfOrderFlowsTotal", out value) ? (int)value : 0,
+                    DroppedFlowInCurrentWindow = windowTransformer.Counters.TryGetValue("OutOfOrderFlowsInCurrentWindow", out value) ? (int)value : 0,
+                    FlowsInCurrentWindow = windowTransformer.Counters.TryGetValue("FlowsInCurrentWindow", out value) ? (int)value : 0,
+                    TotalFlowsInAllWindows = windowTransformer.Counters.TryGetValue("FlowsTotal", out value) ? (int)value : 0,
+                    MaxFlowBufferSize = 0,
+                    BufferedFlows = 0
                 };
             }
 
@@ -319,6 +386,8 @@ namespace Ethanol.ContextBuilder
 
             // wait to completion of the main pipeline:
             await pipelineTask;
+            logger?.LogInformation("Pipeline task completed.");
+
             // release progress reporting when we done:
             progressReportSubscription?.Dispose();
 
@@ -405,7 +474,7 @@ namespace Ethanol.ContextBuilder
             /// Gets or sets the number of dropped flows becasue they did not pass the input filter.
             /// </summary>
             public int DroppedFlows => LoadedFlows - ConsumedFlows;
-        
+
             /// <summary>Gets or sets the number of flows currently buffered in the system.</summary>
             public int BufferedFlows { get; set; }
 
@@ -440,6 +509,5 @@ namespace Ethanol.ContextBuilder
             public int TotalFlowsInAllWindows { get; set; }
 
         }
-
     }
 }

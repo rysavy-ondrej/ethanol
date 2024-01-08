@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Observable;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
@@ -18,38 +19,75 @@ namespace Ethanol.ContextBuilder.Aggregators
         /// <summary>
         /// Represents the statistics of a window in the HoppingWindowAggregator.
         /// </summary>
-        public class WindowStatistics
+        public class PerformanceCounters : IPerformanceCounters
         {
             /// <summary>
             /// Gets or sets the total number of flows.
             /// </summary>
-            public int FlowsTotal { get; set; }
+            public int FlowsTotal;
 
             /// <summary>
             /// Gets or sets the total number of out-of-order flows.
             /// </summary>
-            public int OutOfOrderFlowsTotal { get; set; }
+            public int OutOfOrderFlowsTotal;
 
             /// <summary>
             /// Gets or sets the number of flows in the current window.
             /// </summary>
-            public int FlowsInCurrentWindow { get; set; }
+            public int FlowsInCurrentWindow;
 
             /// <summary>
             /// Gets or sets the number of out-of-order flows in the current window.
             /// </summary>
-            public int OutOfOrderFlowsInCurrentWindow { get; set; }
+            public int OutOfOrderFlowsInCurrentWindow;
 
             /// <summary>
             /// Gets or sets the start time of the current window.
             /// </summary>
-            public DateTime CurrentWindowStart { get; set; }
+            public DateTime CurrentWindowStart;
 
             /// <summary>
             /// Gets or sets the timestamp of the current window.
             /// </summary>
-            public DateTime CurrentTimestamp { get; set; }
+            public DateTime CurrentTimestamp;
+
+            public string Name => "HoppingWindowAggregator";
+
+            public string Category => "Performance Counters";
+
+            public IEnumerable<string> Keys => new string[] { "FlowsTotal", "OutOfOrderFlowsTotal", "FlowsInCurrentWindow", "OutOfOrderFlowsInCurrentWindow", "CurrentWindowStart", "CurrentTimestamp" };
+
+            public int Count => 6;
+
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+            {
+                if (key == null) { throw new ArgumentNullException(nameof(key)); }
+                switch (key)
+                {
+                    case "FlowsTotal":
+                        value = FlowsTotal;
+                        return true;
+                    case "OutOfOrderFlowsTotal":
+                        value = OutOfOrderFlowsTotal;
+                        return true;
+                    case "FlowsInCurrentWindow":
+                        value = FlowsInCurrentWindow;
+                        return true;
+                    case "OutOfOrderFlowsInCurrentWindow":
+                        value = OutOfOrderFlowsInCurrentWindow;
+                        return true;
+                    case "CurrentWindowStart":
+                        value = CurrentWindowStart.Ticks;
+                        return true;
+                    case "CurrentTimestamp":
+                        value = CurrentTimestamp.Ticks;
+                        return true;
+                }
+                value = 0.0;
+                return false;
+            }
         }
+        private readonly PerformanceCounters _performanceCounters = new();
 
         /// <summary>
         /// The time span used by the hopping window aggregator.
@@ -59,11 +97,6 @@ namespace Ethanol.ContextBuilder.Aggregators
         /// Represents the current epoch value used in the hopping window aggregator.
         /// </summary>
         private long _currentEpoch = 0;
-
-        /// <summary>
-        /// Gets the statistics for the window.
-        /// </summary>
-        public WindowStatistics Statistics { get; } = new WindowStatistics();
 
 
         // The current window subject.
@@ -86,6 +119,8 @@ namespace Ethanol.ContextBuilder.Aggregators
         /// </summary>
         public Task Completed => _tcs.Task;
 
+        
+        public IPerformanceCounters Counters => _performanceCounters;
         /// <summary>
         /// Initializes a new instance of the <see cref="HoppingWindowAggregator{T}"/> class with a specified time span.
         /// </summary>
@@ -124,7 +159,7 @@ namespace Ethanol.ContextBuilder.Aggregators
         /// <param name="window">The window to emit.</param>
         void EmitWindow(Subject<TRecord> window, long currentEpoch, long timeSpan)
         {
-            Statistics.CurrentWindowStart = new DateTime(currentEpoch * timeSpan);
+            _performanceCounters.CurrentWindowStart = new DateTime(currentEpoch * timeSpan);
 
             var observers = _observers.ToArray();
             foreach (var o in observers)
@@ -155,17 +190,17 @@ namespace Ethanol.ContextBuilder.Aggregators
             // the element is obsolete, its end time is before the current window:
             if (evt.EndTime.Ticks < GetCurrentWindowInterval().Item1)
             {
-                Statistics.OutOfOrderFlowsTotal++;
-                Statistics.OutOfOrderFlowsInCurrentWindow++;
+                _performanceCounters.OutOfOrderFlowsTotal++;
+                _performanceCounters.OutOfOrderFlowsInCurrentWindow++;
 
                 _obsoleteRecordObserver?.OnNext(evt);                                             
                 return;
             }
             else
             {
-                Statistics.FlowsInCurrentWindow++;
-                Statistics.FlowsTotal++;
-                Statistics.CurrentTimestamp = evt.StartTime;
+                _performanceCounters.FlowsInCurrentWindow++;
+                _performanceCounters.FlowsTotal++;
+                _performanceCounters.CurrentTimestamp = evt.StartTime;
 
                 if (evt.Payload != null)
                 {
@@ -191,8 +226,8 @@ namespace Ethanol.ContextBuilder.Aggregators
             _currentWindow?.OnCompleted();
             _currentEpoch++;
 
-            Statistics.FlowsInCurrentWindow = 0;
-            Statistics.OutOfOrderFlowsInCurrentWindow = 0;
+            _performanceCounters.FlowsInCurrentWindow = 0;
+            _performanceCounters.OutOfOrderFlowsInCurrentWindow = 0;
             
             _currentWindow = new Subject<TRecord>();
 

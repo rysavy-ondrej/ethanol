@@ -1,8 +1,4 @@
-﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
-using System;
-using System.Reactive.Subjects;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -11,18 +7,12 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// This class is intended for use in situations where a placeholder or no-action operation is required in a processing pipeline.
     /// </summary>
 
-    public class VoidContextEnricher<TSource, TTarget> : IObservableTransformer<TSource, TTarget>
+    public class VoidContextEnricher<TSource, TTarget> : IEnricher<TSource, TTarget>
     {
         private readonly Func<TSource, TTarget> _transform;
 
-        /// <summary>
-        /// Underlying subject that relays observed items to subscribers.
-        /// </summary>
-        private Subject<TTarget> _subject = new Subject<TTarget>();
 
-        /// Represents a mechanism for signaling the completion of some asynchronous operation. 
-        /// This provides a way to manually control the lifetime of a Task, signaling its completion.
-        private TaskCompletionSource _tcs = new TaskCompletionSource();
+        private readonly PerformanceCounters? _counters;
 
         public VoidContextEnricher(Func<TSource, TTarget> transform)
         {
@@ -30,27 +20,21 @@ namespace Ethanol.ContextBuilder.Enrichers
             this._transform = transform ?? throw new ArgumentNullException(nameof(transform));
         }
 
-        public Task Completed => _tcs.Task;
-
-        public void OnCompleted()
+        public TTarget Enrich(TSource item)
         {
-            _subject.OnCompleted();
-            _tcs.SetResult();
+            if (_counters != null) _counters.InputCount++;
+           
+            var newValue = _transform(item); 
+
+            if (_counters != null) _counters.OutputCount++;
+            
+            return newValue; 
         }
 
-        public void OnError(Exception error)
+        class PerformanceCounters
         {
-            _subject.OnError(error); 
-        }
-
-        public void OnNext(TSource value)
-        {
-            _subject.OnNext(_transform(value));
-        }
-
-        public IDisposable Subscribe(IObserver<TTarget> observer)
-        {
-            return _subject.Subscribe(observer);
+            public double InputCount;
+            public double OutputCount;
         }
     }
 }

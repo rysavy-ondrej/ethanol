@@ -8,12 +8,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
-
     public static class IpHostContextPolisherCatalogEntry
     {
         public static IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext> GetContextPolisher(this ContextTransformCatalog catalog)
@@ -39,6 +39,8 @@ namespace Ethanol.ContextBuilder.Polishers
     public class IpHostContextPolisher : IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext>
     {
         private readonly ILogger? _logger;
+        private readonly PerformanceCounters _performanceCounters;
+
         // We use subject as the simplest way to implement the transformer.
         // For the production version, consider more performant implementation.
         private Subject<HostContext> _subject;
@@ -49,6 +51,8 @@ namespace Ethanol.ContextBuilder.Polishers
 
         public Task Completed => _tcs.Task;
 
+        public IPerformanceCounters Counters => _performanceCounters;
+
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
         /// </summary>
@@ -56,6 +60,7 @@ namespace Ethanol.ContextBuilder.Polishers
         {
             _subject = new Subject<HostContext>();
             _logger = logger;
+            _performanceCounters = new PerformanceCounters(this);
         }
 
         /// <summary>
@@ -82,6 +87,8 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <param name="value">The input observable event containing a rich IP host context.</param>
         public void OnNext(ObservableEvent<IpHostContextWithTags> value)
         {
+            _performanceCounters.InputCount++;
+
             if (value.Payload == null || value.Payload.HostAddress == null)
                 return;
 
@@ -117,6 +124,9 @@ namespace Ethanol.ContextBuilder.Polishers
                 var handshakes = CollectTls(value.Payload.HostAddress, hostFlows.SelectFlows<TlsFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
 
                 var hostKey = SafeString(value.Payload.HostAddress);
+
+                
+            
                 var hostContext = new HostContext
                 {
                     Start = value.StartTime,
@@ -130,6 +140,12 @@ namespace Ethanol.ContextBuilder.Polishers
                 };
 
                 _subject.OnNext(hostContext);
+
+                _performanceCounters.HostsConnections += hostContext.Connections.Length;
+                _performanceCounters.HostsResolvedDomains += hostContext.ResolvedDomains.Length;
+                _performanceCounters.HostsWebUrls += hostContext.WebUrls.Length;
+                _performanceCounters.HostsTlsHandshakes += hostContext.TlsHandshakes.Length;
+                _performanceCounters.OutputCount++;
             }
             catch (Exception e)
             {
@@ -373,6 +389,59 @@ namespace Ethanol.ContextBuilder.Polishers
                     result = default;
                     return false;
                 }
+            }
+        }
+
+        class PerformanceCounters : IPerformanceCounters
+        {
+            private IpHostContextPolisher ipHostContextPolisher;
+
+            public PerformanceCounters(IpHostContextPolisher ipHostContextPolisher)
+            {
+                this.ipHostContextPolisher = ipHostContextPolisher;
+            }
+
+            public string Name => nameof(IpHostContextPolisher);
+
+            public string Category => "ContextPolisher Performance Counters";
+
+            public IEnumerable<string> Keys => new[] { nameof(InputCount), nameof(OutputCount), nameof(HostsConnections), nameof(HostsResolvedDomains), nameof(HostsWebUrls), nameof(HostsTlsHandshakes) };
+
+            public int Count =>  6;
+
+            public int InputCount;
+            internal int OutputCount;
+            internal int HostsConnections;
+            internal int HostsResolvedDomains;
+            internal int HostsWebUrls;
+            internal int HostsTlsHandshakes;
+
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+            {
+                if (key == null) { throw new ArgumentNullException(nameof(key)); }
+                switch (key)
+                {
+                    case nameof(InputCount):
+                        value = InputCount;
+                        return true;
+                    case nameof(OutputCount):
+                        value = OutputCount;
+                        return true;
+                    case nameof(HostsConnections):
+                        value = HostsConnections;
+                        return true;
+                    case nameof(HostsResolvedDomains):
+                        value = HostsResolvedDomains;
+                        return true;
+                    case nameof(HostsWebUrls):
+                        value = HostsWebUrls;
+                        return true;
+                    case nameof(HostsTlsHandshakes):
+                        value = HostsTlsHandshakes;
+                        return true;
+                }
+                value = 0.0;
+                return false;
             }
         }
     }

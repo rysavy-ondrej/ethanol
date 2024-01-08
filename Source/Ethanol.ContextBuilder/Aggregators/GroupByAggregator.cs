@@ -57,6 +57,8 @@ namespace Ethanol.ContextBuilder.Aggregators
 
         public Task Completed => _tcs.Task;
 
+        public IPerformanceCounters Counters => PerformanceCounters.Default;
+
         public void OnCompleted()
         {
             _sourceSubject.OnCompleted();

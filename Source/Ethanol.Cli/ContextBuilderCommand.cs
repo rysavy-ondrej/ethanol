@@ -15,6 +15,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Ethanol.ContextBuilder;
 using System.Diagnostics;
+using Ethanol.ContextBuilder.Enrichers;
 
 /// <summary>
 /// Represents a command within a console application for running the context builder process.
@@ -71,15 +72,11 @@ internal class ContextBuilderCommand : ConsoleAppBase
 
             // 2.create modules: 
             var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
-
             if (readers.Length == 0) throw new ArgumentException("No 'input' configuration specified in configuration file.");
-
             _logger?.LogInformation($"Reader(s): {String.Join(',', readers.Select(w => w.ToString()))}");
 
             var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
-
             if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
-
             _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
 
             var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
@@ -119,19 +116,35 @@ internal class ContextBuilderCommand : ConsoleAppBase
         {
             var readers = new[] { GetStdinReaderFormat(inputFormat, inputFilePath) };
             var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out, null) };
-            var enricher = _environment.ContextTransform.GetVoidEnricher(); 
-            var polisher = _environment.ContextTransform.GetContextPolisher();
+
+            var enricher = new VoidContextEnricher<ObservableEvent<IpHostContext>?, ObservableEvent<IpHostContextWithTags>>(p => new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Payload?.HostAddress, Flows = p.Payload?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
+            
+            var refinerCounters  = new IpContextRefiner.PerformanceCounters();
+            var refiner = new IpContextRefiner(refinerCounters, _logger);
+            
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
-            var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-            var stats = await EthanolContextBuilder.Run(modules, windowTimeSpan, 8, filter, Context.CancellationToken, null, _logger);
-            _logger?.LogInformation($"Builder finished: {stats.ToString()}");
+
+            void PrintProgress(long progress)
+            {
+                var builderStats = new EthanolContextBuilder.BuilderStatistics
+                {
+                    ContextsBuilt = refinerCounters.OutputCount
+                };
+                OnProgressUpdate(builderStats);
+            }
+
+            Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(PrintProgress);
+
+            await EthanolContextBuilder.Execute(readers, writers, enricher, refiner, windowTimeSpan, windowTimeSpan, filter, _logger, Context.CancellationToken);
         }
         catch(Exception ex)
         {
             _logger.LogCritical(ex, $"Cannot execute builder: {ex.Message}");
         }
     }
+
+
 
     private IDataReader<IpFlow> GetStdinReaderFormat(string inputFormat, string? filePath = null)
     {

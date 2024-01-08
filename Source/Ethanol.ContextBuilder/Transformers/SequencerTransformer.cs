@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Observable;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -35,6 +36,7 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     // TaskCompletionSource to signal completion of event processing.
     private readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
+    private readonly PerformanceCounters _performanceCounters; 
     /// <summary>
     /// Initializes a new instance of the SequencerTransformer class with a specified queue length.
     /// </summary>
@@ -42,7 +44,7 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
     public SequencerTransformer(int queueLength)
     {
         this._maxQueueLength = queueLength;
-        Statistics = new SequencerTransformerStatistics(this);
+        _performanceCounters = new PerformanceCounters(this);
     }
 
     /// <summary>
@@ -111,20 +113,44 @@ public class SequencerTransformer<T> : IObservableTransformer<ObservableEvent<T>
         return _subject.Subscribe(observer);
     }
 
-    public SequencerTransformerStatistics Statistics { get; }
+    public IPerformanceCounters Counters => throw new NotImplementedException();
 
-    public class SequencerTransformerStatistics
+    public class PerformanceCounters : IPerformanceCounters
     {
-        private readonly SequencerTransformer<T> transformer;
+        private SequencerTransformer<T> sequencerTransformer;
 
-        internal SequencerTransformerStatistics(SequencerTransformer<T> transformer)
+        public PerformanceCounters(SequencerTransformer<T> sequencerTransformer)
         {
-            this.transformer = transformer;
+            this.sequencerTransformer = sequencerTransformer;
         }
 
-        public int ActualQueueLength => transformer._bufferedElements;
+        public int ActualQueueLength => sequencerTransformer._bufferedElements;
 
-        public int MaxQueueLength => transformer._maxQueueLength;
+        public int MaxQueueLength => sequencerTransformer._maxQueueLength;
+
+        public string Name => nameof(SequencerTransformer<T>);
+
+        public string Category => "Sequencer Performance Counters";
+
+        public IEnumerable<string> Keys => new [] { nameof(ActualQueueLength), nameof(MaxQueueLength) };
+
+        public int Count => 2;
+
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+        {
+            if (key == null) { throw new ArgumentNullException(nameof(key)); }
+            switch(key)
+            {
+                case nameof(ActualQueueLength):
+                    value = ActualQueueLength;
+                    return true;
+                case nameof(MaxQueueLength):
+                    value = MaxQueueLength;
+                    return true;
+            }
+            value = 0.0;
+            return false;
+        }
     }
 }
 

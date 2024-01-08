@@ -1,6 +1,7 @@
 ﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace Ethanol.ContextBuilder.Filters
         // The subject that acts as both an observer and an observable.
         private readonly Subject<ObservableEvent<TValue>> _subject;
 
+        private readonly PerformanceCounters _performanceCounters = new();
         /// <summary>
         /// Initializes a new instance of the ObservableFilter with the match condition.
         /// </summary>
@@ -35,6 +37,8 @@ namespace Ethanol.ContextBuilder.Filters
         /// Gets the task that completes when the filter has finished processing all events.
         /// </summary>
         public Task Completed => _tcs.Task;
+
+        public IPerformanceCounters Counters => _performanceCounters;
 
         /// <summary>
         /// Called when the observable sequence has completed.
@@ -60,10 +64,16 @@ namespace Ethanol.ContextBuilder.Filters
         /// <param name="value">The current event to be processed.</param>
         public void OnNext(ObservableEvent<TValue> value)
         {
+            _performanceCounters.InputCount++;
             // Only propagate the event if it matches the condition.
             if (_match(value))
             {
+                _performanceCounters.Accepted++;
                 _subject.OnNext(value);
+            }
+            else
+            {
+                _performanceCounters.Rejected++;
             }
         }
 
@@ -75,6 +85,40 @@ namespace Ethanol.ContextBuilder.Filters
         public IDisposable Subscribe(IObserver<ObservableEvent<TValue>> observer)
         {
             return _subject.Subscribe(observer);
+        }
+
+        class PerformanceCounters : IPerformanceCounters
+        {
+            public double InputCount;
+            public double Accepted;
+            public double Rejected;
+
+            public string Name => nameof(ObservableFilter<TValue>);
+
+            public string Category =>  "Filter Performance Counters";
+
+            public IEnumerable<string> Keys => new [] { "InputCount", "Accepted", "Rejected" };
+
+            public int Count => 3;
+
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+            {
+                switch (key)
+                {
+                    case "InputCount":
+                        value = InputCount;
+                        return true;
+                    case "Accepted":
+                        value = Accepted;
+                        return true;
+                    case "Rejected":
+                        value = Rejected;
+                        return true;
+                    default:
+                        value = default;
+                        return false;
+                }
+            }
         }
     }
 

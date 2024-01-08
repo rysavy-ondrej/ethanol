@@ -27,20 +27,5 @@ namespace Ethanol.Catalogs
             connection.Open();
             return new IpHostContextEnricher(new NetifyTagProvider(new PostgresTagDataSource(connection, sourceTable, catalog.Environment.Logger)), catalog.Environment.Logger);
         }
-
-        /// <summary>
-        /// Creates a void enricher that passes through IP host context without adding any tags.
-        /// </summary>
-        /// <param name="catalog">The context transform catalog to which this enricher will be added.</param>
-        /// <returns>
-        /// An observable transformer that takes an observable event of IpHostContext and transforms it into an observable event
-        /// of IpHostContextWithTags without adding or modifying the tags.
-        /// </returns>
-        public static IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> GetVoidEnricher(this ContextTransformCatalog catalog)
-        {
-            return new VoidContextEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>>(s => 
-                new ObservableEvent<IpHostContextWithTags>(
-                    new IpHostContextWithTags { HostAddress = s.Payload?.HostAddress, Flows = s.Payload?.Flows, Tags = Array.Empty<TagObject>() }, s.StartTime, s.EndTime));
-        }
     }
 }

@@ -1,5 +1,8 @@
 ﻿using Ethanol.ContextBuilder.Pipeline;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Defines the contract for a transformer that observes and produces objects, enabling the transformation of data streams.
@@ -35,5 +38,46 @@ public interface IObservableTransformer : IObserver<object>, IObservable<object>
 /// <typeparam name="TTarget">The type of generated context.</typeparam>
 public interface IObservableTransformer<in TSource, out TTarget> : IObserver<TSource>, IObservable<TTarget> 
 { 
+}
 
+
+/// <summary>
+/// Represents a performance counters interface.
+/// </summary>
+public interface IPerformanceCounters 
+{
+    /// <summary>
+    /// Gets the name of the category.
+    /// </summary>
+    string Name { get; }
+
+    /// <summary>
+    /// Gets the name of the category.
+    /// </summary>
+    string Category { get; }
+
+    public IEnumerable<string> Keys { get; } 
+
+    public int Count { get; }
+
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value);
+}
+
+public class PerformanceCounters : IPerformanceCounters
+{
+    public static IPerformanceCounters Default { get; } = new PerformanceCounters();
+
+    public string Name => String.Empty;
+
+    public string Category => String.Empty;
+
+    public IEnumerable<string> Keys => Array.Empty<string>();
+
+    public int Count => 0;
+
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out double value)
+    {
+        value = 0;
+        return false;
+    }
 }

@@ -2,7 +2,6 @@
 using Ethanol.ContextBuilder.Readers.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;
-using System;
 using System.IO;
 using System.Net;
 using System.Text.Json;

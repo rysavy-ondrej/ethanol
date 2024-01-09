@@ -1,9 +1,10 @@
-﻿using Ethanol.DataObjects;
+﻿using Ethanol.ContextBuilder.Helpers;
+using Ethanol.DataObjects;
 using System;
 using System.Linq;
 using System.Net;
 
-namespace Ethanol.ContextBuilder.Pipeline
+namespace Ethanol.ContextBuilder.Filters
 {
     /// <summary>
     /// Provides a filter mechanism based on IP addresses of hosts.
@@ -42,7 +43,7 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// <param name="value">The filter function to be used for matching IP addresses.</param>
         public HostBasedFilter(Func<IPAddress, bool> value)
         {
-            this.AddressFilter = value;
+            AddressFilter = value;
         }
 
         /// <summary>

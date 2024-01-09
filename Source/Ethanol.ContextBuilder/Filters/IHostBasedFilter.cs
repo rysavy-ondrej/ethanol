@@ -1,7 +1,7 @@
 ﻿using Ethanol.DataObjects;
 using System.Net;
 
-namespace Ethanol.ContextBuilder.Pipeline
+namespace Ethanol.ContextBuilder.Filters
 {
     /// <summary>
     /// Represents a filter based on the host of an event.

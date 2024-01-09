@@ -80,7 +80,7 @@ namespace Ethanol.ContextBuilder.Reactive
                 this IObservable<Timestamped<T>> source,
                 long windowStartTime, long windowEndTime,
                 Func<Timestamped<T>, KeyValuePair<K, V?>[]> keyValSelector,
-                Func<KeyValuePair<K, V[]>, R> resultSelector,
+                Func<KeyValuePair<K, V?[]>, R> resultSelector,
                 Func<R> emptyResultSelector
         )
         {

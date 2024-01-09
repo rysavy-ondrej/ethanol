@@ -43,5 +43,4 @@ namespace Ethanol
 
         public ILogger Logger => _logger;
     }
-
 }

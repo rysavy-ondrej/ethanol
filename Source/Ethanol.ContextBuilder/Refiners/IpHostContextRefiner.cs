@@ -7,11 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 
-namespace Ethanol.ContextBuilder.Polishers
+namespace Ethanol.ContextBuilder.Refiners
 {
+    /// <summary>
+    /// Represents a refiner that transform a time range of <see cref="IpHostContextWithTags"/> into a <see cref="HostContext"/>.
+    /// </summary>
     public class IpHostContextRefiner : IRefiner<TimeRange<IpHostContextWithTags>, HostContext>
     {
-
         private readonly ILogger? _logger;
         private readonly PerformanceCounters? _counters;
         /// <summary>
@@ -23,7 +25,11 @@ namespace Ethanol.ContextBuilder.Polishers
             _counters = counters;
         }
 
-
+        /// <summary>
+        /// Refines the given <see cref="TimeRange{IpHostContextWithTags}"/> value and returns a <see cref="HostContext"/> object.
+        /// </summary>
+        /// <param name="value">The value to be refined.</param>
+        /// <returns>The refined <see cref="HostContext"/> object, or null if the refinement fails.</returns>
         public HostContext? Refine(TimeRange<IpHostContextWithTags> value)
         {
             if (_counters != null) _counters.InputCount++;
@@ -88,7 +94,7 @@ namespace Ethanol.ContextBuilder.Polishers
             }
             catch (Exception e)
             {
-                _logger?.LogError(e, "Error in context polishing for event {0}.", value);
+                _logger?.LogError(e, $"Error in refining context {value.Value.HostAddress}@{value.StartTime}-{value.EndTime}.");
                 if (_counters != null) _counters.Errors++;
                 return null;
             }
@@ -209,10 +215,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <returns>A resolver object that maps TCP flow tags to process identifiers.</returns>
         private Resolver<string, TcpFlowTag> CreateProcessResolver(IEnumerable<TagObject> tags)
         {
-#pragma warning disable CS8603 // Possible null reference return.          
-            var flowTags = tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag>(x => x.GetDetailsAs<TcpFlowTag>()).Where(t => t != null).Select(t => t!).ToArray();
-#pragma warning restore CS8603 // Possible null reference return.
-
+            var flowTags = tags.Where(x => x.Type == nameof(TcpFlowTag)).Select<TagObject, TcpFlowTag?>(x => x.GetDetailsAs<TcpFlowTag>()).Where(x => x != null).Select(x => x!).ToArray();
             var processResolver = new Resolver<string, TcpFlowTag>(flowTags, flowTag => $"{flowTag.LocalAddress}:{flowTag.LocalPort}-{flowTag.RemoteAddress}:{flowTag.RemotePort}");
             return processResolver;
         }
@@ -239,7 +242,7 @@ namespace Ethanol.ContextBuilder.Polishers
         /// <typeparam name="T">The type of the nullable value.</typeparam>
         /// <param name="value">The nullable value to convert.</param>
         /// <returns>The string representation of the nullable value, or an empty string if the value is null.</returns>
-        string SafeString<T>(T? value)
+        static string SafeString<T>(T? value)
         {
             return value?.ToString() ?? String.Empty;
         }
@@ -322,14 +325,38 @@ namespace Ethanol.ContextBuilder.Polishers
             }
         }
 
+        /// <summary>
+        /// Represents performance counters for tracking various metrics.
+        /// </summary>
         public class PerformanceCounters
         {
+            /// <summary>
+            /// Gets or sets the number of inputs.
+            /// </summary>
             public int InputCount;
+            /// <summary>
+            /// Gets or sets the number of outputs.
+            /// </summary>
             public int OutputCount;
+            /// <summary>
+            /// Gets or sets the number of hosts connections.
+            /// </summary>
             public int HostsConnections;
+            /// <summary>
+            /// The number of hosts with resolved domains.
+            /// </summary>
             public int HostsResolvedDomains;
+            /// <summary>
+            /// Gets or sets the number of web URLs hosted by the IP host.
+            /// </summary>
             public int HostsWebUrls;
+            /// <summary>
+            /// Gets or sets the number of TLS handshakes performed by the host.
+            /// </summary>
             public int HostsTlsHandshakes;
+            /// <summary>
+            /// The number of errors encountered during the refining process.
+            /// </summary>
             public int Errors;
         }
     }

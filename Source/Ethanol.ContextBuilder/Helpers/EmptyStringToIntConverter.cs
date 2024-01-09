@@ -3,26 +3,30 @@ using CsvHelper;
 using System;
 using CsvHelper.TypeConversion;
 
-/// <summary>
-/// Converter for converting potentially empty strings or strings with specific values to an integer representation.
-/// </summary>
-public class EmptyStringToIntConverter : Int32Converter
+namespace Ethanol.ContextBuilder.Helpers
 {
+
     /// <summary>
-    /// Converts a given string representation to an integer value.
-    /// If the string is empty, whitespace, or matches specific patterns, it returns 0.
-    /// Otherwise, it falls back to the base conversion logic.
+    /// Converter for converting potentially empty strings or strings with specific values to an integer representation.
     /// </summary>
-    /// <param name="text">The input string to convert.</param>
-    /// <param name="row">The row from which the value is being converted.</param>
-    /// <param name="memberMapData">The member mapping data for the current field.</param>
-    /// <returns>The converted integer value or 0 for specific string patterns. If the string value cannot be converted to integer, it returns int (or throws an exception?).</returns>
-    public override object? ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    public class EmptyStringToIntConverter : Int32Converter
     {
-        if (string.IsNullOrWhiteSpace(text) || string.Equals(text, "none", StringComparison.InvariantCultureIgnoreCase))
+        /// <summary>
+        /// Converts a given string representation to an integer value.
+        /// If the string is empty, whitespace, or matches specific patterns, it returns 0.
+        /// Otherwise, it falls back to the base conversion logic.
+        /// </summary>
+        /// <param name="text">The input string to convert.</param>
+        /// <param name="row">The row from which the value is being converted.</param>
+        /// <param name="memberMapData">The member mapping data for the current field.</param>
+        /// <returns>The converted integer value or 0 for specific string patterns. If the string value cannot be converted to integer, it returns int (or throws an exception?).</returns>
+        public override object? ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
         {
-            return 0;
+            if (string.IsNullOrWhiteSpace(text) || string.Equals(text, "none", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return 0;
+            }
+            return base.ConvertFromString(text, row, memberMapData);
         }
-        return base.ConvertFromString(text, row, memberMapData);
     }
 }

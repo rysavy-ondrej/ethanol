@@ -1,6 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
-using Ethanol.ContextBuilder.Pipeline;
-using Ethanol.ContextBuilder.Polishers;
+using Ethanol.ContextBuilder.Filters;
+using Ethanol.ContextBuilder.Refiners;
 using Ethanol.ContextBuilder.Reactive;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
@@ -79,14 +79,14 @@ namespace Ethanol.ContextBuilder
                 .SelectMany(window =>
                         {
                             if (builderStats != null) builderStats.CurrentWindowStart = window.StartTime;
-                            return window.Value
+                            return window.Value!
                                 .AggregateIpContexts(window.StartTime.Ticks, window.EndTime.Ticks)
                                 .Do(ctx => { if (builderStats != null) builderStats.ContextsBuilt++; })
                                 .Where(ctx => ContextFilter(filter, ctx))
                                 .Do(ctx => { if (builderStats != null) builderStats.ContextAccepted++; })
                                 .ObserveOn(NewThreadScheduler.Default)          // This causes that the following code is executed in other thread.
-                                .Enrich(enricher)
-                                .Polish(refiner);
+                                .Enrich(enricher).Where(x=>x!=null).Select(x=>x!) 
+                                .Refine(refiner).Where(x=>x!=null).Select(x=>x!);
                         }
                 ).Do(f => { if (builderStats != null) builderStats.ContextsWritten++; })
                 .Consume(writers);

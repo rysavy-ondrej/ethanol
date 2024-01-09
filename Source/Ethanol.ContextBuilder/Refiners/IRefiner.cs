@@ -1,4 +1,4 @@
-namespace Ethanol.ContextBuilder.Polishers
+namespace Ethanol.ContextBuilder.Refiners
 {
     public interface IRefiner<T, R>
     {

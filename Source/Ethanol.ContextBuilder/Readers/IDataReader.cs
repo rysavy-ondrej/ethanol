@@ -13,8 +13,8 @@ namespace Ethanol.ContextBuilder.Readers
         /// <summary>
         /// Initiates the reading process asynchronously. Once started, the reader will produce records that can be observed.
         /// </summary>
-        /// <returns>A task representing the asynchronous read operation.</returns>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         Task ReadAllAsync(CancellationToken ct);
     }
-
 }

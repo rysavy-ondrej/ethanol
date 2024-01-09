@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ethanol.DataObjects;
+using Ethanol.ContextBuilder.Helpers;
 
 namespace Ethanol.ContextBuilder.Enrichers.TagSources
 {

@@ -1,8 +1,7 @@
 ﻿using Ethanol;
 using Ethanol.DataObjects;
 using Ethanol.Catalogs;
-using Ethanol.ContextBuilder.Pipeline;
-using Ethanol.ContextBuilder.Polishers;
+using Ethanol.ContextBuilder.Refiners;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using Microsoft.Extensions.Logging;
@@ -13,6 +12,8 @@ using System.Reactive.Linq;
 using Ethanol.ContextBuilder;
 using System.Diagnostics;
 using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.ContextBuilder.Helpers;
+using Ethanol.ContextBuilder.Filters;
 
 /// <summary>
 /// Represents a command within a console application for running the context builder process.
@@ -77,7 +78,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
 
             var enricher = CreateEnricher2(contextBuilderConfiguration.Enrichers, _environment);
-            var polisher = _environment.ContextBuilder.GetContextPolisher2();
+            var polisher = _environment.ContextBuilder.GetContextRefiner();
             var filter = GetFilter(contextBuilderConfiguration.Builder);
             var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
  
@@ -86,16 +87,16 @@ internal class ContextBuilderCommand : ConsoleAppBase
             // progress report enabled?
             using var report = progressReport ? Observable.Interval(TimeSpan.FromSeconds(5)).Subscribe(_ => OnProgressUpdate(builderStats)) : null;
 
-            _logger.LogInformation($"Builder started.");
+            _logger?.LogInformation($"Builder started.");
             // 4.execute:
             await EthanolContextBuilder.RunAsync(readers, writers, enricher, polisher, windowSpan, windowSpan, filter, _logger, builderStats, Context.CancellationToken);
 
-            _logger.LogInformation($"Builder finished.");
+            _logger?.LogInformation($"Builder finished.");
             OnProgressUpdate(builderStats);
         }
         catch(Exception ex)
         {
-            _logger.LogCritical(ex, $"Cannot run builder: {ex.Message}");
+            _logger?.LogCritical(ex, $"Cannot run builder: {ex.Message}");
         }
     }
 
@@ -119,7 +120,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var readers = new[] { GetStdinReaderFormat(inputFormat, inputFilePath) };
             var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out, null) };
 
-            var enricher = new VoidContextEnricher<TimeRange<IpHostContext>?, TimeRange<IpHostContextWithTags>>(p => new TimeRange<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Value?.HostAddress, Flows = p.Value?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
+            var enricher = new VoidContextEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>>(p => new TimeRange<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Value?.HostAddress, Flows = p.Value?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
             
             var refinerCounters  = new IpHostContextRefiner.PerformanceCounters();
             var refiner = new IpHostContextRefiner(refinerCounters, _logger);

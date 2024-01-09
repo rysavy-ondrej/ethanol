@@ -1,11 +1,9 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers;
-using Ethanol.ContextBuilder.Observable;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-
+using Ethanol.DataObjects;
+using Ethanol.ContextBuilder.Enrichers;
 
 /// <summary>
 /// Provides tags associated with remote hosts for a specified time range using a <see cref="ITagDataSource{T}"/>.
@@ -33,15 +31,15 @@ public class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
     /// </summary>
     /// <param name="value">The observable event containing the IP host context.</param>
     /// <returns>The tags associated with the IP host context.</returns>
-    public IEnumerable<TagObject> GetTags(ObservableEvent<IpHostContext> value)
+    public IEnumerable<TagObject> GetTags(TimeRange<IpHostContext> value)
     {
-        if (value.Payload == null || value.Payload.HostAddress == null || value.Payload.Flows == null || value.Payload.Flows.Length == 0)
+        if (value.Value == null || value.Value.HostAddress == null || value.Value.Flows == null || value.Value.Flows.Length == 0)
             return Enumerable.Empty<TagObject>();
 
-        var host = value.Payload.HostAddress;
+        var host = value.Value.HostAddress;
         var start = value.StartTime;
         var end = value.EndTime;
-        var flows = value.Payload.Flows;
+        var flows = value.Value.Flows;
         var remoteHosts = flows.Select(x => x.GetRemoteAddress(host)).Where(x=> x!= null).Distinct();
         return GetRemoteTags(remoteHosts!, start, end);
     }

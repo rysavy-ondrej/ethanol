@@ -1,9 +1,8 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using Ethanol.ContextBuilder.Context;
-using System.Text.RegularExpressions;
 using Ethanol.DataObjects;
+using System.Text.RegularExpressions;
 using Ethanol.ContextBuilder.Readers.DataObjects;
 
 /// <summary>

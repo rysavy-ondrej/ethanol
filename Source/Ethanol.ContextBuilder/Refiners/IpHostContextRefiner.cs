@@ -1,6 +1,4 @@
-using Ethanol.ContextBuilder.Context;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
-using Ethanol.ContextBuilder.Observable;
 using Ethanol.DataObjects;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,36 +9,34 @@ using System.Net;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
-    public class IpContextRefiner : IRefiner<ObservableEvent<IpHostContextWithTags>, HostContext>
+    public class IpHostContextRefiner : IRefiner<TimeRange<IpHostContextWithTags>, HostContext>
     {
 
         private readonly ILogger? _logger;
         private readonly PerformanceCounters? _counters;
-
-
         /// <summary>
         /// Creates a new instance of the IpHostContextSimplifier class.
         /// </summary>
-        public IpContextRefiner(PerformanceCounters? counters = null, ILogger? logger = null)
+        public IpHostContextRefiner(PerformanceCounters? counters = null, ILogger? logger = null)
         {
             _logger = logger;
             _counters = counters;
         }
 
 
-        public HostContext? Refine(ObservableEvent<IpHostContextWithTags> value)
+        public HostContext? Refine(TimeRange<IpHostContextWithTags> value)
         {
             if (_counters != null) _counters.InputCount++;
 
-            if (value.Payload == null || value.Payload.HostAddress == null)
+            if (value.Value == null || value.Value.HostAddress == null)
                 return null;
 
             try
             {
-                var hostFlows = (value.Payload.Flows) ?? Array.Empty<IpFlow>();
+                var hostFlows = (value.Value.Flows) ?? Array.Empty<IpFlow>();
                 var domainResolver = CreateDomainResolver(hostFlows);
 
-                var tags = value.Payload.Tags ?? Array.Empty<TagObject>();
+                var tags = value.Value.Tags ?? Array.Empty<TagObject>();
                 var processResolver = CreateProcessResolver(tags);
                 var serviceResolver = CreateServiceResolver(tags);
 
@@ -57,15 +53,15 @@ namespace Ethanol.ContextBuilder.Polishers
                     return serviceResolver.TryResolve(destinationAddress, out var result) ? result.Item2 : Array.Empty<InternetServiceTag>();
                 }
 
-                var connections = AggregateHostConnections(value.Payload.HostAddress, hostFlows, ResolveDomain, ResolveServices);
+                var connections = AggregateHostConnections(value.Value.HostAddress, hostFlows, ResolveDomain, ResolveServices);
 
-                var domains = CollectDomains(value.Payload.HostAddress, hostFlows.SelectFlows<DnsFlow>());
+                var domains = CollectDomains(value.Value.HostAddress, hostFlows.SelectFlows<DnsFlow>());
 
-                var webUrls = CollectUrls(value.Payload.HostAddress, hostFlows.SelectFlows<HttpFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
+                var webUrls = CollectUrls(value.Value.HostAddress, hostFlows.SelectFlows<HttpFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
 
-                var handshakes = CollectTls(value.Payload.HostAddress, hostFlows.SelectFlows<TlsFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
+                var handshakes = CollectTls(value.Value.HostAddress, hostFlows.SelectFlows<TlsFlow>(), ResolveDomain, ResolveProcessName, ResolveServices);
 
-                var hostKey = SafeString(value.Payload.HostAddress);
+                var hostKey = SafeString(value.Value.HostAddress);
 
                 
                 var hostContext = new HostContext

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Provides extension methods for collections of <see cref="TagObject"/> to enable easier filtering based on the properties of the objects.

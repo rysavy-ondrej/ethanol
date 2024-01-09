@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents a detailed Internet Protocol (IP) flow data structure that extends the basic <see cref="InternetFlow"/>.

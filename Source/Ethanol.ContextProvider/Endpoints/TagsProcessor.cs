@@ -1,6 +1,6 @@
 ﻿using Npgsql;
 using System.Data;
-using Ethanol.ContextBuilder.Context;
+using Ethanol.DataObjects;
 
 /// <summary>
 /// Processor for handling operations related to tags. The class is designed to read tags relevant 

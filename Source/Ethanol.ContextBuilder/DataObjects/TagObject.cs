@@ -1,8 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Text.Json;
-
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents a TagObject, an essential information element within a context.

@@ -1,4 +1,4 @@
-﻿namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents the type of DNS (Domain Name System) record.

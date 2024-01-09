@@ -7,6 +7,7 @@ using Npgsql;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ethanol.DataObjects;
 
 namespace Ethanol.ContextBuilder.Enrichers.TagSources
 {

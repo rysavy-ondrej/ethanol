@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.ContextBuilder.Math
+namespace Ethanol.ContextBuilder.Utils
 {
     /// <summary>
     /// Provides functionality to detect strings that may be randomly generated based on their entropy.

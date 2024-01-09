@@ -1,46 +1,11 @@
-﻿using Ethanol.ContextBuilder.Aggregators;
 using System;
 using System.Collections.Generic;
 
-namespace Ethanol.ContextBuilder.Observable
+
+namespace Ethanol.ContextBuilder.Reactive
 {
-
-    /// <summary>
-    /// Provides extension methods for aggregating event streams into grooups and windows.
-    /// </summary>
-    public static class AggregatorExtensions
+    public static class ReactiveExtensionAggregate
     {
-        /// <summary>
-        /// Transforms an observable sequence into a series of "hopping" windows, each containing events that
-        /// occurred within a specified time span. Each window is represented as an observable sequence itself.
-        /// This is useful for batch processing or summarizing data over fixed time intervals.
-        /// </summary>
-        /// <typeparam name="TSource">The type of the elements in the source observable sequence.</typeparam>
-        /// <param name="source">The source observable sequence that will be divided into windows.</param>
-        /// <param name="timeSpan">The duration of each window. Events within this time span will be grouped together.</param>
-        /// <returns>
-        /// An observable sequence of windows (each represented as an observable sequence of items) that are 
-        /// emitted at regular intervals defined by the specified duration.
-        /// </returns>
-        /// <remarks>
-        /// Each window is closed at the end of its lifetime, meaning that once the specified time span for
-        /// a window is over, it is emitted and a new window begins, even if the previous window is empty.
-        /// This operation is stateful and must keep a memory of the events during the window time span.
-        /// </remarks>
-        /// <exception cref="ArgumentNullException">Thrown when the source observable is null.</exception>
-
-        public static IObservable<ObservableEvent<IObservable<TSource>>> HoppingWindow<TSource>(this IObservable<ObservableEvent<TSource>> source,
-            IObservableTransformer<ObservableEvent<TSource>, ObservableEvent<IObservable<TSource>>> windowTransformer)
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
-            return System.Reactive.Linq.Observable.Create<ObservableEvent<IObservable<TSource>>>(observer =>
-            {
-                source.Subscribe(windowTransformer);
-                return windowTransformer.Subscribe(observer);
-            });
-        }
-
         /// <summary>
         /// Transforms an observable sequence into a sequence of groups based on a specified key selector function, 
         /// maps each element of each group by using a specified function, and then transforms them into a result sequence.

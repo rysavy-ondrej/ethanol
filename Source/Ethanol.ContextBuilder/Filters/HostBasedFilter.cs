@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Observable;
+﻿using Ethanol.DataObjects;
 using System;
 using System.Linq;
 using System.Net;
@@ -78,10 +77,10 @@ namespace Ethanol.ContextBuilder.Pipeline
         /// </summary>
         /// <param name="evt">The observable event containing the IP host context.</param>
         /// <returns>True if the IP host address matches the filter; otherwise, false.</returns>
-        public bool Evaluate(ObservableEvent<IpHostContext> evt)
+        public bool Evaluate(TimeRange<IpHostContext> evt)
         {
-            if (evt.Payload?.HostAddress == null) return false;
-            return Match(evt.Payload.HostAddress);
+            if (evt.Value?.HostAddress == null) return false;
+            return Match(evt.Value.HostAddress);
         }
     }
 }

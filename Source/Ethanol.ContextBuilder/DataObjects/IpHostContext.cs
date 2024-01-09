@@ -1,7 +1,7 @@
 ﻿using System.Net;
+using System.Reactive;
 
-
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents the context for a specific IP host, encompassing its address, associated flows, and optional custom data.
@@ -28,7 +28,7 @@ namespace Ethanol.ContextBuilder.Context
     /// <summary>
     /// Represents the context for a specific IP host without any associated custom data.
     /// </summary>
-    public class IpHostContext : IpHostContext<Empty>
+    public class IpHostContext : IpHostContext<Unit>
     {
     }
 }

@@ -1,5 +1,4 @@
-﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.DataObjects;
+﻿using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using System.IO;
 using YamlDotNet.Serialization;

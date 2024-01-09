@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reactive.Linq;
 
-namespace Ethanol.ContextBuilder.Math
+namespace Ethanol.ContextBuilder.Utils
 {
     /// <summary>
     /// Provides various useful statistical functions.

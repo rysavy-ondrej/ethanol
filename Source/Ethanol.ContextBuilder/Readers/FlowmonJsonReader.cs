@@ -1,4 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Readers.DataObjects;
 using Ethanol.ContextBuilder.Serialization;
 using Microsoft.Extensions.Logging;

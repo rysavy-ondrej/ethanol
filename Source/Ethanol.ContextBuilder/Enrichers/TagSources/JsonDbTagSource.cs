@@ -1,4 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Enrichers;
 using JsonFlatFileDataStore;
 using System;

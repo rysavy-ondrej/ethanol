@@ -1,5 +1,4 @@
-﻿using Ethanol.DataObjects;
-namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents the DNS flow, derived from the general IP flow.

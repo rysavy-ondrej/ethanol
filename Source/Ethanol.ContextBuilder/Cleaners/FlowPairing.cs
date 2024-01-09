@@ -1,10 +1,9 @@
-﻿using Ethanol.ContextBuilder.Context;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-
+using Ethanol.DataObjects;
 namespace Ethanol.ContextBuilder.Cleaners
 {
     /// <summary>
@@ -18,7 +17,7 @@ namespace Ethanol.ContextBuilder.Cleaners
     /// pairs them together. If a matching flow is not found within a specified timeout,
     /// the single flow is emitted as-is.
     /// </remarks>
-    public class FlowPairing : IObservableTransformer<IpFlow, IpFlow>
+    public class FlowPairing : IObserver<IpFlow>, IObservable<IpFlow>
     {
         private readonly Subject<IpFlow> _flowSubject;
         private readonly TimeSpan _flowTimeout;
@@ -40,8 +39,6 @@ namespace Ethanol.ContextBuilder.Cleaners
         }
 
         public Task Completed => _tcs.Task;
-
-        public IPerformanceCounters Counters => PerformanceCounters.Default;
 
         /// <summary>
         /// Publishes the remaining single flows upon completion of the input stream.

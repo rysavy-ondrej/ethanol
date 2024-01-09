@@ -1,6 +1,6 @@
 ﻿using System;
 using AutoMapper;
-using Ethanol.ContextBuilder.Context;
+using Ethanol.DataObjects;
 
 namespace Ethanol.ContextBuilder.Readers.DataObjects
 {

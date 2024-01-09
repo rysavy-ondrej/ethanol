@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Provides extension methods for working with <see cref="IpFlow"/> objects.

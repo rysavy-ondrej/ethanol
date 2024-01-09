@@ -1,6 +1,4 @@
-﻿using Ethanol.ContextBuilder.Observable;
-using Ethanol.ContextBuilder.Pipeline;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
@@ -8,7 +6,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 
-namespace Ethanol.ContextBuilder.Aggregators
+namespace Ethanol.ContextBuilder.Reactive
 {
     /// <summary>
     /// Aggregates events by grouping them based on a key and then transforming each group into a single result.
@@ -22,7 +20,7 @@ namespace Ethanol.ContextBuilder.Aggregators
     /// groups them by a specified key, and then transforms each group into a single, aggregated result.
     /// It's a reactive pipeline component that can be used to process streams of data in real-time.
     /// </remarks>
-    public class GroupByAggregator<TSource, TKey, TValue, TResult> : ObservableBase<TResult>, IObservableTransformer<TSource, TResult>
+    public class GroupByAggregator<TSource, TKey, TValue, TResult> : ObservableBase<TResult>, IObserver<TSource>
     {
         readonly TaskCompletionSource _tcs = new TaskCompletionSource();
 
@@ -56,8 +54,6 @@ namespace Ethanol.ContextBuilder.Aggregators
         }
 
         public Task Completed => _tcs.Task;
-
-        public IPerformanceCounters Counters => PerformanceCounters.Default;
 
         public void OnCompleted()
         {

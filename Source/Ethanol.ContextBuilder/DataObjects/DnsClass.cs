@@ -1,4 +1,4 @@
-﻿namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents the class field in the DNS protocol.

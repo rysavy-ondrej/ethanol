@@ -1,4 +1,4 @@
-﻿namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents the different types of flows in a communication.

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
-using Ethanol.ContextBuilder.Context;
-
+using Ethanol.DataObjects;
 namespace Ethanol.ContextBuilder.Cleaners
 {
     /// <summary>

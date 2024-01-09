@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ethanol.ContextBuilder.Context
+namespace Ethanol.DataObjects
 {
     /// <summary>
     /// Represents details of a Transport Layer Security (TLS) flow, derived from an IP flow.

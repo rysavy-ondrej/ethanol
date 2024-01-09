@@ -1,4 +1,4 @@
-﻿namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// The DNS query response flag, also known as the QR bit, is a single bit field in the DNS header that indicates 

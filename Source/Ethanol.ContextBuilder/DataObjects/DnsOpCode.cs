@@ -1,4 +1,4 @@
-﻿namespace Ethanol.ContextBuilder.Context
+﻿namespace Ethanol.DataObjects
 {
     /// <summary>
     /// DNS OPCODE identifies the type of DNS query or DNS update operation that is being performed in the message.

@@ -1,6 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
-using Ethanol.ContextBuilder.Context;
-using Microsoft.Extensions.Logging;
+using Ethanol.DataObjects;
 using System;
 using System.Collections.Generic;
 using System.IO;

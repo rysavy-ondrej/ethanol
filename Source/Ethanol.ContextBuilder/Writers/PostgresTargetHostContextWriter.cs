@@ -1,5 +1,4 @@
 ﻿using Ethanol.ContextBuilder.Helpers;
-using Ethanol.ContextBuilder.Observable;
 using Ethanol.DataObjects;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -12,7 +11,7 @@ namespace Ethanol.ContextBuilder.Writers
     /// A writer plugin responsible for serializing context data to a PostgreSQL table.
     /// </summary>
     /// <remarks>
-    /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="ObservableEvent{IpTargetHostContext}"/> 
+    /// The <see cref="PostgresTargetHostContextWriter"/> class is specifically designed to handle <see cref="TimeRange{IpTargetHostContext}"/> 
     /// and serialize them into a PostgreSQL table. The class provides functionality to establish connections, create tables if they 
     /// don't exist, and write context data.
     /// </remarks>

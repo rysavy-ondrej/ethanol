@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Ethanol.DataObjects;
-using Ethanol.ContextBuilder.Context;
 using System;
 using System.Net;
 using System.Net.Sockets;

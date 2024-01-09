@@ -1,5 +1,4 @@
 ﻿using Ethanol.Catalogs;
-using Ethanol.ContextBuilder;
 using Microsoft.Extensions.Logging;
 
 namespace Ethanol
@@ -15,8 +14,6 @@ namespace Ethanol
         // Context builder catalog to manage the context-building components.
         private readonly ContextBuilderCatalog _contextBuilderCatalog;
 
-        private readonly ContextTransformCatalog _contextTransformCatalog;
-
         private readonly ContextWriterCatalog _contextWriterCatalog;
 
         private readonly ILogger _logger;
@@ -28,7 +25,6 @@ namespace Ethanol
         {
             _flowReaderCatalog = new FlowReaderCatalog(this);
             _contextBuilderCatalog = new ContextBuilderCatalog(this);
-            _contextTransformCatalog = new ContextTransformCatalog(this);
             _contextWriterCatalog = new ContextWriterCatalog(this);
             _logger = logger;
         }
@@ -42,8 +38,6 @@ namespace Ethanol
         /// Gets the context builder catalog associated with this environment.
         /// </summary>
         public ContextBuilderCatalog ContextBuilder => _contextBuilderCatalog;
-
-        public ContextTransformCatalog ContextTransform => _contextTransformCatalog;
 
         public ContextWriterCatalog ContextWriter => _contextWriterCatalog;
 

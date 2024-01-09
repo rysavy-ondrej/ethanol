@@ -1,6 +1,5 @@
 ﻿using Ethanol;
-using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Enrichers.TagObjects;
+using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Enrichers.TagSources;
 using Ethanol.ContextBuilder.Helpers;
 using Microsoft.Extensions.Logging;

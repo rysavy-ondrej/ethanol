@@ -1,5 +1,5 @@
-﻿using Ethanol.ContextBuilder.Observable;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Ethanol.DataObjects;
 
 namespace Ethanol.ContextBuilder.Enrichers
 {
@@ -15,7 +15,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// </summary>
         /// <param name="value">The event containing the context information used for generating tags.</param>
         /// <returns>An enumerable collection of tags of type <typeparamref name="TagType"/>.</returns>
-        IEnumerable<TagType> GetTags(ObservableEvent<ContextType> value);
+        IEnumerable<TagType> GetTags(TimeRange<ContextType> value);
     }
 
 }

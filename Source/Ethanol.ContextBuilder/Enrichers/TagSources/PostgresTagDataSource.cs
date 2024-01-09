@@ -1,4 +1,4 @@
-﻿using Ethanol.ContextBuilder.Context;
+﻿using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
 using Ethanol.ContextBuilder.Helpers;

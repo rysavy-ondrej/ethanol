@@ -1,8 +1,6 @@
 ﻿using Ethanol;
 using Ethanol.DataObjects;
 using Ethanol.Catalogs;
-using Ethanol.ContextBuilder.Context;
-using Ethanol.ContextBuilder.Observable;
 using Ethanol.ContextBuilder.Pipeline;
 using Ethanol.ContextBuilder.Polishers;
 using Ethanol.ContextBuilder.Readers;
@@ -11,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System.Data;
 using System.Net;
-using System.Reactive;
 using System.Reactive.Linq;
 using Ethanol.ContextBuilder;
 using System.Diagnostics;
@@ -79,54 +76,15 @@ internal class ContextBuilderCommand : ConsoleAppBase
             if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
             _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
 
-            var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
-            var polisher = _environment.ContextTransform.GetContextPolisher();
-            var filter = GetFilter(contextBuilderConfiguration.Builder);
-            var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
-            
-            // 3.set-up pipeline:
-            var modules = new EthanolContextBuilder.BuilderModules(readers, writers, enricher, polisher);
-
-            // 4.execute:
-            var stats = await EthanolContextBuilder.Run(modules, windowSpan, contextBuilderConfiguration.Builder?.FlowOrderingBufferSize ?? 0, filter, Context.CancellationToken, progressReport ? Observer.Create<EthanolContextBuilder.BuilderStatistics>(OnProgressUpdate) : null, _logger);
-            _logger?.LogInformation($"Builder finished: {stats.ToString()}");
-        }
-        catch(Exception ex)
-        {
-            _logger.LogCritical(ex, $"Cannot run builder: {ex.Message}");
-        }
-    }
-
- [Command("start", "Runs the context builder command according to the configuration file.")]
-    public async Task StartBuilderCommand(
-
-    [Option("c", "The path to the configuration file used for processing setup.")]
-                string configurationFile
-    )
-    {
-        try
-        {
-            // 1.load configuration:
-            var configurationFilePath = Path.GetFullPath(configurationFile);
-            _logger?.LogInformation($"Running context builder with configuration file: '{configurationFilePath}'");
-            var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
-
-            // 2.create modules: 
-            var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
-            if (readers.Length == 0) throw new ArgumentException("No 'input' configuration specified in configuration file.");
-            _logger?.LogInformation($"Reader(s): {String.Join(',', readers.Select(w => w.ToString()))}");
-
-            var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
-            if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
-            _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
-
             var enricher = CreateEnricher2(contextBuilderConfiguration.Enrichers, _environment);
-            var polisher = _environment.ContextTransform.GetContextPolisher2();
+            var polisher = _environment.ContextBuilder.GetContextPolisher2();
             var filter = GetFilter(contextBuilderConfiguration.Builder);
             var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
  
             var builderStats = new EthanolContextBuilder.BuilderStatistics();
-            using var report = Observable.Interval(TimeSpan.FromSeconds(5)).Subscribe(_ => OnProgressUpdate(builderStats));
+            
+            // progress report enabled?
+            using var report = progressReport ? Observable.Interval(TimeSpan.FromSeconds(5)).Subscribe(_ => OnProgressUpdate(builderStats)) : null;
 
             _logger.LogInformation($"Builder started.");
             // 4.execute:
@@ -161,10 +119,10 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var readers = new[] { GetStdinReaderFormat(inputFormat, inputFilePath) };
             var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out, null) };
 
-            var enricher = new VoidContextEnricher<ObservableEvent<IpHostContext>?, ObservableEvent<IpHostContextWithTags>>(p => new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Payload?.HostAddress, Flows = p.Payload?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
+            var enricher = new VoidContextEnricher<TimeRange<IpHostContext>?, TimeRange<IpHostContextWithTags>>(p => new TimeRange<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Value?.HostAddress, Flows = p.Value?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
             
-            var refinerCounters  = new IpContextRefiner.PerformanceCounters();
-            var refiner = new IpContextRefiner(refinerCounters, _logger);
+            var refinerCounters  = new IpHostContextRefiner.PerformanceCounters();
+            var refiner = new IpHostContextRefiner(refinerCounters, _logger);
             
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
@@ -186,8 +144,6 @@ internal class ContextBuilderCommand : ConsoleAppBase
             _logger.LogCritical(ex, $"Cannot execute builder: {ex.Message}");
         }
     }
-
-
 
     private IDataReader<IpFlow> GetStdinReaderFormat(string inputFormat, string? filePath = null)
     {
@@ -240,32 +196,15 @@ internal class ContextBuilderCommand : ConsoleAppBase
         return TimeSpan.TryParse(builder.WindowSize, out var span) ? span : throw new ArgumentException("Invalid WindowSize specified in BUILDER section of the configuration file.");
     }
 
-    private IObservableTransformer<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
-    {
-        if (enricher==null)
-        {
-            return environment.ContextTransform.GetVoidEnricher();
-        }
-
-        if (enricher?.Netify != null && enricher.Netify.Postgres != null)
-        {
-            if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in REFINER section of the configuration file.");
-            return environment.ContextTransform.GetNetifyPostgresEnricher(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
-        }
-    
-        return environment.ContextTransform.GetVoidEnricher();
-    }
-
-
-    private IEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher2(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
+    private IEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>> CreateEnricher2(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
     {
 
         if (enricher != null && enricher?.Netify != null && enricher.Netify.Postgres != null)
         {
             if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in REFINER section of the configuration file.");
-            return environment.ContextTransform.GetNetifyPostgresEnricher2(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
+            return environment.ContextBuilder.GetNetifyPostgresEnricher2(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
         }
-        return environment.ContextTransform.GetVoidEnricher2();
+        return environment.ContextBuilder.GetVoidEnricher2();
     }
 
     private static HostBasedFilter GetFilter(ContextBuilderConfiguration.ContextBuilder? builder)

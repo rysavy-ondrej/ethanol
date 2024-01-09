@@ -14,13 +14,6 @@ using System.Threading.Tasks;
 
 namespace Ethanol.ContextBuilder.Polishers
 {
-    public static class IpHostContextPolisherCatalogEntry
-    {
-        public static IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext> GetContextPolisher(this ContextTransformCatalog catalog)
-        {
-            return new IpHostContextPolisher(catalog.Environment.Logger);
-        }
-    }
     /// <summary>
     /// Transforms a rich IP host context into a simplified IP host context.
     /// </summary>

@@ -225,37 +225,48 @@ namespace Ethanol.ContextBuilder
             IObservableTransformer<ObservableEvent<IpHostContextWithTags>, HostContext> Refiner);
 
 
+
         /// <summary>
-        /// Executes the context builder with the provided modules.
+        /// Represents an asynchronous operation that can return a value.
         /// </summary>
         /// <typeparam name="TResult">The type of the result produced by the task.</typeparam>
-        public static async Task Execute(
+        public static async Task RunAsync(
             IDataReader<IpFlow>[] readers,
             IDataWriter<HostContext>[] writers,
-            IEnricher<ObservableEvent<IpHostContext>?, ObservableEvent<IpHostContextWithTags>> enricher,
+            IEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> enricher,
             IRefiner<ObservableEvent<IpHostContextWithTags>, HostContext> refiner,
             TimeSpan windowSpan,
             TimeSpan windowShift,
             IHostBasedFilter filter,
             ILogger? logger,
+            BuilderStatistics? builderStats,
             CancellationToken cancellationToken)
         {
-            var scheduler = TaskPoolScheduler.Default;
-
-            // TODO: How to use scheduler in the following code?
-
-            var pipelineTask = readers
-                .Merge().Where(OnlyValidUnicastFlows).Where(flow => FilterFlows(filter, flow))
+            var pipelineTask = readers                
+                .Merge()
+                .Do(x=> { if (builderStats != null) builderStats.LoadedFlows++; })
+                .Where(OnlyValidUnicastFlows).Where(flow => FilterFlows(filter, flow))
+                .Do(x=> { if (builderStats != null) builderStats.ConsumedFlows++; })
                 .Select(f => new Timestamped<IpFlow>(f, f.TimeStart))
+                .Do(f => { if (builderStats != null) builderStats.CurrentTimestamp = f.Timestamp.DateTime; })
                 .VirtualWindow(windowSpan, windowShift)
-                .Where(window => window.Payload!=null)
+                .Where(window => window.Payload!=null)                  // remove empty windows from the processing pipeline
+                .Do(x=> { if (builderStats != null) builderStats.CreatedWindows++; })
                 .SelectMany(window =>
-                    window.Payload
-                    .AggregateIpContexts(window.StartTime.Ticks, window.EndTime.Ticks)
-                    .Enrich(enricher)
-                    .Polish(refiner)  
-                ).Consume(writers);
-                
+                        {
+                            if (builderStats != null) builderStats.CurrentWindowStart = window.StartTime;
+                            return window.Payload
+                                .AggregateIpContexts(window.StartTime.Ticks, window.EndTime.Ticks)
+                                .Do(ctx => { if (builderStats != null) builderStats.ContextsBuilt++; })
+                                .Where(ctx => ContextFilter(filter, ctx))
+                                .Do(ctx => { if (builderStats != null) builderStats.ContextAccepted++; })
+                                .ObserveOn(NewThreadScheduler.Default)          // This causes that the following code is executed in other thread.
+                                .Enrich(enricher)
+                                .Polish(refiner);
+                        }
+                ).Do(f => { if (builderStats != null) builderStats.ContextsWritten++; })
+                .Consume(writers);
+
             // for multiple readers, we need to run them in parallel on the background:
             var _readerTasks = readers.Select(x =>
             {
@@ -272,7 +283,9 @@ namespace Ethanol.ContextBuilder
             // readers should be done as well either completed or cancelled:
             try
             {
+                logger?.LogInformation("Waiting to readers...");
                 await Task.WhenAll(_readerTasks);
+                logger?.LogInformation("Readers completed.");
             }
             catch (OperationCanceledException)
             {
@@ -336,12 +349,6 @@ namespace Ethanol.ContextBuilder
                     ContextsWritten = contextsWrittenCount,
                     CurrentWindowStart = windowTransformer.Counters.TryGetValue("CurrentWindowStart", out var value) ? new DateTime((long)value) : DateTime.MinValue,
                     CurrentTimestamp = windowTransformer.Counters.TryGetValue("CurrentTimestamp", out value) ? new DateTime((long)value) : DateTime.MinValue,
-                    DroppedFlowsInAllWindows = windowTransformer.Counters.TryGetValue("OutOfOrderFlowsTotal", out value) ? (int)value : 0,
-                    DroppedFlowInCurrentWindow = windowTransformer.Counters.TryGetValue("OutOfOrderFlowsInCurrentWindow", out value) ? (int)value : 0,
-                    FlowsInCurrentWindow = windowTransformer.Counters.TryGetValue("FlowsInCurrentWindow", out value) ? (int)value : 0,
-                    TotalFlowsInAllWindows = windowTransformer.Counters.TryGetValue("FlowsTotal", out value) ? (int)value : 0,
-                    MaxFlowBufferSize = 0,
-                    BufferedFlows = 0
                 };
             }
 
@@ -465,27 +472,26 @@ namespace Ethanol.ContextBuilder
         public record BuilderStatistics
         {
             /// <summary>Gets or sets the number of flows that have been loaded into the system.</summary>
-            public int LoadedFlows { get; set; }
+            public long LoadedFlows { get; set; }
 
             /// <summary>Gets or sets the number of flows that have been consumed by the system.</summary>
-            public int ConsumedFlows { get; set; }
+            public long ConsumedFlows { get; set; }
 
             /// <summary>
             /// Gets or sets the number of dropped flows becasue they did not pass the input filter.
             /// </summary>
-            public int DroppedFlows => LoadedFlows - ConsumedFlows;
-
-            /// <summary>Gets or sets the number of flows currently buffered in the system.</summary>
-            public int BufferedFlows { get; set; }
-
-            /// <summary>Gets or sets the maximum size of the flow buffer.</summary>
-            public int MaxFlowBufferSize { get; set; }
+            public long DroppedFlows => LoadedFlows - ConsumedFlows;
 
             /// <summary>Gets or sets the number of windows created by the system for managing flows.</summary>
             public int CreatedWindows { get; set; }
 
             /// <summary>Gets or sets the number of contexts that have been built in the system.</summary>
             public int ContextsBuilt { get; set; }
+
+            /// <summary>
+            /// Gets or sets the number of contexts that passsed the context filter.
+            /// </summary>
+            public int ContextAccepted { get; set; }
 
             /// <summary>Gets or sets the number of contexts that have been written to an output or storage.</summary>
             public int ContextsWritten { get; set; }
@@ -495,19 +501,6 @@ namespace Ethanol.ContextBuilder
 
             /// <summary>Gets or sets the current timestamp within the system.</summary>
             public DateTime CurrentTimestamp { get; set; }
-
-            /// <summary>Gets or sets the number of flows that have been dropped across all windows.</summary>
-            public int DroppedFlowsInAllWindows { get; set; }
-
-            /// <summary>Gets or sets the number of flows dropped in the current window.</summary>
-            public int DroppedFlowInCurrentWindow { get; set; }
-
-            /// <summary>Gets or sets the number of flows present in the current window.</summary>
-            public int FlowsInCurrentWindow { get; set; }
-
-            /// <summary>Gets or sets the total number of flows processed across all windows.</summary>
-            public int TotalFlowsInAllWindows { get; set; }
-
         }
     }
 }

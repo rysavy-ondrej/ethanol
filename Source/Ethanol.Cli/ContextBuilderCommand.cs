@@ -97,6 +97,50 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
     }
 
+ [Command("start", "Runs the context builder command according to the configuration file.")]
+    public async Task StartBuilderCommand(
+
+    [Option("c", "The path to the configuration file used for processing setup.")]
+                string configurationFile
+    )
+    {
+        try
+        {
+            // 1.load configuration:
+            var configurationFilePath = Path.GetFullPath(configurationFile);
+            _logger?.LogInformation($"Running context builder with configuration file: '{configurationFilePath}'");
+            var contextBuilderConfiguration = ContextBuilderConfiguration.LoadFromFile(configurationFilePath);
+
+            // 2.create modules: 
+            var readers = CreateInputReaders(contextBuilderConfiguration.Input, _environment);
+            if (readers.Length == 0) throw new ArgumentException("No 'input' configuration specified in configuration file.");
+            _logger?.LogInformation($"Reader(s): {String.Join(',', readers.Select(w => w.ToString()))}");
+
+            var writers = CreateOutputWriters(contextBuilderConfiguration.Output, _environment);
+            if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
+            _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
+
+            var enricher = CreateEnricher2(contextBuilderConfiguration.Enrichers, _environment);
+            var polisher = _environment.ContextTransform.GetContextPolisher2();
+            var filter = GetFilter(contextBuilderConfiguration.Builder);
+            var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
+ 
+            var builderStats = new EthanolContextBuilder.BuilderStatistics();
+            using var report = Observable.Interval(TimeSpan.FromSeconds(5)).Subscribe(_ => OnProgressUpdate(builderStats));
+
+            _logger.LogInformation($"Builder started.");
+            // 4.execute:
+            await EthanolContextBuilder.RunAsync(readers, writers, enricher, polisher, windowSpan, windowSpan, filter, _logger, builderStats, Context.CancellationToken);
+
+            _logger.LogInformation($"Builder finished.");
+            OnProgressUpdate(builderStats);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogCritical(ex, $"Cannot run builder: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// Executes the context builder that reads data on stdin and produces contexts to stdout.
     /// </summary>
@@ -125,18 +169,17 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
 
-            void PrintProgress(long progress)
-            {
-                var builderStats = new EthanolContextBuilder.BuilderStatistics
-                {
-                    ContextsBuilt = refinerCounters.OutputCount
-                };
-                OnProgressUpdate(builderStats);
-            }
+            var builderStats = new EthanolContextBuilder.BuilderStatistics();
+ 
 
-            Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(PrintProgress);
+            using var report = Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(_ => OnProgressUpdate(builderStats));
 
-            await EthanolContextBuilder.Execute(readers, writers, enricher, refiner, windowTimeSpan, windowTimeSpan, filter, _logger, Context.CancellationToken);
+            _logger.LogInformation($"Builder started.");
+
+            await EthanolContextBuilder.RunAsync(readers, writers, enricher, refiner, windowTimeSpan, windowTimeSpan, filter, _logger, builderStats, Context.CancellationToken);
+
+            _logger.LogInformation($"Builder finished.");
+            OnProgressUpdate(builderStats);
         }
         catch(Exception ex)
         {
@@ -164,9 +207,9 @@ internal class ContextBuilderCommand : ConsoleAppBase
 
     private void OnProgressUpdate(EthanolContextBuilder.BuilderStatistics report)
     {
-        _logger.LogInformation($"{report}.");
         var memoryUsage = GetMemoryUsage();
-        _logger.LogInformation($"MemoryUsage {{ Physical = {memoryUsage.Physical:F2}MB, Allocated = {memoryUsage.Allocated:F2}MB, PhysicalPeak = {memoryUsage.PhysicalPeak:F2}MB. }}");
+        _logger.LogInformation($"STATS: {report}");        
+        _logger.LogInformation($"STATS: {memoryUsage}");
     }
 
     /// <summary>
@@ -185,7 +228,10 @@ internal class ContextBuilderCommand : ConsoleAppBase
     /// <summary>
     /// Represents the memory usage information.
     /// </summary>
-    public record MemoryUsage(double Physical, double Allocated, double PhysicalPeak);
+    public record MemoryUsage(double Physical, double Allocated, double PhysicalPeak)
+    {
+                public override string ToString() => $"{{ Physical = {Physical:F2}MB, Allocated = {Allocated:F2}MB, PhysicalPeak = {PhysicalPeak:F2}MB. }}";
+    }
 
     private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder? builder)
     {
@@ -208,6 +254,18 @@ internal class ContextBuilderCommand : ConsoleAppBase
         }
     
         return environment.ContextTransform.GetVoidEnricher();
+    }
+
+
+    private IEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> CreateEnricher2(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
+    {
+
+        if (enricher != null && enricher?.Netify != null && enricher.Netify.Postgres != null)
+        {
+            if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in REFINER section of the configuration file.");
+            return environment.ContextTransform.GetNetifyPostgresEnricher2(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
+        }
+        return environment.ContextTransform.GetVoidEnricher2();
     }
 
     private static HostBasedFilter GetFilter(ContextBuilderConfiguration.ContextBuilder? builder)

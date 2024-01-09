@@ -27,5 +27,17 @@ namespace Ethanol.Catalogs
             connection.Open();
             return new IpHostContextEnricher(new NetifyTagProvider(new PostgresTagDataSource(connection, sourceTable, catalog.Environment.Logger)), catalog.Environment.Logger);
         }
+        public static IEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> GetNetifyPostgresEnricher2(this ContextTransformCatalog catalog, string connectionString, string sourceTable)
+        {
+            var connection = new NpgsqlConnection(connectionString);
+            if (connection == null || connection.State != System.Data.ConnectionState.Open) throw new Exception("Connection is not open");
+            connection.Open();
+            return new IpContextEnricher(new NetifyTagProvider(new PostgresTagDataSource(connection, sourceTable, catalog.Environment.Logger)), null, catalog.Environment.Logger);
+        }  
+
+        public static IEnricher<ObservableEvent<IpHostContext>, ObservableEvent<IpHostContextWithTags>> GetVoidEnricher2(this ContextTransformCatalog catalog)
+        {
+            return new VoidContextEnricher<ObservableEvent<IpHostContext>?, ObservableEvent<IpHostContextWithTags>>(p => new ObservableEvent<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Payload?.HostAddress, Flows = p.Payload?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
+        }
     }
 }

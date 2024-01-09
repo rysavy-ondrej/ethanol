@@ -421,3 +421,36 @@ for(int i = 0; i < 30; i++)
     Thread.Sleep(TimeSpan.FromMilliseconds(random.Next(100,1000)));
 }
 subject.OnCompleted();
+
+#!markdown
+
+# ObserveOn/SubscribeOn
+
+#!csharp
+
+using System.Reactive.Concurrency;
+using System.Diagnostics;
+
+var sw = new Stopwatch();
+sw.Start();
+
+int SomeCpuIntensiveOperation(int x)
+{
+    Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Task {x} Start %{Environment.CurrentManagedThreadId}");
+    Thread.Sleep(TimeSpan.FromSeconds(1));
+    Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Task {x} End %{Environment.CurrentManagedThreadId}");
+    return x;
+}
+Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Current thread %{Environment.CurrentManagedThreadId}");
+
+var scheduler = NewThreadScheduler.Default;       // will create a new thread for each item
+
+Observable.Range(1, 5)
+.Do(x => Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Queued {x} %{Environment.CurrentManagedThreadId}"))
+.Select(item => SomeCpuIntensiveOperation(item))
+.ObserveOn(scheduler)
+.Select(item => SomeCpuIntensiveOperation(item))
+.Subscribe(x => Console.WriteLine($"[{sw.ElapsedMilliseconds}ms] Completed {x} %{Environment.CurrentManagedThreadId}"));
+
+
+//Thread.Sleep(TimeSpan.FromSeconds(20));

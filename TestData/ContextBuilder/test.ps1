@@ -44,8 +44,14 @@ Write-Host
 Get-Content ./flows.ipfixcol.json | & $ethanolExe builder run -c context-builder.ipfixcol.config.json > ctx.test.3.json
 Compare-FileContent ctx.reference.3.json ctx.test.3.json
 
-Write-Host  "● Test 3: exec-builder ipfixcol" -ForegroundColor Yellow -BackgroundColor DarkGreen
-Write-Host  "  $ethanolExe builder exec -f ipfixcol  " -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host  "● Test 4: exec-builder ipfixcol" -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host  "  $ethanolExe builder exec -f ipfixcol-json  " -ForegroundColor Yellow -BackgroundColor DarkGreen
 Write-Host
 Get-Content ./flows.ipfixcol.json | & $ethanolExe builder exec -f ipfixcol-json > ctx.test.4.json
 Compare-FileContent ctx.reference.4.json ctx.test.4.json
+
+
+Write-Host  "● Test 5: builder with litedb enricher" -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host  "  EXEC: $ethanolExe builder run -c context-builder.litedb.config.json  " -ForegroundColor Yellow -BackgroundColor DarkGreen
+Write-Host
+Get-Content ./flows.json | & $ethanolExe builder run -c context-builder.litedb.config.json > ctx.test.5.json

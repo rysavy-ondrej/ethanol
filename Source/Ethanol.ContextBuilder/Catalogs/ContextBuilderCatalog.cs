@@ -1,4 +1,8 @@
-﻿namespace Ethanol.Catalogs
+﻿using System;
+using Ethanol.ContextBuilder.Enrichers;
+using Ethanol.DataObjects;
+
+namespace Ethanol.Catalogs
 {
 
     /// <summary>

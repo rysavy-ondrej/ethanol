@@ -1,10 +1,13 @@
-﻿namespace Ethanol.ContextBuilder.Enrichers.TagObjects
+﻿using System;
+
+namespace Ethanol.ContextBuilder.Enrichers.TagObjects
 {
     /// <summary>
     /// Represents a record detailing specific information about a web application. 
     /// This can include attributes such as the application's tag, name, description, 
     /// web address, and its associated category.
     /// </summary>
+    [Serializable]
     public record NetifyTag
     {
         /// <summary>

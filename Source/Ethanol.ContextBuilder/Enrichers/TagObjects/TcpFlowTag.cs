@@ -12,6 +12,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagObjects
     /// <param name="RemoteAddress">The remote IP address involved in the traffic flow.</param>
     /// <param name="RemotePort">The remote port number involved in the traffic flow.</param>
     /// <param name="ProcessName">The name of the process that initiated or received the traffic flow.</param>
+    [Serializable]
     public record TcpFlowTag(
         DateTime StartTime,
         DateTime EndTime,

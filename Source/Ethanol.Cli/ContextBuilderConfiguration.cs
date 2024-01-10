@@ -94,7 +94,7 @@ public class ContextBuilderConfiguration
         [JsonPropertyName("builder")]
         public ContextBuilder? Builder { get; set; }
 
-        [JsonPropertyName("enricher")]
+        [JsonPropertyName("enrichers")]
         public Enrichers? Enrichers { get; set; }
 
         [JsonPropertyName("output")]
@@ -106,11 +106,19 @@ public class ContextBuilderConfiguration
         public NetifyEnricher? Netify { get; set; }
     }
 
-
     public class NetifyEnricher
     {
         [JsonPropertyName("postgres")]
         public Postgres? Postgres { get; set; }
+
+        [JsonPropertyName("litedb")]
+        public LiteDatabase? LiteDb { get; set; }
+    }
+
+    public class LiteDatabase
+    {
+        [JsonPropertyName("dbpath")]
+        public string? DbPath { get; set; }
     }
 
     public class Stdin

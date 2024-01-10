@@ -21,6 +21,11 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
         _cache = new MemoryCache(options);
     }
 
+    public void Dispose()
+    {
+        _cache.Dispose();
+    }
+
     public IEnumerable<TagDataType> Get(string tagKey, DateTime start, DateTime end)
     {
         string cacheKey = $"Get_{tagKey}_{start}_{end}";

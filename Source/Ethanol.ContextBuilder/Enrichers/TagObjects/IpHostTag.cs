@@ -5,6 +5,7 @@ namespace Ethanol.ContextBuilder.Enrichers.TagObjects
     /// <summary>
     /// Represents information about a host during a specified time interval.
     /// </summary>
+    [Serializable]
     public record IpHostTag
     {
         /// <summary>

@@ -15,7 +15,6 @@
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="ConsoleAppFramework" Version="4.2.4" />
     <PackageReference Include="CsvHelper" Version="30.0.1" />
-    <PackageReference Include="JsonFlatFileDataStore" Version="2.4.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Npgsql.Json.NET" Version="7.0.2" />
@@ -23,6 +22,9 @@
     <PackageReference Include="YamlDotNet" Version="13.0.1" />
     <PackageReference Include="Npgsql" Version="7.0.2" />
     <PackageReference Include="ZLogger" Version="1.7.1" />
+
+    <PackageReference Include="JsonFlatFileDataStore" Version="2.4.1" />
+    <PackageReference Include="LiteDb" Version="5.0.17" />
   </ItemGroup>
 
     <ItemGroup>

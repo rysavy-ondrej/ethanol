@@ -99,6 +99,13 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
 
     public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
     {
-        throw new NotImplementedException();
+        foreach (var key in keys)        
+            foreach(var result in Get(key, tagType, start, end))
+                yield return result;              
+    }
+
+    public void Dispose()
+    {
+        _store.Dispose();  
     }
 }

@@ -77,7 +77,7 @@ internal class ContextBuilderCommand : ConsoleAppBase
             if (writers.Length == 0) throw new ArgumentException("No 'output' configuration specified in configuration file.");
             _logger?.LogInformation($"Writer(s): {String.Join(',', writers.Select(w => w.ToString()))}");
 
-            var enricher = CreateEnricher2(contextBuilderConfiguration.Enrichers, _environment);
+            var enricher = CreateEnricher(contextBuilderConfiguration.Enrichers, _environment);
             var polisher = _environment.ContextBuilder.GetContextRefiner();
             var filter = GetFilter(contextBuilderConfiguration.Builder);
             var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
@@ -197,15 +197,19 @@ internal class ContextBuilderCommand : ConsoleAppBase
         return TimeSpan.TryParse(builder.WindowSize, out var span) ? span : throw new ArgumentException("Invalid WindowSize specified in BUILDER section of the configuration file.");
     }
 
-    private IEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>> CreateEnricher2(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
+    private IEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>> CreateEnricher(ContextBuilderConfiguration.Enrichers? enricher, EthanolEnvironment environment)
     {
-
         if (enricher != null && enricher?.Netify != null && enricher.Netify.Postgres != null)
         {
-            if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in REFINER section of the configuration file.");
-            return environment.ContextBuilder.GetNetifyPostgresEnricher2(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
+            if (enricher.Netify.Postgres.TableName == null) throw new ArgumentException("Invalid or missing netify table configuration in ENRICHER section of the configuration file.");
+            return environment.ContextBuilder.GetNetifyPostgresEnricher(enricher.Netify.Postgres.GetConnectionString(), enricher.Netify.Postgres.TableName);
         }
-        return environment.ContextBuilder.GetVoidEnricher2();
+        if (enricher != null && enricher?.Netify != null && enricher.Netify.LiteDb != null)
+        {
+            if (enricher.Netify.LiteDb.DbPath == null) throw new ArgumentException("Invalid or missing netify dbpath configuration in ENRICHER section of the configuration file.");
+            return environment.ContextBuilder.GetNetifyLiteDatabaseEnricher(enricher.Netify.LiteDb.DbPath);
+        }
+        return environment.ContextBuilder.GetVoidEnricher();
     }
 
     private static HostBasedFilter GetFilter(ContextBuilderConfiguration.ContextBuilder? builder)

@@ -26,6 +26,7 @@ namespace Ethanol.ContextBuilder.Enrichers
             _counters = counters;
             _logger = logger;
             _tagProvider = tagProvider;
+            _logger?.LogInformation($"IpHostContextEnricher created: tagProvider={tagProvider.GetType().FullName}");
         }
 
         /// <summary>

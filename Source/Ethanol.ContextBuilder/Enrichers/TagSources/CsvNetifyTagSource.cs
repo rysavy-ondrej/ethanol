@@ -3,11 +3,9 @@ using CsvHelper.Configuration;
 using CsvHelper.Configuration.Attributes;
 using CsvHelper.TypeConversion;
 using Ethanol.ContextBuilder.Enrichers.TagObjects;
-using Npgsql;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Ethanol.DataObjects;
 using Ethanol.ContextBuilder.Helpers;
 
 namespace Ethanol.ContextBuilder.Enrichers.TagSources

@@ -9,7 +9,7 @@ namespace Ethanol.ContextBuilder.Enrichers
     /// Defines a data source for retrieving <see cref="TagDataType"/> based on specified criteria.
     /// This interface provides methods for synchronous and asynchronous retrieval of tag data.
     /// </summary>
-    public interface ITagDataSource<TagDataType>
+    public interface ITagDataSource<TagDataType> : IDisposable
     {
         /// <summary>
         /// Retrieves a collection of <see cref="TagDataType"/> that matches the given tag key 

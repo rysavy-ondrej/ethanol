@@ -21,6 +21,7 @@ namespace Ethanol.DataObjects
     /// </list>
     /// To cater for diverse data needs, tags can also encapsulate additional granular details, enhancing the richness of the context information provided.
     /// </remarks>
+    [Serializable]
     public class TagObject
     {
         /// <summary>

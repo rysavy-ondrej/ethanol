@@ -308,5 +308,11 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
         };
     }
+
+    public void Dispose()
+    {
+        _connection.Close();
+        _connection.Dispose();
+    }
 }
 

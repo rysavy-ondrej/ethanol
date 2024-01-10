@@ -43,7 +43,7 @@ namespace Ethanol.Catalogs
         /// <returns>An instance of IEnricher&lt;TimeRange&lt;IpHostContext&gt;, TimeRange&lt;IpHostContextWithTags&gt;&gt;.</returns>
         public static IEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>> GetNetifyLiteDatabaseEnricher(this ContextBuilderCatalog catalog, string dbPath)
         {
-            return new IpHostContextEnricher(new NetifyTagProvider(new LiteDatabaseTagDataSource(dbPath)), null, catalog.Environment.Logger);
+            return new IpHostContextEnricher(new NetifyTagProvider(new LiteDatabaseTagDataSource(dbPath, catalog.Environment.Logger)), null, catalog.Environment.Logger);
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Text;
 using LiteDB;
+using Microsoft.Extensions.Logging;
 
 
 public class LongHash
@@ -29,10 +30,12 @@ public class LiteDatabaseTagDataSource : ITagDataSource<TagObject>
 {
     LiteDatabase _database;
     ILiteCollection<TagObject> _collection;
-    public LiteDatabaseTagDataSource(string dbPath)
+    ILogger? _logger; 
+    public LiteDatabaseTagDataSource(string dbPath, ILogger? logger)
     {
         _database = new LiteDatabase(dbPath);        
         _collection = _database.GetCollection<TagObject>("tags");
+        _logger = logger;
     }
 
     public void Dispose()
@@ -42,13 +45,13 @@ public class LiteDatabaseTagDataSource : ITagDataSource<TagObject>
 
     public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
     {
-        return _collection.Find(x => x.Key == tagKey).Where(x=> x.StartTime >= start && x.EndTime <= end);
+        return _collection.Find(x => x.Key == tagKey); // Where(x => x.StartTime <= end && x.EndTime >= start);
     }
 
     public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
     {
 
-        return _collection.Find(x => x.Key == tagKey && x.Type == tagType).Where(x => x.StartTime >= start && x.EndTime <= end);        
+        return _collection.Find(x => x.Key == tagKey && x.Type == tagType); // Where(x => x.StartTime <= end && x.EndTime >= start);      
     }
 
     public Task<IEnumerable<TagObject>> GetAsync(string key, DateTime start, DateTime end)

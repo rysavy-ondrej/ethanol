@@ -25,7 +25,14 @@
 		"windowhop": "00:05:00",
 		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
 	},
-
+	"enrichers": {
+		"netify": {
+			"litedb": 
+			{
+				"dbpath" : "e:\\ethanol\\NETIFY-DATA\\data\\netify.db"			
+			}
+		}
+	},	
 	"output": [{
 		"stdout": {
 			"format": "json"

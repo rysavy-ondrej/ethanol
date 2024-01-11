@@ -111,7 +111,7 @@ namespace Ethanol.ContextBuilder.Writers
                 cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>());
                 cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls ?? Array.Empty<WebRequestInfo>());
                 cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
-                cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, entity.End));
+                cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, true, entity.End, false));
                 cmd.ExecuteNonQuery();
             }
         }

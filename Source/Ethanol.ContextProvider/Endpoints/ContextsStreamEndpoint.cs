@@ -42,7 +42,7 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <returns>Asynchronous task signalizing the completion of the operation.</returns>
         public override async Task HandleAsync(ContextsQuery query, CancellationToken ct)
         {
-            _logger?.LogInformation($"Endpoint '{nameof(ContextsEndpoint)}' received requests '{query}'.");
+            _logger?.LogInformation($"Endpoint '{nameof(ContextsStreamEndpoint)}' received requests '{query}'.");
             try
             {
                 using var connection = _datasource.OpenConnection();

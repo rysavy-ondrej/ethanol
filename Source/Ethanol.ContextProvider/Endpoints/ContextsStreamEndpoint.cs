@@ -27,7 +27,7 @@ namespace Ethanol.ContextProvider.Endpoints
         private readonly int _tagsChunkSize;
 
         public ContextsStreamEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger? logger)
-        {
+        {   
             _datasource = datasource ?? throw new ArgumentNullException(nameof(datasource));
             _hostContextTable = configuration?.HostContextTable ?? throw new ArgumentNullException(nameof(configuration));
             _tagsTableName = configuration?.TagsTable ?? throw new ArgumentNullException(nameof(configuration));

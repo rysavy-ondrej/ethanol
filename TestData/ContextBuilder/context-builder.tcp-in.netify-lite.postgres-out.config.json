@@ -1,0 +1,46 @@
+{
+	"input": [
+		{
+			"stdin": {
+				"format": "flowmon-json"
+			}
+		},
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5180",
+				"format": "flowmon-json"
+			}
+		},
+		{
+			"tcp": {
+				"listen": "0.0.0.0",
+				"port": "5181",
+				"format": "ipfixcol-json"
+			}
+		}
+	],
+	"builder": {
+		"windowsize": "00:05:00",
+		"windowhop": "00:05:00",
+		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.229.0.0/16" ]
+	},
+	"enrichers": {
+		"netify": {
+			"litedb": 
+			{
+				"dbpath" : "e:\\ethanol\\NETIFY-DATA\\data\\netify.db"			
+			}
+		}
+	},	
+	"output": [{
+		"postgres": {
+			"server": "localhost",
+			"port": "1605",
+			"database": "ethanol",
+			"user": "postgres",
+			"password": "postgres",
+			"tablename": "host_context"
+		}
+	}]
+}

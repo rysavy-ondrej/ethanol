@@ -55,10 +55,10 @@ namespace Ethanol.ContextProvider.Endpoints
                     cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
                     _logger?.LogInformation($"Fetching context objects {query.GetWhereExpression()} from {_hostContextTable} table.");
 
-                    using var reader = cmd.ExecuteReader();
-                    while (true)
+                    using var reader = await cmd.ExecuteReaderAsync(ct);
+                    while (ct.IsCancellationRequested == false)
                     {
-                        var chunk = ReadNextChunk(reader, out var start, out var end);
+                        var chunk = ReadNextChunk(reader, out var start, out var end, ct);
                         if (chunk.Count == 0) break; // no more data to read
 
                         _logger?.LogInformation($"Processing context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}");
@@ -88,10 +88,10 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <param name="start">The start DateTime of the chunk.</param>
         /// <param name="end">The end DateTime of the chunk.</param>
         /// <returns>A list of HostContext objects representing the chunk of data.</returns>
-        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTime start, out DateTime end)
+        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTime start, out DateTime end, CancellationToken ct)
         {
             var chunk = new List<HostContext>();
-            while (reader.Read() && chunk.Count < _tagsChunkSize)
+            while (reader.Read() && chunk.Count < _tagsChunkSize && ct.IsCancellationRequested == false)
             {
                 // read rows in to chunk of the specified size
                 var row = ReadRow(reader);

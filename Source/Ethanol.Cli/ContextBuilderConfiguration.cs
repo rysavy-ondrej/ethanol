@@ -38,8 +38,8 @@ public class ContextBuilderConfiguration
         [JsonPropertyName("networks")]
         public List<string>? Networks { get; set; } = null;
 
-        [JsonPropertyName("orderingbuffersize")]
-        public int FlowOrderingBufferSize { get; set; } = 16;
+        [JsonPropertyName("buffersize")]
+        public int BufferSize { get; set; } = 20000;
     }
 
     public class Input

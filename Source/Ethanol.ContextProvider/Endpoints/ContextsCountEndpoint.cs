@@ -41,7 +41,7 @@ namespace Ethanol.ContextProvider.Endpoints
 
                 var result = await cmd.ExecuteScalarAsync(ct);
                 var count = int.TryParse(result?.ToString(), out var val) ? val : 0;
-                await SendAsync(count, 200);
+                await SendAsync(count, 200, ct);
             }
             catch (Exception ex)
             {

@@ -53,7 +53,7 @@ namespace Ethanol.ContextProvider.Endpoints
                     cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
                     _logger?.LogTrace($"Execute command: {cmd.CommandText}");
 
-                    using var reader = cmd.ExecuteReader();
+                    using var reader = await cmd.ExecuteReaderAsync(ct);
                     while (reader.Read())
                     {
                         var row = ReadRow(reader);

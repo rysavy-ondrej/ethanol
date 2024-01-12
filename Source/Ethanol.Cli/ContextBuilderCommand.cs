@@ -14,6 +14,7 @@ using System.Diagnostics;
 using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Helpers;
 using Ethanol.ContextBuilder.Filters;
+using System.Diagnostics.Metrics;
 
 /// <summary>
 /// Represents a command within a console application for running the context builder process.
@@ -81,18 +82,13 @@ internal class ContextBuilderCommand : ConsoleAppBase
             var polisher = _environment.ContextBuilder.GetContextRefiner();
             var filter = GetFilter(contextBuilderConfiguration.Builder);
             var windowSpan = GetWindowSpan(contextBuilderConfiguration.Builder);
- 
-            var builderStats = new EthanolContextBuilder.BuilderStatistics();
-            
-            // progress report enabled?
-            using var report = progressReport ? Observable.Interval(TimeSpan.FromSeconds(5)).Subscribe(_ => OnProgressUpdate(builderStats)) : null;
 
             _logger?.LogInformation($"Builder started.");
+            EthanolContextBuilder.BufferSize = contextBuilderConfiguration.Builder?.BufferSize ?? 20000;
             // 4.execute:
-            await EthanolContextBuilder.RunAsync(readers, writers, enricher, polisher, windowSpan, windowSpan, filter, _logger, builderStats, Context.CancellationToken);
+            await EthanolContextBuilder.RunAsync(readers, writers, enricher, polisher, windowSpan, filter, _logger, Context.CancellationToken);
 
             _logger?.LogInformation($"Builder finished.");
-            OnProgressUpdate(builderStats);
         }
         catch(Exception ex)
         {
@@ -112,35 +108,31 @@ internal class ContextBuilderCommand : ConsoleAppBase
         [Option("f", "Input format. Default is flowmon-json.")]
         string inputFormat="flowmon-json",
         [Option("i", "Input file path. If not specified, 'stdin' is used.")]
-        string? inputFilePath=null       
+        string? inputFilePath=null,
+        [Option("p", "Enable or disable progress reporting during processing. Default is true.")]
+        bool progressReport=true
         )
-        {
+    {
         try
         {
             var readers = new[] { GetStdinReaderFormat(inputFormat, inputFilePath) };
             var writers = new[] { _environment.ContextWriter.GetJsonFileWriter(Console.Out, null) };
 
             var enricher = new VoidContextEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>>(p => new TimeRange<IpHostContextWithTags>(new IpHostContextWithTags { HostAddress = p.Value?.HostAddress, Flows = p.Value?.Flows, Tags = Array.Empty<TagObject>() }, p.StartTime, p.EndTime));
-            
-            var refinerCounters  = new IpHostContextRefiner.PerformanceCounters();
+
+            var refinerCounters = new IpHostContextRefiner.PerformanceCounters();
             var refiner = new IpHostContextRefiner(refinerCounters, _logger);
-            
+
             var filter = new HostBasedFilter();
             var windowTimeSpan = TimeSpan.Parse(windowSpan);
 
-            var builderStats = new EthanolContextBuilder.BuilderStatistics();
- 
-
-            using var report = Observable.Interval(TimeSpan.FromSeconds(1)).Subscribe(_ => OnProgressUpdate(builderStats));
-
             _logger.LogInformation($"Builder started.");
 
-            await EthanolContextBuilder.RunAsync(readers, writers, enricher, refiner, windowTimeSpan, windowTimeSpan, filter, _logger, builderStats, Context.CancellationToken);
+            await EthanolContextBuilder.RunAsync(readers, writers, enricher, refiner, windowTimeSpan, filter, _logger, Context.CancellationToken);
 
             _logger.LogInformation($"Builder finished.");
-            OnProgressUpdate(builderStats);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogCritical(ex, $"Cannot execute builder: {ex.Message}");
         }
@@ -160,34 +152,6 @@ internal class ContextBuilderCommand : ConsoleAppBase
             default:
                 throw new ArgumentException($"Invalid or missing stdin format specified '{inputFormat}'.");
         }
-    }
-
-    private void OnProgressUpdate(EthanolContextBuilder.BuilderStatistics report)
-    {
-        var memoryUsage = GetMemoryUsage();
-        _logger.LogInformation($"STATS: {report}");        
-        _logger.LogInformation($"STATS: {memoryUsage}");
-    }
-
-    /// <summary>
-    /// Retrieves the memory usage of the current process.
-    /// </summary>
-    /// <returns>A tuple containing the private memory size, GC memory, and peak working set size.</returns>
-    private MemoryUsage GetMemoryUsage()
-    {
-        var proc = Process.GetCurrentProcess();
-        var phyMem = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
-        var phyMemPeak = proc.PeakWorkingSet64 / (1024.0 * 1024.0);
-        var gcMem = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
-        return new MemoryUsage(phyMem, gcMem, phyMemPeak);
-    }
-
-    /// <summary>
-    /// Represents the memory usage information.
-    /// </summary>
-    public record MemoryUsage(double Physical, double Allocated, double PhysicalPeak)
-    {
-                public override string ToString() => $"{{ Physical = {Physical:F2}MB, Allocated = {Allocated:F2}MB, PhysicalPeak = {PhysicalPeak:F2}MB. }}";
     }
 
     private TimeSpan GetWindowSpan(ContextBuilderConfiguration.ContextBuilder? builder)

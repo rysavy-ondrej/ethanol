@@ -25,17 +25,14 @@
 		"windowhop": "00:05:00",
 		"networks": [ "192.168.0.0/16", "172.16.0.0/16", "10.0.0.0/8", "147.0.0.0/8" ]
 	},
-	"enrichers": {
-		"netify": {
-			"litedb": 
-			{
-				"dbpath" : "e:\\ethanol\\NETIFY-DATA\\data\\netify.db"			
-			}
-		}
-	},	
 	"output": [{
-		"stdout": {
-			"format": "json"
+		"postgres": {
+			"server": "localhost",
+			"port": "1605",
+			"database": "ethanol",
+			"user": "postgres",
+			"password": "postgres",
+			"tablename": "host_context"
 		}
 	}]
 }

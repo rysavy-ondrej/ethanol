@@ -27,6 +27,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     private readonly ILogger? _logger;
     private readonly NpgsqlConnection _connection;
     private readonly string _tableName;
+    private readonly TimeSpan _reconnectionInterval = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Creates the object using the provided connection string. An format of the string is:
@@ -85,7 +86,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         }
         catch (Exception e)
         {
-            _logger?.LogError(e, "Error executing SQL command");
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
             return Array.Empty<TagObject>();
         }
     }
@@ -120,13 +121,15 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         }
         catch (Exception e)
         {
-            _logger?.LogError(e, "Error executing SQL command");
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
             return new List<TagObject>();
         }
     }
 
     private IList<TagObject> ReadObjects(NpgsqlCommand cmd)
     {
+        if (!EnsureOpenConnection(_connection))
+            return new List<TagObject>();
 
         using var reader = cmd.ExecuteReader();
         var rowList = new List<TagObject>();
@@ -138,13 +141,42 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         reader.Close();
         _logger?.LogDebug($"Query {cmd.CommandText} returned {rowList.Count} rows.");
         return rowList;
+    }
 
+    /// <summary>
+    /// Represents the last connection attempt made by the PostgresTagDataSource.
+    /// </summary>
+    DateTime _lastConnectionAttempt = DateTime.MinValue;
+    private bool EnsureOpenConnection(NpgsqlConnection connection)
+    {
+        if (connection.State != ConnectionState.Open && _lastConnectionAttempt + _reconnectionInterval < DateTime.Now)
+        {   // try open:
+            _logger?.LogWarning($"Postgres tag source: Connection closed. Trying to reconnecting...");
+            try
+            {
+                _lastConnectionAttempt = DateTime.Now;
+                connection.Open();
+            }
+            catch(Exception e)
+            {
+                _logger?.LogError(e, $"Postgres tag source: Error opening connection. Trying to reconnect in {_reconnectionInterval.TotalSeconds}s.");
+            }
+        }
+        return connection.State == ConnectionState.Open;
     }
 
     public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
     {
-        using var cmd = PrepareCommand(tagKey, tagType, start, end);
-        return ReadObjects(cmd);
+        try
+        {
+            using var cmd = PrepareCommand(tagKey, tagType, start, end);
+            return ReadObjects(cmd);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
+            return new List<TagObject>();
+        }
     }
 
     public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
@@ -155,16 +187,30 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
     {
         if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
-
-        using var cmd = PrepareCommand(keys, tagType, start, end);
-        return ReadObjects(cmd);
+        try
+        {
+            using var cmd = PrepareCommand(keys, tagType, start, end);
+            return ReadObjects(cmd);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
+            return new List<TagObject>();
+        }      
     }
     public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, DateTime start, DateTime end)
     {
         if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
-
-        using var cmd = PrepareCommand(keys, start, end);
-        return ReadObjects(cmd);
+        try
+        {
+            using var cmd = PrepareCommand(keys, start, end);
+            return ReadObjects(cmd);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
+            return new List<TagObject>();
+        }      
     }
     /// <summary>
     /// Prepares a NpgsqlCommand for retrieving data based on the provided tag key and time range.

@@ -78,13 +78,14 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         [Option("f", "The flow file to replay.")] string flowFormat,
         [Option("c", "The number of flows to read from soure flow file.")] int flowCount,
         [Option("t", "Tcp target host.")] string tcpEndpoint,
+        [Option("r", "Randomize addresses")] bool randomizeAddresses = false,
         [Option("s", "Average delay between records in seconds.")] double interRecordDelay = 0,
         [Option("e", "Command timeout. Default is infinite.")] TimeSpan? timeout = null
     )
     {
         var flowFilePath = Path.GetFullPath(flowFile);
-        _logger.LogInformation($"Running builder stress test with flow file: '{flowFilePath}'");
-        var flows = FlowFile.LoadFromFile(flowFilePath, getFormatter(flowFormat), flowCount);
+        _logger.LogInformation($"Running builder stress test with flow file: '{flowFilePath}'. Randomize address={randomizeAddresses}");
+        var flows = FlowFile.LoadFromFile(flowFilePath, getFormatter(flowFormat, randomizeAddresses), flowCount);
 
         var tcpIpEndpoint = IPEndPoint.Parse(tcpEndpoint);
         var random = new Random();
@@ -153,15 +154,15 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         
     }
 
-    private FlowJsonFormatManipulator getFormatter(string? flowFormat)
+    private FlowJsonFormatManipulator getFormatter(string? flowFormat, bool randomizeAddresses = false)
     {
         if (flowFormat == null) throw new ArgumentNullException(nameof(flowFormat), "The flow format cannot be null.");
         switch(flowFormat)
         {
             case "ipficol-json":
-                return new IpfixcolJsonFormatManipulator();
+                return new IpfixcolJsonFormatManipulator(randomizeAddresses);
             case "flowmon-json":
-                return new FlowmonJsonFormatManipulator();
+                return new FlowmonJsonFormatManipulator(randomizeAddresses);
             default:
                 throw new ArgumentException($"Unknown flow format: '{flowFormat}'.");
         }

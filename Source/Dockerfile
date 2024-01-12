@@ -39,8 +39,8 @@ COPY ./ ./
 RUN dotnet publish -c Release -o /bin -r linux-x64 --self-contained true /p:PublishReadyToRun=true /p:PublishSingleFile=true Ethanol.Cli/
 
 # Build the runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
-
+# FROM mcr.microsoft.com/dotnet/runtime-deps:7.0 AS runtime
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS runtime
 
 # Set the working directory to /app and copy the published output
 WORKDIR /app/
@@ -53,6 +53,9 @@ RUN chmod a+x /app/run-ethanol-builder.sh
 
 COPY DockerFiles/run-ethanol-provider.sh /app/
 RUN chmod a+x /app/run-ethanol-provider.sh 
+
+COPY DockerFiles/run-ethanol-monitor.sh /app/
+RUN chmod a+x /app/run-ethanol-monitor.sh 
 
 # Just run shell...it is possible to run either builder or provider
 # using corresponding scripts

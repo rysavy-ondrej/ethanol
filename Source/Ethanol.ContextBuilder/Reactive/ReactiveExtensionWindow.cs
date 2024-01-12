@@ -6,12 +6,13 @@ using System.Linq;
 using System.Net;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Threading.Tasks.Dataflow;
 
 
 namespace Ethanol.ContextBuilder.Reactive
 {
 
-    public static class ReactiveExtensionWindow
+    public static partial class ReactiveExtensionWindow
     {
         /// <summary>
         /// Creates a virtual window over an observable sequence of timestamped values.
@@ -58,6 +59,61 @@ namespace Ethanol.ContextBuilder.Reactive
                     .Do(ShiftTime).Window(windowSize, windowShift, virtualScheduler).Timestamp(virtualScheduler)
                     .Select(w => new TimeRange<IObservable<Timestamped<T>>>(w.Value, w.Timestamp.Ticks, w.Timestamp.Ticks + windowSize.Ticks))
                     .Subscribe(observer);
+            });
+        }
+
+        /// <summary>
+        /// Groups the elements of the source observable sequence into windows based on a specified time window size,
+        /// and then groups the elements within each window by a key selector function.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key returned by the key selector function.</typeparam>
+        /// <typeparam name="TValue">The type of the elements in the source observable sequence.</typeparam>
+        /// <param name="source">The source observable sequence of timestamped values.</param>
+        /// <param name="keySelector">A function to extract the key for each element in the source observable sequence.</param>
+        /// <param name="windowSize">The size of the time windows.</param>
+        /// <returns>An observable sequence of grouped observables representing the windows.</returns>
+        public static IObservable<TimeRange<IGroupedObservable<TKey,TValue>>> WindowGroupBy<TKey, TValue>(this IObservable<Timestamped<TValue>> source, 
+            Func<Timestamped<TValue>, TKey> keySelector,
+            TimeSpan windowSize)
+        {
+            var virtualScheduler = new VirtualFlowTimeScheduler();
+            var firstFlow = true;
+
+            DateTimeOffset GetWindowStart(DateTimeOffset timestamp)
+            {
+                var timeOfDayTicks = timestamp.TimeOfDay.Ticks;
+                var windowTicks = windowSize.Ticks % TimeSpan.FromDays(1).Ticks;   //this is for sure that we are within a single day
+                var shiftTicks = timeOfDayTicks % windowTicks;
+                var windowStart = timestamp - TimeSpan.FromTicks(shiftTicks);
+                return windowStart;
+            }
+
+            void ShiftTime(Timestamped<TValue> flow)
+            {
+                if (firstFlow)
+                {
+                    var windowStart = GetWindowStart(flow.Timestamp);
+                    virtualScheduler.SkipTo(windowStart);
+                    firstFlow = false;
+                }
+                if (flow.Timestamp > virtualScheduler.Clock)
+                {
+                    virtualScheduler.AdvanceTo(flow.Timestamp);
+                }
+            }
+  
+            TimeRange<IGroupedObservable<TKey, TValue>> GetTimeRangeGroup(Timestamped<IGroupedObservable<TKey, TValue>> item)
+            {
+                var start = GetWindowStart(item.Timestamp);
+                var end = start + windowSize;
+                return new TimeRange<IGroupedObservable<TKey, TValue>>(item.Value, start.Ticks, end.Ticks);
+            }
+
+            return Observable.Create<TimeRange<IGroupedObservable<TKey, TValue>>>(observer =>
+            {
+                var t = source.Do(ShiftTime).GroupByUntil(keySelector, item=>item.Value, grp => Observable.Timer( GetWindowStart(virtualScheduler.Now) + windowSize, virtualScheduler)).Timestamp(virtualScheduler);
+                var s = t.Select(GetTimeRangeGroup);
+                return s.Subscribe(observer);
             });
         }
 

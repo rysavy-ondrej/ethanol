@@ -80,41 +80,43 @@ namespace Ethanol.ContextBuilder.Readers
         /// Executes the TCP server as an awaitable task. Each incoming client connection is handled in a separate task.
         /// </summary>
         /// <typeparam name="TResult">The type of the result produced by the task.</typeparam>
-        private async Task RunAsync(TcpListener listener, CancellationToken cancellation)
+        private async Task RunAsync(TcpListener listener, CancellationToken cancellationToken)
         {
-            _logger?.LogInformation($"TCP server listening on {_endpoint}");
+            _logger?.LogInformation($"TCP server {_endpoint}: Started, listening for incoming connections.");
             try
             {
                 // Wait for incoming client connections
-                while (!cancellation.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    var client = await listener.AcceptTcpClientAsync(cancellation);
-                    _logger?.LogInformation($"TCP server {_endpoint} has accepted connection from {client?.Client.RemoteEndPoint}");
+                    var client = await listener.AcceptTcpClientAsync(cancellationToken);
+                    _logger?.LogInformation($"TCP server {_endpoint}: Accepted connection from {client?.Client.RemoteEndPoint}");
                     if (client != null)
                     {
-                        var tcs = new TaskCompletionSource();
-                        _clientsTasks.Add(tcs.Task);
                         // Start as a background task... 
-                        var _ = Task.Run(async () =>
+                        var proxyTask = Task.Run(async () =>
                         {
-                            await ReadInputData(client, cancellation);
-                            _clientsTasks.Remove(tcs.Task);
-                            tcs.SetResult();
+                            await ReadInputData(client, cancellationToken);
+                            client.Close();
                             client.Dispose();
-                        }, cancellation);
+                            _logger?.LogTrace($"TCP server {_endpoint}: Connection to {client?.Client.RemoteEndPoint} closed.");
+
+                        }, cancellationToken);
+                        _clientsTasks.Add(proxyTask);
+                        var _ = proxyTask.ContinueWith(t => { _logger?.LogTrace($"TCP server {_endpoint}: Connection to {client?.Client.RemoteEndPoint}: Task id={t} removed."); _clientsTasks.Remove(t); });
                     }
                 }
             }
             catch (SocketException ex)
             {
-                _logger?.LogError($"TCP server {_endpoint} socket exception: {ex.Message}");
+                _logger?.LogError($"TCP server {_endpoint}: Socket exception: {ex.Message}");
             }
             catch (OperationCanceledException)
             {
-                _logger?.LogInformation($"TCP server stopped listening on {_endpoint}.");
+                _logger?.LogInformation($"TCP server {_endpoint}: Canceled.");
             }
             finally
             {
+                _logger?.LogInformation($"TCP server {_endpoint}: Stopped.");
                 // Stop listening for client connections when done
                 listener.Stop();
             }
@@ -133,7 +135,7 @@ namespace Ethanol.ContextBuilder.Readers
             var stream = client.GetStream();
             // gets the reader from stream:
             var reader = new StreamReader(stream);
-            _logger?.LogInformation($"Tcp connection {_endpoint}<->{remoteEndpoint}: Start reading data.");
+            _logger?.LogInformation($"Tcp reader {_endpoint}<->{remoteEndpoint}: Start.");
             try
             {
                 while (!cancellation.IsCancellationRequested)
@@ -154,20 +156,18 @@ namespace Ethanol.ContextBuilder.Readers
                     }
                     else
                     {
-                        _logger?.LogError($"Tcp reader {_endpoint} encountered invalid input data: {jsonString.Substring(0, 64)}.");
+                        _logger?.LogError($"Tcp reader {_endpoint}<->{remoteEndpoint}: invalid input data: {jsonString.Substring(0, 64)}.");
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                _logger?.LogInformation($"Tcp connection {_endpoint}<->{remoteEndpoint}: ReadInputData cancelled.");
+                _logger?.LogInformation($"Tcp reader {_endpoint}<->{remoteEndpoint}: Cancelled.");
             }
             finally
             {
-                _logger?.LogInformation($"Tcp connection {_endpoint}<->{remoteEndpoint}: Connection close.");
+                _logger?.LogInformation($"Tcp reader {_endpoint}<->{remoteEndpoint}: Closed.");
                 reader.Close();
-                client.Close();
-                cancellation.ThrowIfCancellationRequested();
             }
         }
 
@@ -186,7 +186,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"Error opening TCP server listener {_endpoint}: {ex.Message}");
+                _logger?.LogError($"TCP server {_endpoint}: Open Error: {ex.Message}");
                 return Task.FromException(ex);
             }
         }
@@ -208,7 +208,7 @@ namespace Ethanol.ContextBuilder.Readers
             }
             catch (OperationCanceledException)
             {
-                _logger?.LogInformation($"Tcp server {_endpoint}: ReadAsync cancelled.");
+                _logger?.LogInformation($"TCP server {_endpoint}: Read Input Queue: Cancelled.");
                 throw;
             }
         }
@@ -219,6 +219,7 @@ namespace Ethanol.ContextBuilder.Readers
         /// <returns>A task representing the asynchronous operation.</returns>
         public async Task CloseAsync()
         {
+            _logger?.LogTrace($"Tcp server {_endpoint}: CloseAsync(): Start.");
             _queue.CompleteAdding();
             var activeTasks = _clientsTasks.Append(_mainLoopTask ?? Task.CompletedTask).ToArray();
 
@@ -227,13 +228,16 @@ namespace Ethanol.ContextBuilder.Readers
 
             try
             {
+                 _logger?.LogInformation($"Tcp server {_endpoint}: Waiting for close connections.");
                 // wait for all tasks to complete
+                _logger?.LogTrace($"Tcp server {_endpoint}: Waiting for {String.Join(',', activeTasks.Select(t=> (t.Id,t.Status)).ToArray())} tasks to complete.");
                 await Task.WhenAll(activeTasks);
+                _logger?.LogInformation($"Tcp server {_endpoint}: All connections closed.");
             }
             catch (AggregateException e)
             {
                 // some task could end with exceptions...just inform about it
-                _logger?.LogWarning(e, $"Tcp server {_endpoint}: CloseAsync() exceptions.");
+                _logger?.LogTrace(e, $"Tcp server {_endpoint}: CloseAsync(): Aggregated Exceptions.");
             }
         }
 

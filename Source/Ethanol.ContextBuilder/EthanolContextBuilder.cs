@@ -1,7 +1,6 @@
 ﻿using Ethanol.ContextBuilder.Enrichers;
 using Ethanol.ContextBuilder.Filters;
 using Ethanol.ContextBuilder.Refiners;
-using Ethanol.ContextBuilder.Reactive;
 using Ethanol.ContextBuilder.Readers;
 using Ethanol.ContextBuilder.Writers;
 using Ethanol.DataObjects;
@@ -11,15 +10,12 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading.Tasks.Dataflow;
 using System.Diagnostics.Metrics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Ethanol.ContextBuilder
 {
@@ -129,7 +125,7 @@ namespace Ethanol.ContextBuilder
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_windows_closed", () => windowsClosedCounter, "windows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_hosts", () => windowBlock.KeyCount, "hosts", "Number of hosts currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_flows", () => windowBlock.ValueCount, "flows", "Number of flows currently collected in the active window.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.next_window_in", () => (int)(windowBlock.NextWindowStart - DateTime.Now).TotalSeconds, "seconds", "Number of seconds until the next window is created.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.next_window_in", TimeUntilNextWindow, "seconds", "Number of seconds until the next window is created.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.input_buffer", () => inputBlock.Count, "flows", "Number of flows in the input buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer", () => writerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the writer buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.builder_buffer", () => contextBlock.InputCount * BatchSize, "contexts", "Number of contexts in the context buffer.");
@@ -213,7 +209,13 @@ namespace Ethanol.ContextBuilder
                     flowsDeniedCounter++;
                 }
             }
+            int TimeUntilNextWindow()
+            {
+                return (int)((windowBlock.NextWindowStart - windowBlock.CurrentTime)?.TotalSeconds ?? 0);
+            }
         }
+
+
 
         /// <summary>
         /// Determines whether the given IP flow represents a valid unicast flow.

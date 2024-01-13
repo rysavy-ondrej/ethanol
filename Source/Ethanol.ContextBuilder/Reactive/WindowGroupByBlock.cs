@@ -78,10 +78,13 @@ public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Batc
     private Dictionary<K, LinkedList<V>> _hostDictionary = new Dictionary<K, LinkedList<V>>();
     private int _allFlowsCount = 0;
     private DateTimeOffset? _windowStart = null;
+    DateTimeOffset? _lastFlowTimestamp = null;
 
-    public DateTime CurrentWindowStart => (_windowStart ?? DateTime.MinValue).DateTime;
+    public DateTime? CurrentWindowStart => _windowStart != null ? new DateTime(_windowStart.Value.Ticks) : null;
 
-    public DateTime NextWindowStart => (_windowStart ?? DateTime.MinValue).DateTime + _windowSize;
+    public DateTime? NextWindowStart => _windowStart != null ? new DateTime(_windowStart.Value.Ticks + _windowSize.Ticks) : null;
+
+    public DateTime? CurrentTime => _lastFlowTimestamp != null ? new DateTime(_lastFlowTimestamp.Value.Ticks) : null;
 
     private readonly TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Batch<IGrouping<K, V>>> _outputBuffer;
 
@@ -171,9 +174,15 @@ public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Batc
     private async Task ProcessMessageAsync(Timestamped<T> message)
     {
         _windowStart ??= GetWindowStart(message.Timestamp);
+        _lastFlowTimestamp ??= message.Timestamp;
+
         if (message.Timestamp > _windowStart + _windowSize)
         {
             await CompleteWindowAsync(message.Timestamp);
+        }
+        if (_lastFlowTimestamp < message.Timestamp)
+        {
+            _lastFlowTimestamp = message.Timestamp;
         }
         AddElementInternal(message);
     }

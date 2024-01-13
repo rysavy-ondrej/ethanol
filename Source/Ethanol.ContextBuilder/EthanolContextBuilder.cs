@@ -28,40 +28,33 @@ namespace Ethanol.ContextBuilder
     /// </summary>
     public static class EthanolContextBuilder
     {
-        /// <summary>
-        /// Subscribes to an observable source and writes the emitted items to the specified data writers.
-        /// </summary>
-        /// <typeparam name="T">The type of data being consumed.</typeparam>
-        /// <param name="source">The observable source to subscribe to.</param>
-        /// <param name="writers">An array of data writers to write the data to.</param>
-        /// <returns>A task representing the asynchronous operation of writing data.</returns>
-        public static Task Consume<T>(this IObservable<T> source, params IDataWriter<T>[] writers)
-        {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (writers is null || writers.Length == 0)
-            {
-                throw new ArgumentException("At least one write has to be provided.", nameof(writers));
-            }
-
-            var connectable = source.Publish();
-            foreach (var writer in writers)
-            {
-                connectable.Subscribe(writer);
-            }
-            connectable.Connect();
-            return Task.WhenAll(writers.Select(x => x.Completed));
-        }
-
-        public static int BufferSize { get; set; } = 20000;
-        public static int WriterBatchSize { get; set; } = 10000;
         static Meter s_meter = new Meter("Ethanol.ContextBuilder");
 
-        public static int BatchSize { get; set; } = 128; 
+        /// <summary>
+        /// Gets or sets the buffer size for block in the processing pipeline. The default value is 20000.
+        /// It also represents the maximum number of collected hosts in the window.
+        /// </summary>
+        public static int BufferSize { get; set; } = 20000;
 
+        /// <summary>
+        /// Gets or sets the batch size for processing.
+        /// The pipeline processes contexts in batched. This property specifies the maximum number of contexts in a batch. The value can be used 
+        /// to tune performance. The default value is 128.
+        /// </summary>
+        public static int BatchSize { get; set; } = 128;
 
+        /// <summary>
+        /// Runs the asynchronous pipeline.
+        /// </summary>
+        /// <param name="readers">The array of data readers.</param>
+        /// <param name="writers">The array of data writers.</param>
+        /// <param name="enricher">The enricher for adding tags to the context.</param>
+        /// <param name="refiner">The refiner for refining the context.</param>
+        /// <param name="windowSpan">The time span for each window.</param>
+        /// <param name="filter">The host-based filter for accepting or denying flows.</param>
+        /// <param name="logger">The optional logger for logging information.</param>
+        /// <param name="cancellationToken">The cancellation token for cancelling the operation.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public static async Task RunAsync(
             IDataReader<IpFlow>[] readers,
             IDataWriter<HostContext>[] writers,
@@ -104,7 +97,7 @@ namespace Ethanol.ContextBuilder
                         writer.OnWindowClosed(new DateTime(batch.TickStart), new DateTime(batch.TickStart + batch.Duration));
                     }
                 }
-                contextWrittenCounter+= batch.Items.Length; 
+                contextWrittenCounter += batch.Items.Length;
                 if (batch.Last)
                 {
                     windowsClosedCounter++;
@@ -119,15 +112,15 @@ namespace Ethanol.ContextBuilder
             enricherBlock.LinkTo(refinerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             refinerBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_read", () => inputFlowsCounter , "flows", "Number of flows read from the input.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter ,"flows", "Number of flows accepted by the flow filter.");
+            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_read", () => inputFlowsCounter, "flows", "Number of flows read from the input.");
+            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter, "flows", "Number of flows accepted by the flow filter.");
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_denied", () => flowsDeniedCounter, "flows", "Number of flows denied by the flow filter.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_dropped", () => flowsDroppedCounter ,"flows", "Number of flows droped by the flow sampler.");            
+            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_dropped", () => flowsDroppedCounter, "flows", "Number of flows droped by the flow sampler.");
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_created", () => contextCreatedCounter , "contexts", "Number of contexts created.");
+            s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
 
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter , "contexts", "Number of contexts created.");   
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");  
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_read", () => inputFlowsCounter, "flows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_accepted", () => inputFlowsCounter, "flows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_denied", () => flowsDeniedCounter, "flows", "Number of windows closed.");
@@ -137,12 +130,12 @@ namespace Ethanol.ContextBuilder
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_hosts", () => windowBlock.KeyCount, "hosts", "Number of hosts currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_flows", () => windowBlock.ValueCount, "flows", "Number of flows currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.next_window_in", () => (int)(windowBlock.NextWindowStart - DateTime.Now).TotalSeconds, "seconds", "Number of seconds until the next window is created.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.input_buffer", ()=> inputBlock.Count, "flows", "Number of flows in the input buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer",()=> writerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the writer buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.input_buffer", () => inputBlock.Count, "flows", "Number of flows in the input buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer", () => writerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the writer buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.builder_buffer", () => contextBlock.InputCount * BatchSize, "contexts", "Number of contexts in the context buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.enricher_buffer", () => refinerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the enricher buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.refiner_buffer", () => refinerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the refiner buffer.");
-            
+
             using var d = readers.Merge().Subscribe(observer =>
             {
                 inputBlock.Post(observer);
@@ -175,22 +168,28 @@ namespace Ethanol.ContextBuilder
             Batch<IpHostContext> BuildContext(Batch<IGrouping<IPAddress, IpFlow>> batch)
             {
                 var contextBatch = new Batch<IpHostContext>(batch.Items.Select(x => new IpHostContext { HostAddress = x.Key, Flows = x.ToArray() }).ToArray(), batch.TickStart, batch.Duration, batch.Last);
-                contextCreatedCounter+=batch.Items.Length;
+                contextCreatedCounter += batch.Items.Length;
                 return contextBatch;
             }
             Batch<IpHostContextWithTags> EnrichContext(Batch<IpHostContext> batch)
             {
-                var items = batch.Items.Select(x => enricher.Enrich(new TimeRange<IpHostContext>(x, batch.TickStart, batch.TickStart+batch.Duration))).Where(x=>x!=null && x.Value!=null).Select(x=>x!.Value!);
+                var items = batch.Items.Select(x => enricher.Enrich(new TimeRange<IpHostContext>(x, batch.TickStart, batch.TickStart + batch.Duration))).Where(x => x != null && x.Value != null).Select(x => x!.Value!);
                 return new Batch<IpHostContextWithTags>(items.ToArray(), batch.TickStart, batch.Duration, batch.Last);
             }
             Batch<HostContext> RefineContext(Batch<IpHostContextWithTags> batch)
             {
-                var items = batch.Items.Select(x => refiner.Refine(new TimeRange<IpHostContextWithTags>(x, batch.TickStart, batch.TickStart+batch.Duration))).Where(x=>x!=null).Select(x=>x!);
+                var items = batch.Items.Select(x => refiner.Refine(new TimeRange<IpHostContextWithTags>(x, batch.TickStart, batch.TickStart + batch.Duration))).Where(x => x != null).Select(x => x!);
                 return new Batch<HostContext>(items.ToArray(), batch.TickStart, batch.Duration, batch.Last);
             }
-           
+
             IEnumerable<Timestamped<KeyValuePair<IPAddress, IpFlow>>> BiflowKeySelector(IpFlow flow)
             {
+                if (OnlyValidUnicastFlows(flow) == false)
+                {
+                    flowsDroppedCounter++;
+                    yield break;
+                }
+
                 var accepted = false;
                 var src = flow.SourceAddress;
                 var dst = flow.DestinationAddress;
@@ -214,123 +213,6 @@ namespace Ethanol.ContextBuilder
                     flowsDeniedCounter++;
                 }
             }
-        }
-
-        /// <summary>
-        /// Represents an asynchronous operation that can return a value.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result produced by the task.</typeparam>
-        public static async Task ReactiveRunAsync(
-            IDataReader<IpFlow>[] readers,
-            IDataWriter<HostContext>[] writers,
-            IEnricher<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>> enricher,
-            IRefiner<TimeRange<IpHostContextWithTags>, HostContext> refiner,
-            TimeSpan windowSpan,
-            TimeSpan windowShift,
-            IHostBasedFilter filter,
-            ILogger? logger,
-            BuilderStatistics? builderStats,
-            CancellationToken cancellationToken)
-        {
-            var pipelineTask = readers
-                .Merge()
-                .Do(_ => { if (builderStats != null) builderStats.ReaderThreadId = Thread.CurrentThread.ManagedThreadId; })
-                .Do(x => { if (builderStats != null) builderStats.LoadedFlows++; })
-                .Where(flow => { if (OnlyValidUnicastFlows(flow)) { return true; } else { if (builderStats != null) builderStats.InvalidFlows++; return false; } })
-                .Where(flow => { if (FilterFlows(filter, flow)) { if (builderStats != null) builderStats.AcceptedFlows++; return true; } else { if (builderStats != null) builderStats.DroppedFlows++; return false; } })
-                .Select(f => new Timestamped<IpFlow>(f, f.TimeStart))
-                .Do(f => { if (builderStats != null) builderStats.CurrentTimestamp = f.Timestamp.DateTime; })
-
-                .ObserveOn(ThreadPoolScheduler.Instance)
-                .Do(_ => { if (builderStats != null) builderStats.WindowerThreadId = Thread.CurrentThread.ManagedThreadId; })
-                .VirtualWindow(windowSpan, windowShift)
-                .Where(window => window.Value != null)                  // remove empty windows from the processing pipeline
-                .Do(x => { if (builderStats != null) builderStats.ContextsCreated++; })                
-                .Do(_ => { if (builderStats != null) builderStats.ProcessorThreadId = Thread.CurrentThread.ManagedThreadId; })
-
-                .ObserveOn(ThreadPoolScheduler.Instance)          // This causes that the following code is executed in other thread.    
-                .SelectMany(window =>
-                        {
-                            //if (builderStats != null) builderStats.CurrentWindowStart = window.StartTime;
-                            return window.Value!
-                                //.ObserveOn(ThreadPoolScheduler.Instance)
-                                .AggregateIpContexts(window.StartTime.Ticks, window.EndTime.Ticks)
-                                //.Do(ctx => { if (builderStats != null) builderStats.ContextsActive++; })
-                                .Do(_ => { if (builderStats != null) builderStats.BuilderThreadId = Thread.CurrentThread.ManagedThreadId; })                      
-                                .Where(ctx => ContextFilter(filter, ctx))
-                                .Do(ctx => { if (builderStats != null) builderStats.ContextAccepted++; })
-                                
-                                //.ObserveOn(ThreadPoolScheduler.Instance)          // This causes that the following code is executed in other thread.          
-                                .Do(_ => { if (builderStats != null) builderStats.EnricherThreadId = Thread.CurrentThread.ManagedThreadId; })
-                                .Enrich(enricher).Where(x => x != null).Select(x => x!)
-                                .Do(ctx => { if (builderStats != null) builderStats.ContextEnriched++; })
-
-                                //.ObserveOn(ThreadPoolScheduler.Instance)          // This causes that the following code is executed in other thread.
-                                .Do(_ => { if (builderStats != null) builderStats.RefinerThreadId = Thread.CurrentThread.ManagedThreadId; })
-                                .Refine(refiner).Where(x => x != null).Select(x => x!)
-                                .Do(ctx => { if (builderStats != null) builderStats.ContextCompacted++; });
-                                
-                        }
-                )
-                .Do(f => { if (builderStats != null) builderStats.ContextsWritten++; })
-                
-                .ObserveOn(ThreadPoolScheduler.Instance)
-                .Do(_ => { if (builderStats != null) builderStats.WriterThreadId = Thread.CurrentThread.ManagedThreadId; })
-                .Consume(writers);
-
-            // for multiple readers, we need to run them in parallel on the background:
-            var _readerTasks = readers.Select(x =>
-            {
-                logger?.LogInformation($"Starting input reader {x}.");
-                return Task
-                    .Run(async () => await x.ReadAllAsync(cancellationToken))
-                    .ContinueWith(t => logger?.LogInformation($"Input reader {x} completed."));
-            }).ToArray();
-
-            // wait to completion of the main pipeline:
-            await pipelineTask;
-            logger?.LogInformation("Pipeline task completed.");
-
-            // readers should be done as well either completed or cancelled:
-            try
-            {
-                logger?.LogInformation("Waiting to readers...");
-                await Task.WhenAll(_readerTasks);
-                logger?.LogInformation("Readers completed.");
-            }
-            catch (OperationCanceledException)
-            {
-                logger?.LogInformation("Pipeline operation was cancelled.");
-            }
-        }
-
-        /// <summary>
-        /// Filters the observable event based on the provided filter.
-        /// </summary>
-        /// <param name="filter">The host-based filter to apply.</param>
-        /// <param name="f">The observable event containing the IP host context.</param>
-        /// <returns>True if the context passes the filter; otherwise, false.</returns>
-        private static bool ContextFilter(IHostBasedFilter filter, TimeRange<IpHostContext>? f)
-        {
-            if (f == null) return false;
-            if (IPAddress.Any.Equals(f.Value?.HostAddress)) return true;
-            return filter.Evaluate(f);
-        }
-        /// <summary>
-        /// Filters the given IP flow based on the provided host-based filter.
-        /// </summary>
-        /// <param name="filter">The host-based filter to apply.</param>
-        /// <param name="flow">The IP flow to filter.</param>
-        /// <returns><c>true</c> if the flow matches the filter; otherwise, <c>false</c>.</returns>
-        private static bool FilterFlows(IHostBasedFilter filter, IpFlow? flow)
-        {
-            if (flow == null || flow.SourceAddress == null || flow.DestinationAddress == null) return false;
-            return filter.Match(flow.SourceAddress) || filter.Match(flow.DestinationAddress);
-        }
-        private static bool FilterAddress(IHostBasedFilter filter, IPAddress? adr)
-        {
-            if (adr == null) return false;
-            return filter.Match(adr);
         }
 
         /// <summary>
@@ -361,59 +243,5 @@ namespace Ethanol.ContextBuilder
             }
             return false;
         }
-
-        /// <summary>
-        /// Represents statistics related to the management and processing of flows in a builder system.
-        /// This record tracks metrics like loaded, consumed, and buffered flows, as well as statistics
-        /// related to window creation and flow handling.
-        /// </summary>
-        public record BuilderStatistics
-        {
-            /// <summary>Gets or sets the number of flows that have been loaded into the system.</summary>
-            public long LoadedFlows { get; set; }
-            
-            /// <summary>
-            /// Flows that are not valid for the contexts.
-            /// </summary>
-            public int InvalidFlows { get; internal set; }
-            
-            public int AcceptedFlows { get; internal set; }
-            /// <summary>
-            /// Gets or sets the number of dropped flows becasue they did not pass the input filter.
-            /// </summary>
-            public long DroppedFlows { get; set; }
-
-            /// <summary>Gets or sets the number of windows created by the system for managing flows.</summary>
-            public int ContextsCreated { get; set; }
-
-            /// <summary>Gets or sets the current timestamp within the system.</summary>
-            public DateTime CurrentTimestamp { get; set; }
-
-            /// <summary>Gets or sets the number of contexts that are currently open. These contexts cannot be build yet as they still gather flows.</summary>
-            public int ContextsActive => ContextsCreated - ContextAccepted;
-
-            /// <summary>
-            /// Gets or sets the number of contexts that were accepted for further processing.
-            /// </summary>
-            public int ContextAccepted { get; set; }
-            /// <summary>Gets or sets the number of contexts that have been written to an output or storage.</summary>
-
-            public int ContextEnriched { get; internal set; }
-            public int ContextCompacted { get; internal set; }
-            public int ContextsWritten { get; set; }
-
-
-            public int ReaderThreadId { get; internal set; }
-            public int WindowerThreadId { get; internal set; }
-            public int ProcessorThreadId { get; internal set; }
-            public int BuilderThreadId { get; internal set; }
-            public int EnricherThreadId { get; internal set; }
-            public int RefinerThreadId { get; internal set; }
-            public int WriterThreadId { get; internal set; }
-        }
-    }
-
-    public class BufferMonitor
-    {
     }
 }

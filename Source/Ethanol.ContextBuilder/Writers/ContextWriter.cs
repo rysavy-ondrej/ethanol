@@ -69,5 +69,16 @@ namespace Ethanol.ContextBuilder.Writers
         /// to provide specific close logic for the writer.
         /// </summary>
         protected abstract void Close();
+
+        public void OnNextBatch(IEnumerable<TRecord> records)
+        {
+            var sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            if (!_isopen) { Open(); _isopen = true; }
+            WriteBatch(records);
+            sw.Stop();
+        }
+
+        protected abstract void WriteBatch(IEnumerable<TRecord> record);
     }
 }

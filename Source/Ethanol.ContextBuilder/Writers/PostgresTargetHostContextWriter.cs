@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using NpgsqlTypes;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -39,16 +42,19 @@ namespace Ethanol.ContextBuilder.Writers
         // Name of the target table in the PostgreSQL database
         private readonly string _tableName;
 
+        private readonly int _chunkSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PostgresTargetHostContextWriter"/> class.
         /// </summary>
         /// <param name="connection">Connection to the PostgreSQL database.</param>
         /// <param name="tableName">Name of the target table in the database.</param>
-        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName, ILogger logger)
+        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName, int chunkSize, ILogger logger)
         {
             _connection = connection;
             _tableName = tableName;
             _logger = logger;
+            _chunkSize = chunkSize;
         }
 
         /// <summary>
@@ -119,6 +125,36 @@ namespace Ethanol.ContextBuilder.Writers
         public override string ToString()
         {
             return $"{nameof(PostgresTargetHostContextWriter)}({_connection.ConnectionString}))";
+        }
+
+        protected override void WriteBatch(IEnumerable<HostContext> records)
+        {
+            try
+            {
+                var chunkIndex = 0;
+                foreach (var chunk in records.Chunk(_chunkSize))
+                {
+                    using (var writer = _connection.BeginBinaryImport($"COPY {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) FROM STDIN (FORMAT BINARY)"))
+                    {
+                         _logger.LogInformation($"Postgres Writer: Bulk inserting chunk ({++chunkIndex}) of {chunk.Length} records to database.");
+                        foreach (var item in chunk)
+                        {
+                            writer.StartRow();
+                            writer.Write(item.Key?.ToString() ?? string.Empty);
+                            writer.Write(item.Connections ?? Array.Empty<IpConnectionInfo>(), NpgsqlDbType.Json);
+                            writer.Write(item.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>(), NpgsqlDbType.Json);
+                            writer.Write(item.WebUrls ?? Array.Empty<WebRequestInfo>(), NpgsqlDbType.Json);
+                            writer.Write(item.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>(), NpgsqlDbType.Json);
+                            writer.Write(new NpgsqlRange<DateTime>(item.Start, true, item.End, false));
+                        }
+                        writer.Complete();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, $"Postgres Writer: Error writing batch to database.");
+            }
         }
     }
 }

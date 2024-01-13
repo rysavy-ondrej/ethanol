@@ -54,7 +54,8 @@ namespace Ethanol.ContextBuilder
         }
 
         public static int BufferSize { get; set; } = 20000;
-
+        public static int WriterBatchSize { get; set; } = 10000;
+        public static TimeSpan WriterBatchTimeout { get; set; } = TimeSpan.FromSeconds(1);
         static Meter s_meter = new Meter("Ethanol.ContextBuilder");
 
         public static async Task RunAsync(
@@ -90,14 +91,17 @@ namespace Ethanol.ContextBuilder
 
             var refinerBlock = new TransformBlock<TimeRange<IpHostContextWithTags>, HostContext>(ctx => refiner.Refine(ctx), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize, MaxDegreeOfParallelism = 4 });
 
-            var writerBlock = new ActionBlock<HostContext>(ctx =>
+            var writerBatchBlock = new BatchBlock<HostContext>(WriterBatchSize);
+
+            var writerBlock = new ActionBlock<HostContext[]>(batch =>
             {
                 foreach (var writer in writers)
                 {
-                    writer.OnNext(ctx);
+                    writer.OnNextBatch(batch);
                 }
-                contextWrittenCounter++;
-                
+                contextWrittenCounter+= batch.Length; 
+                // we are ready for the new batch...
+                writerBatchBlock.TriggerBatch();
             }, new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
             // LINKING:
@@ -106,7 +110,8 @@ namespace Ethanol.ContextBuilder
             windowBlock.LinkTo(contextBlock, new DataflowLinkOptions { PropagateCompletion = true });
             contextBlock.LinkTo(enricherBlock, new DataflowLinkOptions { PropagateCompletion = true });
             enricherBlock.LinkTo(refinerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            refinerBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            refinerBlock.LinkTo(writerBatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            writerBatchBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_read", () => inputFlowsCounter , "flows", "Number of flows read from the input.");
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter ,"flows", "Number of flows accepted by the flow filter.");
@@ -115,20 +120,25 @@ namespace Ethanol.ContextBuilder
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_created", () => contextCreatedCounter , "contexts", "Number of contexts created.");
 
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter , "contexts", "Number of contexts created.");      
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter , "contexts", "Number of contexts created.");   
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");  
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_read", () => inputFlowsCounter, "flows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_accepted", () => inputFlowsCounter, "flows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_denied", () => flowsDeniedCounter, "flows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_dropped", () => flowsDroppedCounter, "flows", "Number of windows closed.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_context_written", () => contextWrittenCounter, "contexts", "Number of windows closed.");
+
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_windows_closed", () => windowsClosedCounter, "windows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_hosts", () => windowBlock.KeyCount, "hosts", "Number of hosts currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_flows", () => windowBlock.ValueCount, "flows", "Number of flows currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.input_buffer", ()=> inputBlock.Count, "flows", "Number of flows in the input buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer",()=> writerBlock.InputCount, "contexts", "Number of contexts in the writer buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer",()=> writerBatchBlock.OutputCount, "contexts", "Number of contexts in the writer buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.builder_buffer", () => contextBlock.InputCount, "contexts", "Number of contexts in the context buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.enricher_buffer", () => refinerBlock.InputCount, "contexts", "Number of contexts in the enricher buffer.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.refiner_buffer", () => refinerBlock.InputCount, "contexts", "Number of contexts in the refiner buffer.");
+            
+            
+            using var timer = Observable.Timer(WriterBatchTimeout).Subscribe(_ => writerBatchBlock.TriggerBatch());
+
             using var d = readers.Merge().Subscribe(observer =>
             {
                 inputBlock.Post(observer);

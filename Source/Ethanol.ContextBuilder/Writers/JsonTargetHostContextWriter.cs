@@ -114,6 +114,18 @@ namespace Ethanol.ContextBuilder.Writers
                 var file = _filePath ?? "stdout";
                 return $"{nameof(JsonTargetHostContextWriter)}({file})";
             }
+
+            /// <summary>
+            /// Writes a batch of HostContext records.
+            /// </summary>
+            /// <param name="record">The collection of HostContext records to write.</param>
+            protected override void WriteBatch(IEnumerable<HostContext> record)
+            {
+                foreach (var item in record)
+                {
+                    Write(item);
+                }
+            }
         }
 
 
@@ -157,6 +169,17 @@ namespace Ethanol.ContextBuilder.Writers
             {
                 var stringValue = JsonSerializer.Serialize(value, _jsonOptions);
                 _queue.Add(stringValue);
+            }
+            /// <summary>
+            /// Writes a batch of HostContext records.
+            /// </summary>
+            /// <param name="record">The collection of HostContext records to write.</param>
+            protected override void WriteBatch(IEnumerable<HostContext> record)
+            {
+                foreach (var item in record)
+                {
+                    Write(item);
+                }
             }
 
             /// <summary>

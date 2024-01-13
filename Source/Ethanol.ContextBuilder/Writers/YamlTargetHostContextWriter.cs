@@ -3,6 +3,7 @@ using Ethanol.ContextBuilder.Serialization;
 using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using System.Collections.Generic;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -50,6 +51,14 @@ namespace Ethanol.ContextBuilder.Writers
         {
             _writer.Write(_yamlSerializer.Serialize(value));
             _writer.WriteLine("---");
+        }
+
+        protected override void WriteBatch(IEnumerable<HostContext> record)
+        {
+            foreach (var item in record)
+            {
+                Write(item);
+            }
         }
     }
 }

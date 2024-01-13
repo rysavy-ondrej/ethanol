@@ -126,6 +126,11 @@ namespace Ethanol.ContextBuilder.Writers
                     Write(item);
                 }
             }
+
+            public override void OnWindowClosed(DateTime start, DateTime end)
+            {
+                _writer.Flush();
+            }
         }
 
 
@@ -390,7 +395,9 @@ namespace Ethanol.ContextBuilder.Writers
                 }
             }
 
-
+            public override void OnWindowClosed(DateTime start, DateTime end)
+            {
+            }
         }
     }
 }

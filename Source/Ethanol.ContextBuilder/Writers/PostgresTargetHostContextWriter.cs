@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -42,19 +43,19 @@ namespace Ethanol.ContextBuilder.Writers
         // Name of the target table in the PostgreSQL database
         private readonly string _tableName;
 
-        private readonly int _chunkSize;
+        private readonly int _maxChunkSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PostgresTargetHostContextWriter"/> class.
         /// </summary>
         /// <param name="connection">Connection to the PostgreSQL database.</param>
         /// <param name="tableName">Name of the target table in the database.</param>
-        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName, int chunkSize, ILogger logger)
+        public PostgresTargetHostContextWriter(NpgsqlConnection connection, string tableName, int maxChunkSize, ILogger logger)
         {
             _connection = connection;
             _tableName = tableName;
             _logger = logger;
-            _chunkSize = chunkSize;
+            _maxChunkSize = maxChunkSize;
         }
 
         /// <summary>
@@ -132,11 +133,11 @@ namespace Ethanol.ContextBuilder.Writers
             try
             {
                 var chunkIndex = 0;
-                foreach (var chunk in records.Chunk(_chunkSize))
+                foreach (var chunk in records.Chunk(_maxChunkSize))
                 {
                     using (var writer = _connection.BeginBinaryImport($"COPY {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) FROM STDIN (FORMAT BINARY)"))
                     {
-                         _logger.LogInformation($"Postgres Writer: Bulk inserting chunk ({++chunkIndex}) of {chunk.Length} records to database.");
+                         _logger.LogInformation($"Postgres Context Writer: BulkInsert: {chunk.Length} records.");
                         foreach (var item in chunk)
                         {
                             writer.StartRow();
@@ -155,6 +156,11 @@ namespace Ethanol.ContextBuilder.Writers
             {
                 _logger?.LogError(ex, $"Postgres Writer: Error writing batch to database.");
             }
+        }
+
+        public override void OnWindowClosed(DateTime start, DateTime end)
+        {
+            Write(new HostContext { Key = IPAddress.Any.ToString(), Start = start, End = end });
         }
     }
 }

@@ -5,48 +5,120 @@ using System.Reactive;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
+
+
+/// <summary>
+/// Represents a batch of items in a window.
+/// </summary>
+/// <typeparam name="T">The type of items in the batch.</typeparam>
+public readonly struct Batch<T>
+{
+    /// <summary>
+    /// Gets the array of items in the batch.
+    /// </summary>
+    public T[] Items { get; }
+
+    /// <summary>
+    /// Gets the tick start value.
+    /// </summary>
+    public long TickStart { get; }
+
+    /// <summary>
+    /// Gets the duration of the window group.
+    /// </summary>
+    public long Duration { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether this batch is the last batch in the window.
+    /// </summary>
+    public bool Last { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Batch{T}"/> struct.
+    /// </summary>
+    /// <param name="items">The array of items in the batch.</param>
+    /// <param name="last">A value indicating whether this batch is the last batch.</param>
+    public Batch(T[] items, long tickStart, long duration, bool last)
+    {
+        Items = items;
+        TickStart = tickStart;
+        Duration = duration;
+        Last = last;
+    }
+
+}
+public static class Batch
+{
+    /// <summary>
+    /// Creates a new instance of the <see cref="Batch{T}"/> struct.
+    /// </summary>
+    /// <typeparam name="T">The type of items in the batch.</typeparam>
+    /// <param name="items">The array of items in the batch.</param>
+    /// <param name="last">A value indicating whether this batch is the last batch.</param>
+    /// <returns>A new instance of the <see cref="Batch{T}"/> struct.</returns>
+    public static Batch<T> Create<T>(T[] items, long tickStart, long duration, bool last)
+    {
+        return new Batch<T>(items, tickStart, duration, last);
+    }
+}
+
 /// <summary>
 /// Represents a dataflow block that groups elements into windows based on a key selector function.
 /// </summary>
 /// <typeparam name="T">The type of the elements being grouped.</typeparam>
 /// <typeparam name="K">The type of the key used for grouping.</typeparam>
 /// <typeparam name="V">The type of the values in the groups.</typeparam>
-public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Timestamped<IGrouping<K, V>>> where K : notnull
+public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Batch<IGrouping<K, V>>> where K : notnull
 {
     private readonly Func<T, K> _keySelector;
     private readonly Func<T, V> _valueSelector;
-    private readonly Func<KeyValuePair<K, IEnumerable<V>>>? _eowSelector;
     private readonly TimeSpan _windowSize;
+    private readonly int _batchSize;
     private readonly int _maxHosts;
     private Dictionary<K, LinkedList<V>> _hostDictionary = new Dictionary<K, LinkedList<V>>();
     private int _allFlowsCount = 0;
     private DateTimeOffset? _windowStart = null;
 
-    private readonly TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Timestamped<IGrouping<K, V>>> _outputBuffer;
+    public DateTime CurrentWindowStart => (_windowStart ?? DateTime.MinValue).DateTime;
+
+    public DateTime NextWindowStart => (_windowStart ?? DateTime.MinValue).DateTime + _windowSize;
+
+    private readonly TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Batch<IGrouping<K, V>>> _outputBuffer;
 
     private readonly ActionBlock<Timestamped<T>> _inputBlock;
 
-    public WindowGroupByBlock(Func<T, K> keySelector, Func<T, V> valSelector, Func<KeyValuePair<K, IEnumerable<V>>>? eowSelector, TimeSpan windowSize, ExecutionDataflowBlockOptions executionDataflowBlockOptions)
+    public WindowGroupByBlock(Func<T, K> keySelector, Func<T, V> valSelector, TimeSpan windowSize, int batchSize, ExecutionDataflowBlockOptions executionDataflowBlockOptions)
     {
         _keySelector = keySelector ?? throw new ArgumentNullException(nameof(keySelector));
         _valueSelector = valSelector ?? throw new ArgumentNullException(nameof(valSelector));
-        _eowSelector = eowSelector;
         _windowSize = windowSize;
-        _outputBuffer = new TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Timestamped<IGrouping<K, V>>>(EmitWindow, executionDataflowBlockOptions);
+        this._batchSize = batchSize;
+        _outputBuffer = new TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Batch<IGrouping<K, V>>>(EmitWindow, executionDataflowBlockOptions);
         _inputBlock = new ActionBlock<Timestamped<T>>(ProcessMessageAsync);
-        _maxHosts = executionDataflowBlockOptions.BoundedCapacity - 1;
+        _maxHosts = executionDataflowBlockOptions.BoundedCapacity;
     }
 
-    private IEnumerable<Timestamped<IGrouping<K, V>>> EmitWindow(Timestamped<Dictionary<K, LinkedList<V>>> dictionary)
+    /// <summary>
+    /// Emits windows of batches containing timestamped groupings based on the provided dictionary.
+    /// </summary>
+    /// <param name="dictionary">The timestamped dictionary containing the groupings.</param>
+    /// <returns>An enumerable of batches containing timestamped groupings.</returns>
+    private IEnumerable<Batch<IGrouping<K, V>>> EmitWindow(Timestamped<Dictionary<K, LinkedList<V>>> dictionary)
     {
-        foreach (var item in dictionary.Value)
+        var duration = _windowSize.Ticks;
+        var windowStart = dictionary.Timestamp.Ticks;
+        IGrouping<K, V>[]? array = null; 
+        foreach(var chunk in dictionary.Value.AsEnumerable().Chunk(_batchSize))
         {
-            yield return new Timestamped<IGrouping<K, V>>(new InternalGrouping<K, V>(item.Key, item.Value), dictionary.Timestamp);
+            if (array != null)
+            {
+                yield return Batch.Create(array, windowStart, duration, false);
+            }
+            array = chunk.Select(item =>(IGrouping<K,V>)new InternalGrouping<K, V>(item.Key, item.Value)).ToArray();
         }
-        if (_eowSelector != null)
+        if (array != null)
         {
-            var eow = _eowSelector();
-            yield return new Timestamped<IGrouping<K, V>>(new InternalGrouping<K, V>(eow.Key, eow.Value), dictionary.Timestamp);
+            yield return Batch.Create(array, windowStart, duration, true);
         }
     }
 
@@ -69,24 +141,24 @@ public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Time
         ((IDataflowBlock)_outputBuffer).Fault(exception);
     }
 
-    public Timestamped<IGrouping<K, V>> ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<Timestamped<IGrouping<K, V>>> target, out bool messageConsumed)
+    public Batch<IGrouping<K, V>> ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<Batch<IGrouping<K, V>>> target, out bool messageConsumed)
     {
-        return ((ISourceBlock<Timestamped<IGrouping<K, V>>>)_outputBuffer).ConsumeMessage(messageHeader, target, out messageConsumed);
+        return ((ISourceBlock<Batch<IGrouping<K, V>>>)_outputBuffer).ConsumeMessage(messageHeader, target, out messageConsumed);
     }
 
-    public IDisposable LinkTo(ITargetBlock<Timestamped<IGrouping<K, V>>> target, DataflowLinkOptions linkOptions)
+    public IDisposable LinkTo(ITargetBlock<Batch<IGrouping<K, V>>> target, DataflowLinkOptions linkOptions)
     {
         return _outputBuffer.LinkTo(target, linkOptions);
     }
 
-    public void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<Timestamped<IGrouping<K, V>>> target)
+    public void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<Batch<IGrouping<K, V>>> target)
     {
-        ((ISourceBlock<Timestamped<IGrouping<K, V>>>)_outputBuffer).ReleaseReservation(messageHeader, target);
+        ((ISourceBlock<Batch<IGrouping<K, V>>>)_outputBuffer).ReleaseReservation(messageHeader, target);
     }
 
-    public bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<Timestamped<IGrouping<K, V>>> target)
+    public bool ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<Batch<IGrouping<K, V>>> target)
     {
-        return ((ISourceBlock<Timestamped<IGrouping<K, V>>>)_outputBuffer).ReserveMessage(messageHeader, target);
+        return ((ISourceBlock<Batch<IGrouping<K, V>>>)_outputBuffer).ReserveMessage(messageHeader, target);
     }
 
     private async Task CompleteWindowAsync(DateTimeOffset timestamp)

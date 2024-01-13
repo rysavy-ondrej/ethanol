@@ -8,5 +8,7 @@ namespace Ethanol.ContextBuilder.Writers
     {
         Task Completed { get; }
         void OnNextBatch(IEnumerable<TRecord> record);
+
+        void OnWindowClosed(DateTime start, DateTime end);
     }
 }

@@ -4,6 +4,7 @@ using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using System.Collections.Generic;
+using System;
 
 namespace Ethanol.ContextBuilder.Writers
 {
@@ -32,6 +33,11 @@ namespace Ethanol.ContextBuilder.Writers
         public YamlTargetHostContextWriter(TextWriter writer)
         {
             this._writer = writer;
+        }
+
+        public override void OnWindowClosed(DateTime start, DateTime end)
+        {
+            _writer.Flush();
         }
 
         /// <inheritdoc/>

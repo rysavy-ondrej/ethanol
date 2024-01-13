@@ -79,6 +79,15 @@ namespace Ethanol.ContextBuilder.Writers
             sw.Stop();
         }
 
+        /// <summary>
+        /// Writes a batch of records to the context.
+        /// </summary>
+        /// <param name="record">The collection of records to write.</param>
         protected abstract void WriteBatch(IEnumerable<TRecord> record);
+
+        /// <summary>
+        /// This method is called to infor the writer when the window is closed.
+        /// </summary>
+        public abstract void OnWindowClosed(DateTime start, DateTime end);
     }
 }

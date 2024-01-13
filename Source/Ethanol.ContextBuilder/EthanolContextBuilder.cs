@@ -18,6 +18,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading.Tasks.Dataflow;
 using System.Diagnostics.Metrics;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Ethanol.ContextBuilder
 {
@@ -55,8 +57,10 @@ namespace Ethanol.ContextBuilder
 
         public static int BufferSize { get; set; } = 20000;
         public static int WriterBatchSize { get; set; } = 10000;
-        public static TimeSpan WriterBatchTimeout { get; set; } = TimeSpan.FromSeconds(1);
         static Meter s_meter = new Meter("Ethanol.ContextBuilder");
+
+        public static int BatchSize { get; set; } = 128; 
+
 
         public static async Task RunAsync(
             IDataReader<IpFlow>[] readers,
@@ -75,7 +79,6 @@ namespace Ethanol.ContextBuilder
             int flowsAcceptedCounter = 0;
             int flowsDeniedCounter = 0;
             int flowsDroppedCounter = 0;
-            int windowContextCreatedCounter = 0;
 
             logger?.LogInformation("Starting pipeline...");
             // CREATING BLOCKS:
@@ -83,25 +86,29 @@ namespace Ethanol.ContextBuilder
 
             var keyInputBlock = new TransformManyBlock<IpFlow, Timestamped<KeyValuePair<IPAddress, IpFlow>>>(f => BiflowKeySelector(f), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
-            var windowBlock = new WindowGroupByBlock<KeyValuePair<IPAddress, IpFlow>, IPAddress, IpFlow>(f => f.Key, x => x.Value, ()=> KeyValuePair.Create(IPAddress.Any, Enumerable.Empty<IpFlow>()), windowSpan, new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
+            var windowBlock = new WindowGroupByBlock<KeyValuePair<IPAddress, IpFlow>, IPAddress, IpFlow>(f => f.Key, x => x.Value, windowSpan, BatchSize, new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
-            var contextBlock = new TransformBlock<Timestamped<IGrouping<IPAddress, IpFlow>>, TimeRange<IpHostContext>>(grp => BuildContext(grp), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
+            var contextBlock = new TransformBlock<Batch<IGrouping<IPAddress, IpFlow>>, Batch<IpHostContext>>(grp => BuildContext(grp), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
-            var enricherBlock = new TransformBlock<TimeRange<IpHostContext>, TimeRange<IpHostContextWithTags>>(ctx => enricher.Enrich(ctx), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
+            var enricherBlock = new TransformBlock<Batch<IpHostContext>, Batch<IpHostContextWithTags>>(batch => EnrichContext(batch), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
-            var refinerBlock = new TransformBlock<TimeRange<IpHostContextWithTags>, HostContext>(ctx => refiner.Refine(ctx), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize, MaxDegreeOfParallelism = 4 });
+            var refinerBlock = new TransformBlock<Batch<IpHostContextWithTags>, Batch<HostContext>>(batch => RefineContext(batch), new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize, MaxDegreeOfParallelism = 4 });
 
-            var writerBatchBlock = new BatchBlock<HostContext>(WriterBatchSize);
-
-            var writerBlock = new ActionBlock<HostContext[]>(batch =>
+            var writerBlock = new ActionBlock<Batch<HostContext>>(batch =>
             {
                 foreach (var writer in writers)
                 {
-                    writer.OnNextBatch(batch);
+                    writer.OnNextBatch(batch.Items);
+                    if (batch.Last)
+                    {
+                        writer.OnWindowClosed(new DateTime(batch.TickStart), new DateTime(batch.TickStart + batch.Duration));
+                    }
                 }
-                contextWrittenCounter+= batch.Length; 
-                // we are ready for the new batch...
-                writerBatchBlock.TriggerBatch();
+                contextWrittenCounter+= batch.Items.Length; 
+                if (batch.Last)
+                {
+                    windowsClosedCounter++;
+                }
             }, new ExecutionDataflowBlockOptions { BoundedCapacity = BufferSize });
 
             // LINKING:
@@ -110,8 +117,7 @@ namespace Ethanol.ContextBuilder
             windowBlock.LinkTo(contextBlock, new DataflowLinkOptions { PropagateCompletion = true });
             contextBlock.LinkTo(enricherBlock, new DataflowLinkOptions { PropagateCompletion = true });
             enricherBlock.LinkTo(refinerBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            refinerBlock.LinkTo(writerBatchBlock, new DataflowLinkOptions { PropagateCompletion = true });
-            writerBatchBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
+            refinerBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_read", () => inputFlowsCounter , "flows", "Number of flows read from the input.");
             s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter ,"flows", "Number of flows accepted by the flow filter.");
@@ -130,15 +136,13 @@ namespace Ethanol.ContextBuilder
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_windows_closed", () => windowsClosedCounter, "windows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_hosts", () => windowBlock.KeyCount, "hosts", "Number of hosts currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_flows", () => windowBlock.ValueCount, "flows", "Number of flows currently collected in the active window.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.next_window_in", () => (int)(windowBlock.NextWindowStart - DateTime.Now).TotalSeconds, "seconds", "Number of seconds until the next window is created.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.input_buffer", ()=> inputBlock.Count, "flows", "Number of flows in the input buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer",()=> writerBatchBlock.OutputCount, "contexts", "Number of contexts in the writer buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.builder_buffer", () => contextBlock.InputCount, "contexts", "Number of contexts in the context buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.enricher_buffer", () => refinerBlock.InputCount, "contexts", "Number of contexts in the enricher buffer.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.refiner_buffer", () => refinerBlock.InputCount, "contexts", "Number of contexts in the refiner buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.writer_buffer",()=> writerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the writer buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.builder_buffer", () => contextBlock.InputCount * BatchSize, "contexts", "Number of contexts in the context buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.enricher_buffer", () => refinerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the enricher buffer.");
+            s_meter.CreateObservableGauge<int>("ethanol.context_builder.refiner_buffer", () => refinerBlock.InputCount * BatchSize, "contexts", "Number of contexts in the refiner buffer.");
             
-            
-            using var timer = Observable.Timer(WriterBatchTimeout).Subscribe(_ => writerBatchBlock.TriggerBatch());
-
             using var d = readers.Merge().Subscribe(observer =>
             {
                 inputBlock.Post(observer);
@@ -168,18 +172,23 @@ namespace Ethanol.ContextBuilder
             });
             logger?.LogInformation("Pipeline completed.");
 
-            TimeRange<IpHostContext> BuildContext(Timestamped<IGrouping<IPAddress, IpFlow>> grp)
+            Batch<IpHostContext> BuildContext(Batch<IGrouping<IPAddress, IpFlow>> batch)
             {
-                contextCreatedCounter++;
-                windowContextCreatedCounter++;
-                if (IPAddress.Any.Equals(grp.Value.Key))
-                {
-                     logger?.LogInformation($"Window [{grp.Timestamp}, {grp.Timestamp + windowSpan}) collected, processing {windowContextCreatedCounter} contexts.");
-                    windowContextCreatedCounter = 0;
-                    windowsClosedCounter++;
-                }
-                return new TimeRange<IpHostContext>(new IpHostContext { HostAddress = grp.Value.Key, Flows = grp.Value.ToArray() }, grp.Timestamp.Ticks, grp.Timestamp.Ticks + windowSpan.Ticks);
+                var contextBatch = new Batch<IpHostContext>(batch.Items.Select(x => new IpHostContext { HostAddress = x.Key, Flows = x.ToArray() }).ToArray(), batch.TickStart, batch.Duration, batch.Last);
+                contextCreatedCounter+=batch.Items.Length;
+                return contextBatch;
             }
+            Batch<IpHostContextWithTags> EnrichContext(Batch<IpHostContext> batch)
+            {
+                var items = batch.Items.Select(x => enricher.Enrich(new TimeRange<IpHostContext>(x, batch.TickStart, batch.TickStart+batch.Duration))).Where(x=>x!=null && x.Value!=null).Select(x=>x!.Value!);
+                return new Batch<IpHostContextWithTags>(items.ToArray(), batch.TickStart, batch.Duration, batch.Last);
+            }
+            Batch<HostContext> RefineContext(Batch<IpHostContextWithTags> batch)
+            {
+                var items = batch.Items.Select(x => refiner.Refine(new TimeRange<IpHostContextWithTags>(x, batch.TickStart, batch.TickStart+batch.Duration))).Where(x=>x!=null).Select(x=>x!);
+                return new Batch<HostContext>(items.ToArray(), batch.TickStart, batch.Duration, batch.Last);
+            }
+           
             IEnumerable<Timestamped<KeyValuePair<IPAddress, IpFlow>>> BiflowKeySelector(IpFlow flow)
             {
                 var accepted = false;

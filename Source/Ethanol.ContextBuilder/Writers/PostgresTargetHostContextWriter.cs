@@ -108,19 +108,56 @@ namespace Ethanol.ContextBuilder.Writers
                 return;
             }
 
-            using (var cmd = new NpgsqlCommand())
+            if (!EnsureOpenConnection())
             {
-                cmd.Connection = _connection;
-                cmd.CommandText = $"INSERT INTO {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @connections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
-
-                cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Key.ToString());
-                cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Connections ?? Array.Empty<IpConnectionInfo>());
-                cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>());
-                cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls ?? Array.Empty<WebRequestInfo>());
-                cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
-                cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, true, entity.End, false));
-                cmd.ExecuteNonQuery();
+                _logger?.LogError($"Postgres Writer: Cannot write to database. Connection is closed.");
+                return;
             }
+            try
+            {
+                using (var cmd = new NpgsqlCommand())
+                {
+                    cmd.Connection = _connection;
+                    cmd.CommandText = $"INSERT INTO {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) VALUES (@key, @connections, @resolveddomains, @weburls, @tlshandshakes, @validity)";
+
+                    cmd.Parameters.AddWithValue("key", NpgsqlTypes.NpgsqlDbType.Text, entity.Key.ToString());
+                    cmd.Parameters.AddWithValue("connections", NpgsqlTypes.NpgsqlDbType.Json, entity.Connections ?? Array.Empty<IpConnectionInfo>());
+                    cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>());
+                    cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls ?? Array.Empty<WebRequestInfo>());
+                    cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
+                    cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, true, entity.End, false));
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger?.LogError(ex, $"Postgres Writer: Error writing record to database.");
+            }            
+        }
+
+        /// <summary>
+        /// Ensures that the database connection is open. If the connection is already open, returns true. 
+        /// If the connection is closed, attempts to open it and returns true if successful. 
+        /// If an exception occurs while opening the connection, logs the error and returns false.
+        /// </summary>
+        /// <returns>True if the connection is open or successfully opened, false otherwise.</returns>
+        private bool EnsureOpenConnection()
+        {
+            if (_connection.State == System.Data.ConnectionState.Open)
+            {
+                return true;
+            }            
+            try
+            {
+                _logger?.LogInformation($"Postgres Writer: Open DB connection '{_connection.ConnectionString}'");
+                _connection.Open();
+            }
+            catch(Exception e)
+            {
+                _logger?.LogError(e, $"Postgres Writer: Error opening connection '{_connection.ConnectionString}'");
+                return false;
+            }
+            return _connection.State == System.Data.ConnectionState.Open;
         }
 
         public override string ToString()
@@ -130,9 +167,13 @@ namespace Ethanol.ContextBuilder.Writers
 
         protected override void WriteBatch(IEnumerable<HostContext> records)
         {
+            if (!EnsureOpenConnection())
+            {
+                _logger?.LogError($"Postgres Writer: Cannot write to database. Connection is closed.");
+                return;
+            }  
             try
             {
-                var chunkIndex = 0;
                 foreach (var chunk in records.Chunk(_maxChunkSize))
                 {
                     using (var writer = _connection.BeginBinaryImport($"COPY {_tableName} (key, connections, resolveddomains, weburls, tlshandshakes, validity) FROM STDIN (FORMAT BINARY)"))

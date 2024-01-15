@@ -1,10 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-public abstract class FlowJsonFormatManipulator
+public abstract class JsonFormatManipulator
 {
     public abstract bool UpdateField(string fieldName, JsonElement fieldValue, out JsonValue? newValue);
-    public string UpdateFlow(string flowJson)
+    public string UpdateRecord(string flowJson)
     {
         var fields = new List<string>();
         using (JsonDocument doc = JsonDocument.Parse(flowJson))

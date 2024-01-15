@@ -13,6 +13,12 @@
     <PackageReference Include="ConsoleAppFramework" Version="4.2.4" />
     <PackageReference Include="ZLogger" Version="1.7.1" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
+        <PackageReference Include="Npgsql" Version="7.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ethanol.DataObjects\Ethanol.DataObjects.csproj" />
+    <ProjectReference Include="..\Ethanol.ContextBuilder\Ethanol.ContextBuilder.csproj" />
+  </ItemGroup>
+  
 </Project>

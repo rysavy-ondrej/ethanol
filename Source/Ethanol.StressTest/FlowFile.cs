@@ -1,42 +1,44 @@
 using System.Text;
 
-internal class FlowFile
+
+
+internal class JsonSampleFile
 {
-    List<string> _flows;
-    private readonly FlowJsonFormatManipulator _flowJsonFormat;
+    List<string> _samples;
+    private readonly JsonFormatManipulator _flowJsonFormat;
     private int _currentFlowIndex;
 
-    public FlowFile(List<string> flows, FlowJsonFormatManipulator flowJsonFormat)
+    public JsonSampleFile(List<string> flows, JsonFormatManipulator flowJsonFormat)
     {
         if (flows == null || flows.Count == 0) throw new ArgumentNullException(nameof(flows), "The list of flows cannot be null or empty.");
         if (flowJsonFormat == null) throw new ArgumentNullException(nameof(flowJsonFormat), "The flow json format manipulator cannot be null.");
         
-        this._flows = flows;
+        this._samples = flows;
         this._flowJsonFormat = flowJsonFormat;
     }
 
-    public static FlowFile LoadFromFile(string flowFilePath, FlowJsonFormatManipulator flowJsonFormat, int flowCount)
+    public static JsonSampleFile LoadFromFile(string flowFilePath, JsonFormatManipulator flowJsonFormat, int samplesCount)
     {
         var flows = new List<string>();
         using var reader = new StreamReader(flowFilePath);
-        for(int i = 0; i < flowCount; i++)
+        for(int i = 0; i < samplesCount; i++)
         {
             var record = ReadJsonString(reader);
             if (record == null) break;
             flows.Add(record);
         }
-        return new FlowFile(flows, flowJsonFormat);
+        return new JsonSampleFile(flows, flowJsonFormat);
     }
-    public string? GetNextFlow()
+    public string? GetNextSample()
     {
-        if (_currentFlowIndex >= _flows.Count)
+        if (_currentFlowIndex >= _samples.Count)
         {
             _currentFlowIndex = 0;
         }
-        var flow = _flows[_currentFlowIndex];
+        var sample = _samples[_currentFlowIndex];
         _currentFlowIndex++;
 
-        return _flowJsonFormat.UpdateFlow(flow);
+        return _flowJsonFormat.UpdateRecord(sample);
     }
 
     public static string? ReadJsonString(TextReader inputStream)

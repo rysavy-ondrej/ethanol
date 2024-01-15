@@ -27,7 +27,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     private readonly ILogger? _logger;
     private readonly NpgsqlConnection _connection;
     private readonly string _tableName;
-    private readonly TimeSpan _reconnectionInterval = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _reconnectionInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Creates the object using the provided connection string. An format of the string is:
@@ -93,6 +93,9 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
 
     private async Task<IList<TagObject>> ReadObjectsAsync(NpgsqlCommand cmd)
     {
+        if (!EnsureOpenConnection(_connection))
+            return new List<TagObject>();
+
         using var reader = await cmd.ExecuteReaderAsync();
         var rowList = new List<TagObject>();
         while (await reader.ReadAsync())
@@ -254,6 +257,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
 
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
+
         return cmd;
     }
     private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)

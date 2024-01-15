@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-public class IpfixcolJsonFormatManipulator : FlowJsonFormatManipulator
+public class IpfixcolJsonFormatManipulator : JsonFormatManipulator
 {
     // ipfixcol-json timestamps:
     // "iana:flowStartMilliseconds":"2023-12-29T12:49:10.270Z",

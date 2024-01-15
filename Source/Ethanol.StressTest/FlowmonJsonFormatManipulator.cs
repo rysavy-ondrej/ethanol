@@ -1,8 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-
-public class FlowmonJsonFormatManipulator : FlowJsonFormatManipulator
+public class FlowmonJsonFormatManipulator : JsonFormatManipulator
 {
     // flowmon-json timestamps:
     // "START_NSEC":"2023-12-19 14:00:48.093178043"

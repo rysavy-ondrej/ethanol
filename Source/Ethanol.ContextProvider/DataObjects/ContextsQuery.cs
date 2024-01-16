@@ -30,8 +30,8 @@ public record ContextsQuery
     /// <returns>Expression usable in WHERE clauses of the SQL expression.</returns>
     internal string GetWhereExpression()
     {
-        var start = Start.GetValueOrDefault(DateTime.MinValue).ToString("o", CultureInfo.InvariantCulture);
-        var end = End.GetValueOrDefault(DateTime.MaxValue).ToString("o", CultureInfo.InvariantCulture);
+        var start = Start.GetValueOrDefault(DateTimeOffset.MinValue).ToString("o", CultureInfo.InvariantCulture);
+        var end = End.GetValueOrDefault(DateTimeOffset.MaxValue).ToString("o", CultureInfo.InvariantCulture);
         var exprs = new[]{  $"validity && '[{start},{end})'",
                              HostKey != null ? $"key = '{HostKey}'" : "key <> '0.0.0.0'" };
         return String.Join(" AND ", exprs);

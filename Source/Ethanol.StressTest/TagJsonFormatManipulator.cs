@@ -22,9 +22,7 @@ public class TagJsonFormatManipulator : JsonFormatManipulator
                 newValue = JsonValue.Create(GetNextHostAddress().ToString());
                 return true;
             case "validity":
-                var start = DateTime.Now; 
-                var end = start.AddSeconds(60);
-                newValue = JsonValue.Create($"[{start.ToString("yyyy-MM-dd HH:mm:ss.fffffff")},{end.ToString("yyyy-MM-dd HH:mm:ss.fffffff")}]");
+                newValue = JsonValue.Create(String.Empty);
                 return true;
             default:
                 newValue = null;

@@ -14,6 +14,7 @@ using Npgsql;
 using Ethanol.ContextBuilder.Helpers;
 using Ethanol.DataObjects;
 using Humanizer;
+using Ethanol.ContextBuilder.Serialization;
 
 /// <summary>
 /// The program class containing the main entry point.
@@ -109,7 +110,7 @@ internal class BuilderStressTestCommand : ConsoleAppBase
             Console.Write($"now:{currentTimestamp},tags: {sentTagsCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
         }
 
-        var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);
+        //var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);
         Console.WriteLine($"Start generating flows:");
 
         var ipPrefix = (IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr.Address.GetAddressBytes()[..(adr.PrefixLength/8)] : null) ?? throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
@@ -124,6 +125,12 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         connection.Open();
         _logger.LogInformation($"Connected.");
         LinkedList<TagObject> tagObjects = new LinkedList<TagObject>();
+        var jsonOption = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            IgnoreNullValues = true,
+            Converters = { new DateTimeOffsetJsonConverter() }
+        };
         while (Context.CancellationToken.IsCancellationRequested == false && sw.ElapsedMilliseconds < (timeout?.TotalMilliseconds ?? long.MaxValue))
         {
             string tag = String.Empty;
@@ -131,19 +138,25 @@ internal class BuilderStressTestCommand : ConsoleAppBase
             {
                 tag = tags.GetNextSample();
                 if (tag == null) continue;
-                var tagObject = JsonSerializer.Deserialize<TagObject>(tag);
+                var tagObject = JsonSerializer.Deserialize<TagObject>(tag, jsonOption);
+                if (tagObject == null) continue;
+
+                tagObject.StartTime = DateTimeOffset.Now - TimeSpan.FromDays(1);
+                tagObject.EndTime = DateTimeOffset.Now + TimeSpan.FromDays(1);
                 tagObjects.AddLast(tagObject);
             }
             catch (JsonException e)
             {
-                _logger?.LogError(e, $"Error parsing tag: {tag}");
+               // _logger?.LogError(e, $"Error parsing tag: {tag}");
             }
 
             if (tagObjects.Count > 1000)
             {
+                _logger?.LogInformation($"Inserting {tagObjects.Count} tags.");
                 PostgresTagDataSource.BulkInsert(connection, tableName, tagObjects);
                 tagObjects.Clear();
             }
+            
             sentTagsCount++;
         }
         PostgresTagDataSource.BulkInsert(connection, tableName, tagObjects);

@@ -8,10 +8,8 @@ using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Dynamic;
 using System.Globalization;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -226,15 +224,13 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// The generated SQL query will fetch all records from a specified table where the key matches the provided tagKey and
     /// the validity period overlaps with the provided time range. The validity period is represented using PostgreSQL's range type.
     /// <para/>
-    /// Example SQL format: 
-    /// SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)'
     /// </remarks>
     private NpgsqlCommand PrepareCommand(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
-        // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE key ='{tagKey}' AND validity && '[{startString},{endString})'";
         return cmd;
     }
@@ -243,7 +239,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
-        // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
+
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key ='{tagKey}'";
         return cmd;
     }
@@ -252,8 +248,6 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
-        // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
-
         var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
 
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
@@ -265,12 +259,8 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
-        // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
 
         var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
-
-        
-
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
         return cmd;
     }
@@ -304,7 +294,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         string Truncate(string? input, int maxsize) => input?.Substring(0, Math.Min(input.Length, maxsize)) ?? string.Empty;
 
         var recordCount = 0;
-        using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, validity, details) FROM STDIN (FORMAT BINARY)"))
+        using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, validity) FROM STDIN (FORMAT BINARY)"))
         {
             foreach (var record in records)
             {
@@ -315,7 +305,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
                 writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
                 writer.Write(record.Reliability, NpgsqlDbType.Real);
                 writer.Write(new NpgsqlRange<DateTimeOffset>(record.StartTime.UtcDateTime, record.EndTime.UtcDateTime), NpgsqlDbType.TimestampTzRange);
-                writer.Write(record.Details, NpgsqlDbType.Json);
+                //writer.Write(record.Details, NpgsqlDbType.Json);
             }
 
             writer.Complete();
@@ -334,7 +324,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             ("key", $"VARCHAR({ColumnKeyLength}) NOT NULL"),
             ("value", $"VARCHAR({ColumnValueLength})"),
             ("reliability", "REAL"),
-            ("validity", "TSRANGE"),
+            ("validity", "TSTZRANGE"),
             ("details", "JSON")
         };
     static int ColumnTypeLength = 32;
@@ -357,7 +347,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             Reliability = reader.GetFloat("reliability"),
             StartTime = validity.LowerBound,
             EndTime = validity.UpperBound,
-            Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
+            //Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
         };
     }
 

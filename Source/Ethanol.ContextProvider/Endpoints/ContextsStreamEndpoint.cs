@@ -61,13 +61,14 @@ namespace Ethanol.ContextProvider.Endpoints
                         var chunk = ReadNextChunk(reader, out var start, out var end, ct);
                         if (chunk.Count == 0) break; // no more data to read
 
-                        _logger?.LogInformation($"Processing context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}");
+                        _logger?.LogInformation($"Processing context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}...");
                         var contexts = FetchTags(tagsProcessor, chunk, start, end);
                         foreach (var ctx in contexts)
                         {
                             var contextJson = Json.Serialize(ctx);
                             await HttpContext.Response.WriteAsync($"{contextJson}\n", ct);
                         }
+                        _logger?.LogInformation($"Processed context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}.");
                         await HttpContext.Response.Body.FlushAsync(ct); // Flush the data to the client
                     }
                     reader.Close();
@@ -112,13 +113,13 @@ namespace Ethanol.ContextProvider.Endpoints
         IEnumerable<HostContext> FetchTags(TagsProcessor tagsProcessor, IEnumerable<HostContext> chunk, DateTimeOffset start, DateTimeOffset end)
         {
             var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key ?? string.Empty), start, end);
+            _logger.LogInformation($"Fetched {tags.Count} tags for {chunk.Count()} host contexts.");
             foreach (var ctx in chunk)
             {
                 if (ctx.Key == null) continue;
                 if (tags.TryGetValue(ctx.Key, out var ctxTags))
                 {
                     ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags.Where(t => TimeOverlaps(t.StartTime, t.EndTime, ctx.Start, ctx.End)).ToList());
-                    yield return ctx;
                 }
                 yield return ctx;
             }

@@ -46,7 +46,7 @@ class TagsProcessor
     /// </summary>
     /// <param name="tags">Array of <see cref="TagObject"/> to be processed.</param>
     /// <returns>A dictionary with compacted tag representations.</returns>
-    public Dictionary<string, object> ComputeCompactTags(TagObject[] tags)
+    public Dictionary<string, object> ComputeCompactTags(IList<TagObject> tags)
     {
         string[] CleanAndSplitString(string? s)
         {
@@ -104,10 +104,23 @@ class TagsProcessor
     /// <param name="start">The start of the date-time range.</param>
     /// <param name="end">The end of the date-time range.</param>
     /// <returns>An array of <see cref="TagObject"/> matching the criteria.</returns>
-    public TagObject[] ReadTagObjects(IEnumerable<string> key, DateTime start, DateTime end)
+    public IDictionary<string, List<TagObject>> ReadTagObjects(IEnumerable<string> key, DateTimeOffset start, DateTimeOffset end)
     {
+        var dictionary = new Dictionary<string, List<TagObject>>();
         var tags = _provider.GetMany(key, start, end);
-        return tags.ToArray();
+        foreach (var tag in tags)
+        { 
+            if (tag.Key == null) continue;
+            if (dictionary.TryGetValue(tag.Key, out var list))
+            {
+                list.Add(tag);
+            }
+            else
+            {
+                dictionary[tag.Key] = new List<TagObject> { tag };
+            }
+        }
+        return dictionary;
     }
 }
 public static class ToStringExtensions

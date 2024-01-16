@@ -69,6 +69,7 @@ namespace Ethanol.ContextBuilder.Readers
         {
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
+            _serializerOptions.Converters.Add(new DateTimeOffsetJsonConverter());
             _serializerOptions.Converters.Add(new ProtocolTypeJsonConverter());
             _logger = logger;
             _deserializer = new JsonReaderDeserializer<IpfixcolEntry>(x => x.ToFlow(), logger);

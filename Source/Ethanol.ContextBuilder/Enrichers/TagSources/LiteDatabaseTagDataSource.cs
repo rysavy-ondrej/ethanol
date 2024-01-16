@@ -43,28 +43,28 @@ public class LiteDatabaseTagDataSource : ITagDataSource<TagObject>
         _database.Dispose();
     }
 
-    public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         return _collection.Find(x => x.Key == tagKey); // Where(x => x.StartTime <= end && x.EndTime >= start);
     }
 
-    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
 
         return _collection.Find(x => x.Key == tagKey && x.Type == tagType); // Where(x => x.StartTime <= end && x.EndTime >= start);      
     }
 
-    public Task<IEnumerable<TagObject>> GetAsync(string key, DateTime start, DateTime end)
+    public Task<IEnumerable<TagObject>> GetAsync(string key, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(key, start, end));
     }
 
-    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
+    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(key, tagType, start, end));
     }
 
-    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTimeOffset start, DateTimeOffset end)
     {        
         foreach (var key in keys)
             foreach(var result in Get(key, tagType, start, end))

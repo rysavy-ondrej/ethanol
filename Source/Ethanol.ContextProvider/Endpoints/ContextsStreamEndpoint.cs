@@ -88,7 +88,7 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <param name="start">The start DateTime of the chunk.</param>
         /// <param name="end">The end DateTime of the chunk.</param>
         /// <returns>A list of HostContext objects representing the chunk of data.</returns>
-        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTime start, out DateTime end, CancellationToken ct)
+        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTimeOffset start, out DateTimeOffset end, CancellationToken ct)
         {
             var chunk = new List<HostContext>();
             while (reader.Read() && chunk.Count < _tagsChunkSize && ct.IsCancellationRequested == false)
@@ -97,8 +97,8 @@ namespace Ethanol.ContextProvider.Endpoints
                 var row = ReadRow(reader);
                 chunk.Add(row);
             }
-            start = chunk.FirstOrDefault()?.Start ?? DateTime.MinValue;
-            end = chunk.LastOrDefault()?.End ?? DateTime.MinValue;
+            start = chunk.FirstOrDefault()?.Start ?? DateTimeOffset.MinValue;
+            end = chunk.LastOrDefault()?.End ?? DateTimeOffset.MinValue;
             return chunk;
         }
         /// <summary>
@@ -109,14 +109,18 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <param name="start">The start time of the time range.</param>
         /// <param name="end">The end time of the time range.</param>
         /// <returns>An enumerable collection of host contexts with their computed tags.</returns>
-        IEnumerable<HostContext> FetchTags(TagsProcessor tagsProcessor, IEnumerable<HostContext> chunk, DateTime start, DateTime end)
+        IEnumerable<HostContext> FetchTags(TagsProcessor tagsProcessor, IEnumerable<HostContext> chunk, DateTimeOffset start, DateTimeOffset end)
         {
             var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key ?? string.Empty), start, end);
             foreach (var ctx in chunk)
             {
-                var ctxTags = tags.Where(t => t.Key == ctx.Key && TimeOverlaps(t.StartTime, t.EndTime, ctx.Start, ctx.End)).ToArray();
-                ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags);
-                yield return ctx; 
+                if (ctx.Key == null) continue;
+                if (tags.TryGetValue(ctx.Key, out var ctxTags))
+                {
+                    ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags.Where(t => TimeOverlaps(t.StartTime, t.EndTime, ctx.Start, ctx.End)).ToList());
+                    yield return ctx;
+                }
+                yield return ctx;
             }
         }
 
@@ -128,7 +132,7 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <param name="secondStart">The start time of the second time range.</param>
         /// <param name="secondEnd">The end time of the second time range.</param>
         /// <returns><c>true</c> if the time ranges overlap; otherwise, <c>false</c>.</returns>
-        private bool TimeOverlaps(DateTime firstStart, DateTime firstEnd, DateTime secondStart, DateTime secondEnd)
+        private bool TimeOverlaps(DateTimeOffset firstStart, DateTimeOffset firstEnd, DateTimeOffset secondStart, DateTimeOffset secondEnd)
         {
             return firstStart <= secondEnd && firstEnd >= secondStart;
         }

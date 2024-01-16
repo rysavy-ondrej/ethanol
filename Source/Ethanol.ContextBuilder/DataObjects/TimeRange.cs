@@ -11,12 +11,12 @@ namespace Ethanol.DataObjects
         /// <summary>
         /// Gets the start time of the event.
         /// </summary>
-        public DateTime StartTime { get; set; }
+        public DateTimeOffset StartTime { get; set; }
 
         /// <summary>
         /// Gets the end time of the event.
         /// </summary>
-        public DateTime EndTime { get; set;  }
+        public DateTimeOffset EndTime { get; set;  }
 
         /// <summary>
         /// Gets the payload or data associated with the event.
@@ -30,21 +30,7 @@ namespace Ethanol.DataObjects
         /// <param name="payload">The payload or data of the event.</param>
         /// <param name="startTime">The start time of the event in ticks.</param>
         /// <param name="endTime">The end time of the event in ticks.</param>
-        public TimeRange(T payload, long startTime, long endTime)
-        {
-            Value = payload;
-            StartTime = new DateTime(startTime);
-            EndTime = new DateTime(endTime);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TimeRange{TPayload}"/> record 
-        /// using a payload and start and end times as DateTime values.
-        /// </summary>
-        /// <param name="payload">The payload or data of the event.</param>
-        /// <param name="startTime">The start time of the event.</param>
-        /// <param name="endTime">The end time of the event.</param>
-        public TimeRange(T payload, DateTime startTime, DateTime endTime)
+        public TimeRange(T payload, DateTimeOffset startTime, DateTimeOffset endTime)
         {
             Value = payload;
             StartTime = startTime;

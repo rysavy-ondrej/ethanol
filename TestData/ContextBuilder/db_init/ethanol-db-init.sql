@@ -16,7 +16,7 @@ GRANT ALL PRIVILEGES ON DATABASE ethanol TO postgres;
 -- key: A string used as a unique identifier for the enrichment data.
 -- value: A string to store the enrichment data value itself.
 -- reliability: A floating-point number to indicate the reliability of the enrichment data.
--- validity: A time range (TSRANGE) to represent the period during which the data is considered valid.
+-- validity: A time range (TSTZRANGE) to represent the period during which the data is considered valid.
 -- details: A JSON object to store additional details related to the enrichment data in a structured format.
 
 CREATE TABLE IF NOT EXISTS enrichment_data (
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSRANGE,
+    validity TSTZRANGE,
     details JSON
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS netify_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSRANGE,
+    validity TSTZRANGE,
     details JSON
 );
 
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS host_context (
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,
-    validity TSRANGE
+    validity TSTZRANGE
 );
 
 -- An index is created on the 'key' column of the 'host_context' table to facilitate quick lookups based on the host identifier.

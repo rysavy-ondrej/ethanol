@@ -197,3 +197,32 @@ QueryResponse(33152).Display();
 
 var t = 4;
 1234.ToString($"X{t}").Display();
+
+#!csharp
+
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+var ipfixDate = "2023-12-19T15:15:03.557Z";
+var flowmonDate = "2023-03-10 18:47:40.208678757";
+
+var ipfixDateTime = DateTimeOffset.Parse(ipfixDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+var flowmonDateTime = DateTimeOffset.Parse(flowmonDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+
+ipfixDateTime.Display();
+flowmonDateTime.Display();
+
+DateTimeOffset.Now.Display();
+
+DateTimeOffset.Now.UtcDateTime.Display();
+
+var date = DateTimeOffset.Now.DateTime.Display();
+
+
+var zoneStr = "2024-01-14T15:00:00+05:00";
+
+var zoneDt = DateTimeOffset.Parse(zoneStr, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+zoneDt.Display();
+
+zoneDt.UtcDateTime.ToString("o", CultureInfo.InvariantCulture).Display();
+zoneDt.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture).Display();

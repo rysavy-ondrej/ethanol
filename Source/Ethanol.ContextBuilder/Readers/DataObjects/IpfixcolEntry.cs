@@ -76,10 +76,10 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public int IanaIpVersion { get; set; }
 
         [JsonPropertyName("iana:flowStartMilliseconds")]
-        public DateTime IanaFlowStartMilliseconds { get; set; }
+        public DateTimeOffset IanaFlowStartMilliseconds { get; set; }
 
         [JsonPropertyName("iana:flowEndMilliseconds")]
-        public DateTime IanaFlowEndMilliseconds { get; set; }
+        public DateTimeOffset IanaFlowEndMilliseconds { get; set; }
 
         [JsonPropertyName("iana:applicationId")]
         public int IanaApplicationId { get; set; }

@@ -88,6 +88,6 @@ namespace Ethanol.ContextBuilder.Writers
         /// <summary>
         /// This method is called to infor the writer when the window is closed.
         /// </summary>
-        public abstract void OnWindowClosed(DateTime start, DateTime end);
+        public abstract void OnWindowClosed(DateTimeOffset start, DateTimeOffset end);
     }
 }

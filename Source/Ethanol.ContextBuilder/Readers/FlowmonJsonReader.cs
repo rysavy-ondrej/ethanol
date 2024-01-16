@@ -54,6 +54,7 @@ namespace Ethanol.ContextBuilder.Readers
         {
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
+            _serializerOptions.Converters.Add(new DateTimeOffsetJsonConverter());
             _logger = logger;
             _deserializer = new JsonReaderDeserializer<Flowmonexp5Entry>(x => x.ToFlow(), logger);
         }

@@ -1,23 +1,26 @@
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 
 
 internal class JsonSampleFile
 {
     List<string> _samples;
-    private readonly JsonFormatManipulator _flowJsonFormat;
+    private readonly JsonFormatManipulator _sampleJsonFormat;
+    private readonly ILogger? _logger;
     private int _currentFlowIndex;
 
-    public JsonSampleFile(List<string> flows, JsonFormatManipulator flowJsonFormat)
+    public JsonSampleFile(List<string> flows, JsonFormatManipulator flowJsonFormat, ILogger ? logger = null)
     {
         if (flows == null || flows.Count == 0) throw new ArgumentNullException(nameof(flows), "The list of flows cannot be null or empty.");
         if (flowJsonFormat == null) throw new ArgumentNullException(nameof(flowJsonFormat), "The flow json format manipulator cannot be null.");
         
         this._samples = flows;
-        this._flowJsonFormat = flowJsonFormat;
+        this._sampleJsonFormat = flowJsonFormat;
+        this._logger = logger;
     }
 
-    public static JsonSampleFile LoadFromFile(string flowFilePath, JsonFormatManipulator flowJsonFormat, int samplesCount)
+    public static JsonSampleFile LoadFromFile(string flowFilePath, JsonFormatManipulator flowJsonFormat, int samplesCount, ILogger? logger = null)
     {
         var flows = new List<string>();
         using var reader = new StreamReader(flowFilePath);
@@ -27,7 +30,8 @@ internal class JsonSampleFile
             if (record == null) break;
             flows.Add(record);
         }
-        return new JsonSampleFile(flows, flowJsonFormat);
+        logger?.LogInformation($"Loaded {flows.Count} samples from {flowFilePath}");
+        return new JsonSampleFile(flows, flowJsonFormat,logger);
     }
     public string? GetNextSample()
     {
@@ -37,8 +41,7 @@ internal class JsonSampleFile
         }
         var sample = _samples[_currentFlowIndex];
         _currentFlowIndex++;
-
-        return _flowJsonFormat.UpdateRecord(sample);
+        return _sampleJsonFormat.UpdateRecord(sample);
     }
 
     public static string? ReadJsonString(TextReader inputStream)
@@ -53,7 +56,7 @@ internal class JsonSampleFile
             if (line == null) break;
 
             // Skip empty lines
-            if (line == string.Empty) continue;
+            if (line == string.Empty || line=="[" || line=="]") continue;
 
             // Add without line delimiter to get a single line JSON               
             buffer.Append(line);

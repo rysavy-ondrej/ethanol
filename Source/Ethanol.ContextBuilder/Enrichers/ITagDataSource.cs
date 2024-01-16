@@ -19,7 +19,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A collection of <see cref="TagDataType"/> that matches the given criteria.</returns>
-        IEnumerable<TagDataType> Get(string tagKey, DateTime start, DateTime end);
+        IEnumerable<TagDataType> Get(string tagKey, DateTimeOffset start, DateTimeOffset end);
 
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A collection of <see cref="TagDataType"/> that matches the given criteria.</returns>
-        IEnumerable<TagDataType> Get(string tagKey, string tagType, DateTime start, DateTime end);
+        IEnumerable<TagDataType> Get(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end);
 
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A task representing the asynchronous operation, which upon completion 
         /// will return a collection of <see cref="TagDataType"/> that matches the given criteria.</returns>
-        Task<IEnumerable<TagDataType>> GetAsync(string key, DateTime start, DateTime end);
+        Task<IEnumerable<TagDataType>> GetAsync(string key, DateTimeOffset start, DateTimeOffset end);
 
         /// <summary>
         /// Asynchronously retrieves a collection of <see cref="TagDataType"/> that matches the given key,
@@ -55,7 +55,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A task that represents the asynchronous operation. The value of the TResult parameter contains 
         /// a collection of <see cref="TagDataType"/> that matches the given criteria.</returns>
-        Task<IEnumerable<TagDataType>> GetAsync(string key, string tagType, DateTime start, DateTime end);
+        Task<IEnumerable<TagDataType>> GetAsync(string key, string tagType, DateTimeOffset start, DateTimeOffset end);
 
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Ethanol.ContextBuilder.Enrichers
         /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
         /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
         /// <returns>A collection of <see cref="TagObject"/> that matches the given criteria.</returns>
-        IEnumerable<TagDataType> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end);
+        IEnumerable<TagDataType> GetMany(IEnumerable<string> keys, string tagType, DateTimeOffset start, DateTimeOffset end);
 
     }
 }

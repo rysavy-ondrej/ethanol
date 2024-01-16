@@ -28,13 +28,13 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long BytesA { get; set; }
 
         [JsonPropertyName("END_NSEC")]
-        public DateTime EndNsec { get; set; }
+        public DateTimeOffset EndNsec { get; set; }
 
         [JsonPropertyName("END_NSEC_A")]
-        public DateTime EndNsecA { get; set; }
+        public DateTimeOffset EndNsecA { get; set; }
 
         [JsonPropertyName("END_NSEC_B")]
-        public DateTime EndNsecB { get; set; }
+        public DateTimeOffset EndNsecB { get; set; }
 
         [JsonPropertyName("INVEA_DNS_ADDTREC_COUNT_REQUEST")]
         public int InveaDnsAddtrecCountRequest { get; set; }
@@ -127,13 +127,13 @@ namespace Ethanol.ContextBuilder.Readers.DataObjects
         public long PacketsA { get; set; }
 
         [JsonPropertyName("START_NSEC")]
-        public DateTime StartNsec { get; set; }
+        public DateTimeOffset StartNsec { get; set; }
 
         [JsonPropertyName("START_NSEC_A")]
-        public DateTime StartNsecA { get; set; }
+        public DateTimeOffset StartNsecA { get; set; }
 
         [JsonPropertyName("START_NSEC_B")]
-        public DateTime StartNsecB { get; set; }
+        public DateTimeOffset StartNsecB { get; set; }
 
         [JsonPropertyName("NBAR_APP_ID")]
         public int NbarAppId { get; set; }

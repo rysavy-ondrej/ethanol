@@ -57,7 +57,7 @@ namespace Ethanol.ContextBuilder.Reactive
             {
                 return source
                     .Do(ShiftTime).Window(windowSize, windowShift, virtualScheduler).Timestamp(virtualScheduler)
-                    .Select(w => new TimeRange<IObservable<Timestamped<T>>>(w.Value, w.Timestamp.Ticks, w.Timestamp.Ticks + windowSize.Ticks))
+                    .Select(w => new TimeRange<IObservable<Timestamped<T>>>(w.Value, w.Timestamp, w.Timestamp + windowSize))
                     .Subscribe(observer);
             });
         }
@@ -106,7 +106,7 @@ namespace Ethanol.ContextBuilder.Reactive
             {
                 var start = GetWindowStart(item.Timestamp);
                 var end = start + windowSize;
-                return new TimeRange<IGroupedObservable<TKey, TValue>>(item.Value, start.Ticks, end.Ticks);
+                return new TimeRange<IGroupedObservable<TKey, TValue>>(item.Value, start, end);
             }
 
             return Observable.Create<TimeRange<IGroupedObservable<TKey, TValue>>>(observer =>
@@ -134,7 +134,7 @@ namespace Ethanol.ContextBuilder.Reactive
         /// <returns>An observable sequence of aggregated results within the specified time window.</returns>
         public static IObservable<TimeRange<R>> Aggregate<T, R, K, V>(
                 this IObservable<Timestamped<T>> source,
-                long windowStartTime, long windowEndTime,
+                DateTimeOffset windowStartTime, DateTimeOffset windowEndTime,
                 Func<Timestamped<T>, KeyValuePair<K, V?>[]> keyValSelector,
                 Func<KeyValuePair<K, V?[]>, R> resultSelector,
                 Func<R> emptyResultSelector
@@ -154,7 +154,7 @@ namespace Ethanol.ContextBuilder.Reactive
         /// <param name="windowStartTime">The start time of the window.</param>
         /// <param name="windowEndTime">The end time of the window.</param>
         /// <returns>An observable sequence of observable events containing the aggregated IP host contexts.</returns>
-        public static IObservable<TimeRange<IpHostContext>> AggregateIpContexts(this IObservable<Timestamped<IpFlow>> flows, long windowStartTime, long windowEndTime)
+        public static IObservable<TimeRange<IpHostContext>> AggregateIpContexts(this IObservable<Timestamped<IpFlow>> flows, DateTimeOffset windowStartTime, DateTimeOffset windowEndTime)
         {
             return flows.Aggregate(
                 windowStartTime, windowEndTime,

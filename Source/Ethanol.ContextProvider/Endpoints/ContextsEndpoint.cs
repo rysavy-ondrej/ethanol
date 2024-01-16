@@ -77,9 +77,11 @@ namespace Ethanol.ContextProvider.Endpoints
                         var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key ?? string.Empty), window.Key.Start, window.Key.End);
                         foreach (var ctx in chunk)
                         {
-                            var ctxTags = tags.Where(t => t.Key == ctx.Key).ToArray();
-                            _logger?.LogTrace($"  Compactimg tags: ctx-id: {ctx.Id}, ctx-key={ctx.Key}, tags={ctxTags.Length}");
-                            ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags);
+                            if (tags.TryGetValue(ctx.Key, out var ctxTags))
+                            {
+                                _logger?.LogTrace($"  Compactimg tags: ctx-id: {ctx.Id}, ctx-key={ctx.Key}, tags={ctxTags.Count()}");
+                                ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags);
+                            }
                         }
                     }
                 }

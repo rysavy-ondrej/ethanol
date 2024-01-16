@@ -1,4 +1,4 @@
--- WARNING: When chaning this script do not forget to update it also at the following locations:
+-- WARNING: When changing this script do not forget to update it also at the following locations:
 -- TestData/ContextBuilder/db_init
 -- Deploy/Docker/
 --
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSRANGE,
+    validity TSTZRANGE,
     details JSON
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS netify_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSRANGE,
+    validity TSTZRANGE,
     details JSON
 );
 
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS host_context (
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,
-    validity TSRANGE
+    validity TSTZRANGE
 );
 
 -- An index is created on the 'key' column of the 'host_context' table to facilitate quick lookups based on the host identifier.

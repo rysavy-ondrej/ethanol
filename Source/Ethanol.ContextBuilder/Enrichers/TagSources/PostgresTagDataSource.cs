@@ -77,7 +77,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// <param name="start">The start time of the time range.</param>
     /// <param name="end">The end time of the time range.</param>
     /// <returns>An IEnumerable of HostTag objects representing the tags associated with the specified host and time range.</returns>
-    public async Task<IEnumerable<TagObject>> GetAsync(string key, DateTime start, DateTime end)
+    public async Task<IEnumerable<TagObject>> GetAsync(string key, DateTimeOffset start, DateTimeOffset end)
     {
         try
         {
@@ -115,7 +115,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// <param name="start">The start time of the time range.</param>
     /// <param name="end">The end time of the time range.</param>
     /// <returns>An IEnumerable of HostTag objects representing the tags associated with the specified host and time range.</returns>
-    public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         try
         {
@@ -168,7 +168,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         return connection.State == ConnectionState.Open;
     }
 
-    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         try
         {
@@ -182,12 +182,12 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         }
     }
 
-    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
+    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         throw new NotImplementedException();
     }
 
-    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
         try
@@ -201,7 +201,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             return new List<TagObject>();
         }      
     }
-    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, DateTime start, DateTime end)
+    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, DateTimeOffset start, DateTimeOffset end)
     {
         if (keys is null || keys.Count() == 0) return Enumerable.Empty<TagObject>();
         try
@@ -229,28 +229,28 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// Example SQL format: 
     /// SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)'
     /// </remarks>
-    private NpgsqlCommand PrepareCommand(string tagKey, DateTime start, DateTime end)
+    private NpgsqlCommand PrepareCommand(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
-        var startString = start.ToString("o", CultureInfo.InvariantCulture);
-        var endString = end.ToString("o", CultureInfo.InvariantCulture);
+        var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
         // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE key ='{tagKey}' AND validity && '[{startString},{endString})'";
         return cmd;
     }
-    private NpgsqlCommand PrepareCommand(string tagKey, string tagType, DateTime start, DateTime end)
+    private NpgsqlCommand PrepareCommand(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
-        var startString = start.ToString("o", CultureInfo.InvariantCulture);
-        var endString = end.ToString("o", CultureInfo.InvariantCulture);
+        var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
         // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key ='{tagKey}'";
         return cmd;
     }
-    private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, DateTime start, DateTime end)
+    private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, DateTimeOffset start, DateTimeOffset end)
     {
-        var startString = start.ToString("o", CultureInfo.InvariantCulture);
-        var endString = end.ToString("o", CultureInfo.InvariantCulture);
+        var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
         // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
 
@@ -260,14 +260,16 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
 
         return cmd;
     }
-    private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)
+    private NpgsqlCommand PrepareCommand(IEnumerable<string> tagKeys, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
-        var startString = start.ToString("o", CultureInfo.InvariantCulture);
-        var endString = end.ToString("o", CultureInfo.InvariantCulture);
+        var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var cmd = _connection.CreateCommand();
         // SELECT * FROM smartads WHERE Host = '192.168.1.32' AND Validity @> '[2022-06-01T14:00:00,2022-06-01T14:05:00)';
 
         var tagKeysExpr = String.Join(',', tagKeys.Select(x => $"'{x}'").ToArray());
+
+        
 
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
         return cmd;
@@ -299,7 +301,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     public static int BulkInsert(NpgsqlConnection connection, string tableName, IEnumerable<TagObject> records)
     {
 
-        string Truncate(string? input, int maxsize) => input?.Substring(0, System.Math.Min(input.Length, maxsize)) ?? string.Empty;
+        string Truncate(string? input, int maxsize) => input?.Substring(0, Math.Min(input.Length, maxsize)) ?? string.Empty;
 
         var recordCount = 0;
         using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, validity, details) FROM STDIN (FORMAT BINARY)"))
@@ -312,7 +314,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
                 writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlDbType.Text);
                 writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
                 writer.Write(record.Reliability, NpgsqlDbType.Real);
-                writer.Write(new NpgsqlRange<DateTime>(record.StartTime, record.EndTime), NpgsqlDbType.TimestampRange);
+                writer.Write(new NpgsqlRange<DateTimeOffset>(record.StartTime.UtcDateTime, record.EndTime.UtcDateTime), NpgsqlDbType.TimestampTzRange);
                 writer.Write(record.Details, NpgsqlDbType.Json);
             }
 
@@ -346,7 +348,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// <returns>The TagRecord extracted from the reader.</returns>
     static TagObject ReadRow(NpgsqlDataReader reader)
     {
-        var validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity");
+        var validity = reader.GetFieldValue<NpgsqlRange<DateTimeOffset>>("validity");
         return new TagObject
         {
             Type = reader.GetString("type"),

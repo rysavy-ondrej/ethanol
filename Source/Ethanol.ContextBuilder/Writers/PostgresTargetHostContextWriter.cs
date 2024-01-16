@@ -6,7 +6,6 @@ using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 
 namespace Ethanol.ContextBuilder.Writers
@@ -125,7 +124,7 @@ namespace Ethanol.ContextBuilder.Writers
                     cmd.Parameters.AddWithValue("resolveddomains", NpgsqlTypes.NpgsqlDbType.Json, entity.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>());
                     cmd.Parameters.AddWithValue("weburls", NpgsqlTypes.NpgsqlDbType.Json, entity.WebUrls ?? Array.Empty<WebRequestInfo>());
                     cmd.Parameters.AddWithValue("tlshandshakes", NpgsqlTypes.NpgsqlDbType.Json, entity.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>());
-                    cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTime>(entity.Start, true, entity.End, false));
+                    cmd.Parameters.AddWithValue("validity", new NpgsqlRange<DateTimeOffset>(entity.Start.ToUniversalTime(), true, entity.End.ToUniversalTime(), false));
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -187,7 +186,7 @@ namespace Ethanol.ContextBuilder.Writers
                             writer.Write(item.ResolvedDomains ?? Array.Empty<ResolvedDomainInfo>(), NpgsqlDbType.Json);
                             writer.Write(item.WebUrls ?? Array.Empty<WebRequestInfo>(), NpgsqlDbType.Json);
                             writer.Write(item.TlsHandshakes ?? Array.Empty<TlsHandshakeInfo>(), NpgsqlDbType.Json);
-                            writer.Write(new NpgsqlRange<DateTime>(item.Start, true, item.End, false));
+                            writer.Write(new NpgsqlRange<DateTimeOffset>(item.Start.ToUniversalTime(), true, item.End.ToUniversalTime(), false));
                         }
                         writer.Complete();
                     }
@@ -199,7 +198,7 @@ namespace Ethanol.ContextBuilder.Writers
             }
         }
 
-        public override void OnWindowClosed(DateTime start, DateTime end)
+        public override void OnWindowClosed(DateTimeOffset start, DateTimeOffset end)
         {
             Write(new HostContext { Key = IPAddress.Any.ToString(), Start = start, End = end });
         }

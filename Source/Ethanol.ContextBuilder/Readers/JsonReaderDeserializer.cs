@@ -33,6 +33,7 @@ namespace Ethanol.ContextBuilder.Readers
             _logger = logger;
             _serializerOptions = new JsonSerializerOptions();
             _serializerOptions.Converters.Add(new DateTimeJsonConverter());
+            _serializerOptions.Converters.Add(new DateTimeOffsetJsonConverter());
             _serializerOptions.Converters.Add(new ProtocolTypeJsonConverter());
         }
 

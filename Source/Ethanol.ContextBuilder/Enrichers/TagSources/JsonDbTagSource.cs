@@ -40,7 +40,7 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <param name="start">The starting date of the range.</param>
     /// <param name="end">The ending date of the range.</param>
     /// <returns>A collection of tags that match the specified criteria.</returns>
-    public IEnumerable<TagObject> Get(string tagKey, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         return _queryable.Where(x => tagKey.Equals(x.Key?.ToString()) && x.StartTime <= start && x.EndTime >= end);
     }
@@ -52,7 +52,7 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <param name="start">The starting date of the range.</param>
     /// <param name="end">The ending date of the range.</param>
     /// <returns>A task representing the asynchronous operation, which upon completion returns a collection of tags that match the specified criteria.</returns>
-    public Task<IEnumerable<TagObject>> GetAsync(string host, DateTime start, DateTime end)
+    public Task<IEnumerable<TagObject>> GetAsync(string host, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(host, start, end));
     }
@@ -77,7 +77,7 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <param name="start">The starting point of the date range for which tags are to be retrieved.</param>
     /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
     /// <returns>A collection of <see cref="TagObject"/> that matches the provided criteria.</returns>
-    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> Get(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         return _queryable.Where(x => tagKey.Equals(x.Key?.ToString()) && x.Type == tagType && x.StartTime <= start && x.EndTime >= end);
     }
@@ -92,12 +92,12 @@ public class JsonDbTagSource : ITagDataSource<TagObject>
     /// <param name="end">The ending point of the date range for which tags are to be retrieved.</param>
     /// <returns>A task that represents the asynchronous operation. The value of the TResult parameter contains 
     /// a collection of <see cref="TagObject"/> that matches the given criteria.</returns>
-    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTime start, DateTime end)
+    public Task<IEnumerable<TagObject>> GetAsync(string key, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(key, tagType, start, end));
     }
 
-    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagObject> GetMany(IEnumerable<string> keys, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         foreach (var key in keys)        
             foreach(var result in Get(key, tagType, start, end))

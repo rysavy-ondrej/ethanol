@@ -21,11 +21,11 @@ public class IpfixcolJsonFormatManipulator : JsonFormatManipulator
         switch (fieldName)
         {
             case "iana:flowStartMilliseconds":
-                newValue = JsonValue.Create(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+                newValue = JsonValue.Create(DateTimeOffset.Now.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
                 return true;
             case "iana:flowEndMilliseconds":
                 var duration = random.Next(10, 10000);
-                newValue = JsonValue.Create(DateTime.Now.AddMilliseconds(duration).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+                newValue = JsonValue.Create(DateTimeOffset.Now.UtcDateTime.AddMilliseconds(duration).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
                 return true;
             case "iana:sourceIPv4Address": 
                 if (_randomizeAddresses)

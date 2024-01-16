@@ -35,7 +35,7 @@ namespace Ethanol.ContextBuilder.Writers
             this._writer = writer;
         }
 
-        public override void OnWindowClosed(DateTime start, DateTime end)
+        public override void OnWindowClosed(DateTimeOffset start, DateTimeOffset end)
         {
             _writer.Flush();
         }

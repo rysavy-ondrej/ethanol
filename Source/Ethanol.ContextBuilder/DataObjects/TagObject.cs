@@ -50,12 +50,12 @@ namespace Ethanol.DataObjects
         /// <summary>
         /// Gets or sets the starting timestamp indicating when the tag first becomes valid.
         /// </summary>
-        public DateTime StartTime { get; set; }
+        public DateTimeOffset StartTime { get; set; }
         /// <summary>
         /// Gets or sets the ending timestamp indicating when the tag's validity expires.
         /// Together with <see cref="StartTime"/>, this forms the validity range for the tag.
         /// </summary>
-        public DateTime EndTime { get; set; }
+        public DateTimeOffset EndTime { get; set; }
 
         /// <summary>
         /// Gets or sets the granular or extended information related to the tag, 

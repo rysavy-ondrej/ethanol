@@ -22,7 +22,7 @@ namespace Ethanol.ContextBuilder.Cleaners
         private readonly Subject<IpFlow> _flowSubject;
         private readonly TimeSpan _flowTimeout;
         private readonly Cache<FlowKey, IpFlow> _flowDictionary;
-        private DateTime _currentTime = DateTime.MinValue;
+        private DateTimeOffset _currentTime = DateTime.MinValue;
         private TaskCompletionSource _tcs = new TaskCompletionSource();
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace Ethanol.ContextBuilder.Cleaners
 
         class Cache<TKey, TValue> where TValue : class where TKey : notnull
         {
-            private readonly SortedDictionary<DateTime, List<TKey>> _timeline = new SortedDictionary<DateTime, List<TKey>>();
+            private readonly SortedDictionary<DateTimeOffset, List<TKey>> _timeline = new SortedDictionary<DateTimeOffset, List<TKey>>();
             private readonly IDictionary<TKey, CacheItem<TValue>> _cache = new Dictionary<TKey, CacheItem<TValue>>();
 
             public TValue? Get(TKey key)
@@ -146,7 +146,7 @@ namespace Ethanol.ContextBuilder.Cleaners
                 return item;
             }
 
-            public void Set(TKey key, TValue value, DateTime expiresAt)
+            public void Set(TKey key, TValue value, DateTimeOffset expiresAt)
             {
                 // Create a new cache item with the specified value and expiration time
                 var item = new CacheItem<TValue>(value, expiresAt);
@@ -163,7 +163,7 @@ namespace Ethanol.ContextBuilder.Cleaners
                 _cache[key] = item;
             }
 
-            public IEnumerable<TValue> CleanupExpiredItems(DateTime currentDate)
+            public IEnumerable<TValue> CleanupExpiredItems(DateTimeOffset currentDate)
             {
                 var expiredItems = _timeline.TakeWhile(x => x.Key < currentDate).ToList();
 
@@ -186,9 +186,9 @@ namespace Ethanol.ContextBuilder.Cleaners
             private class CacheItem<T>
             {
                 public T Value { get; }
-                public DateTime ExpiresAt { get; }
+                public DateTimeOffset ExpiresAt { get; }
 
-                public CacheItem(T value, DateTime expiresAt)
+                public CacheItem(T value, DateTimeOffset expiresAt)
                 {
                     Value = value;
                     ExpiresAt = expiresAt;

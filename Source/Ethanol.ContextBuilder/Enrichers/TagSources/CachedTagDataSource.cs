@@ -26,7 +26,7 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
         _cache.Dispose();
     }
 
-    public IEnumerable<TagDataType> Get(string tagKey, DateTime start, DateTime end)
+    public IEnumerable<TagDataType> Get(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         string cacheKey = $"Get_{tagKey}_{start}_{end}";
         var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
@@ -38,7 +38,7 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
         return item ?? Enumerable.Empty<TagDataType>();
     }
 
-    public IEnumerable<TagDataType> Get(string tagKey, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagDataType> Get(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         string cacheKey = $"Get_{tagKey}_{tagType}_{start}_{end}";
         var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>
@@ -50,17 +50,17 @@ public class CachedTagDataSource<TagDataType> : ITagDataSource<TagDataType>
         return item ?? Enumerable.Empty<TagDataType>();
     }
      
-    public Task<IEnumerable<TagDataType>> GetAsync(string tagKey, DateTime start, DateTime end)
+    public Task<IEnumerable<TagDataType>> GetAsync(string tagKey, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(tagKey, start, end));
     }
 
-    public Task<IEnumerable<TagDataType>> GetAsync(string tagKey, string tagType, DateTime start, DateTime end)
+    public Task<IEnumerable<TagDataType>> GetAsync(string tagKey, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         return Task.FromResult(Get(tagKey, tagType, start, end));
     }
 
-    public IEnumerable<TagDataType> GetMany(IEnumerable<string> tagKeys, string tagType, DateTime start, DateTime end)
+    public IEnumerable<TagDataType> GetMany(IEnumerable<string> tagKeys, string tagType, DateTimeOffset start, DateTimeOffset end)
     {
         string cacheKey = $"GetMany_{String.Join("_", tagKeys)}_{tagType}_{start}_{end}";
         var item = _cache.GetOrCreate<TagDataType[]>(cacheKey, entry =>

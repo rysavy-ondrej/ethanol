@@ -27,7 +27,7 @@ namespace Ethanol.ContextBuilder.Reactive
         private Subject<TimeRange<T>> _subject = new Subject<TimeRange<T>>();
 
         // Buffer to hold events sorted by their start time.
-        private SortedList<DateTime, Queue<TimeRange<T>>> _elementBuffer = new SortedList<DateTime, Queue<TimeRange<T>>>();
+        private SortedList<DateTimeOffset, Queue<TimeRange<T>>> _elementBuffer = new SortedList<DateTimeOffset, Queue<TimeRange<T>>>();
 
         // Counter to keep track of the total number of elements buffered.
         private int _bufferedElements = 0;

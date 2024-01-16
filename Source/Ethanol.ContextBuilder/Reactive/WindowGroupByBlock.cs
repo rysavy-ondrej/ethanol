@@ -21,12 +21,12 @@ public readonly struct Batch<T>
     /// <summary>
     /// Gets the tick start value.
     /// </summary>
-    public long TickStart { get; }
+    public DateTimeOffset TickStart { get; }
 
     /// <summary>
     /// Gets the duration of the window group.
     /// </summary>
-    public long Duration { get; }
+    public TimeSpan Duration { get; }
 
     /// <summary>
     /// Gets a value indicating whether this batch is the last batch in the window.
@@ -38,7 +38,7 @@ public readonly struct Batch<T>
     /// </summary>
     /// <param name="items">The array of items in the batch.</param>
     /// <param name="last">A value indicating whether this batch is the last batch.</param>
-    public Batch(T[] items, long tickStart, long duration, bool last)
+    public Batch(T[] items, DateTimeOffset tickStart, TimeSpan duration, bool last)
     {
         Items = items;
         TickStart = tickStart;
@@ -56,7 +56,7 @@ public static class Batch
     /// <param name="items">The array of items in the batch.</param>
     /// <param name="last">A value indicating whether this batch is the last batch.</param>
     /// <returns>A new instance of the <see cref="Batch{T}"/> struct.</returns>
-    public static Batch<T> Create<T>(T[] items, long tickStart, long duration, bool last)
+    public static Batch<T> Create<T>(T[] items, DateTimeOffset tickStart, TimeSpan duration, bool last)
     {
         return new Batch<T>(items, tickStart, duration, last);
     }
@@ -80,11 +80,11 @@ public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Batc
     private DateTimeOffset? _windowStart = null;
     DateTimeOffset? _lastFlowTimestamp = null;
 
-    public DateTime? CurrentWindowStart => _windowStart != null ? new DateTime(_windowStart.Value.Ticks) : null;
+    public DateTimeOffset? CurrentWindowStart => _windowStart != null ? _windowStart : null;
 
-    public DateTime? NextWindowStart => _windowStart != null ? new DateTime(_windowStart.Value.Ticks + _windowSize.Ticks) : null;
+    public DateTimeOffset? NextWindowStart => _windowStart != null ? _windowStart + _windowSize : null;
 
-    public DateTime? CurrentTime => _lastFlowTimestamp != null ? new DateTime(_lastFlowTimestamp.Value.Ticks) : null;
+    public DateTimeOffset? CurrentTime => _lastFlowTimestamp != null ? _lastFlowTimestamp.Value : null;
 
     private readonly TransformManyBlock<Timestamped<Dictionary<K, LinkedList<V>>>, Batch<IGrouping<K, V>>> _outputBuffer;
 
@@ -108,8 +108,8 @@ public class WindowGroupByBlock<T, K, V> : IPropagatorBlock<Timestamped<T>, Batc
     /// <returns>An enumerable of batches containing timestamped groupings.</returns>
     private IEnumerable<Batch<IGrouping<K, V>>> EmitWindow(Timestamped<Dictionary<K, LinkedList<V>>> dictionary)
     {
-        var duration = _windowSize.Ticks;
-        var windowStart = dictionary.Timestamp.Ticks;
+        var duration = _windowSize;
+        var windowStart = dictionary.Timestamp;
         IGrouping<K, V>[]? array = null; 
         foreach(var chunk in dictionary.Value.AsEnumerable().Chunk(_batchSize))
         {

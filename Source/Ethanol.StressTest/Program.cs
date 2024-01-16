@@ -9,11 +9,11 @@ using System.Net;
 using System.Text;
 using System;
 using System.Reactive.Linq;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using Npgsql;
 using Ethanol.ContextBuilder.Helpers;
-using System.Text.Json;
 using Ethanol.DataObjects;
+using Humanizer;
 
 /// <summary>
 /// The program class containing the main entry point.
@@ -77,19 +77,20 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+// User ID=myUsername;Password=myPassword;Host=myServerAddress;Port=5432;Database=myDataBase;
+
     [Command("replay-tags", "Replays the given Tags file using the given arguments.")]
     public void ReplayTags(
         [Option("i", "The flow file to replay.")] string tagFile,
-        [Option("d", "Databse connection string.")] string connectionString,
+        [Option("d", "Database connection string. Example: 'User ID=postgres;password=postgres;Host=localhost;Port=1605;Database=ethanol'")] string connectionString,
         [Option("t", "Database tablename.")] string tableName, 
         [Option("p", "Address prefix to use for the tag data.")] string addressPrefix,
         [Option("s", "Average delay between records in seconds.")] double interRecordDelay = 0,
-        [Option("c", "The number of tags to read from soure flow file.")] int tagCount = 1000,
+        [Option("c", "The number of tags to read from soure flow file.")] int tagCount = 10000,
         [Option("e", "Command timeout. Default is infinite.")] TimeSpan? timeout = null
     )
     {
         var flowFilePath = Path.GetFullPath(tagFile);
-        _logger.LogInformation($"Running builder stress test with tag file: '{tagFile}'. USe random addresses from the prefix={addressPrefix}");
         
         var random = new Random();
         var sw = new Stopwatch();
@@ -104,7 +105,8 @@ internal class BuilderStressTestCommand : ConsoleAppBase
             lastMiliseconds = sw.ElapsedMilliseconds;     
             var averageFps = sentTagsCount / (sw.ElapsedMilliseconds / 1000.0);
             var elapsed = TimeSpan.FromSeconds(sw.ElapsedMilliseconds / 1000.0);
-            Console.Write($"flows: {sentTagsCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
+            var currentTimestamp = DateTimeOffset.Now;
+            Console.Write($"now:{currentTimestamp},tags: {sentTagsCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
         }
 
         var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);
@@ -112,25 +114,39 @@ internal class BuilderStressTestCommand : ConsoleAppBase
 
         var ipPrefix = (IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr.Address.GetAddressBytes()[..(adr.PrefixLength/8)] : null) ?? throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
 
-         var tags = JsonSampleFile.LoadFromFile(flowFilePath, new TagJsonFormatManipulator(ipPrefix), tagCount);
-         
+        _logger.LogInformation($"Running builder stress test with tag file: '{tagFile}'. Use random addresses from the prefix={ipPrefix}");
+
+
+        var tags = JsonSampleFile.LoadFromFile(flowFilePath, new TagJsonFormatManipulator(ipPrefix), tagCount, _logger);
+
+        _logger.LogInformation($"Connecting to database: '{connectionString}'...");         
         var connection = new NpgsqlConnection(connectionString);
         connection.Open();
-
+        _logger.LogInformation($"Connected.");
         LinkedList<TagObject> tagObjects = new LinkedList<TagObject>();
         while (Context.CancellationToken.IsCancellationRequested == false && sw.ElapsedMilliseconds < (timeout?.TotalMilliseconds ?? long.MaxValue))
         {
-            var tag = tags.GetNextSample();
-            if (tag == null) continue;
-            var tagObject = JsonSerializer.Deserialize<TagObject>(tag);
-            if (tagObject == null) continue;
-            tagObjects.AddLast(tagObject);
+            string tag = String.Empty;
+            try
+            {
+                tag = tags.GetNextSample();
+                if (tag == null) continue;
+                var tagObject = JsonSerializer.Deserialize<TagObject>(tag);
+                tagObjects.AddLast(tagObject);
+            }
+            catch (JsonException e)
+            {
+                _logger?.LogError(e, $"Error parsing tag: {tag}");
+            }
+
             if (tagObjects.Count > 1000)
             {
                 PostgresTagDataSource.BulkInsert(connection, tableName, tagObjects);
                 tagObjects.Clear();
             }
+            sentTagsCount++;
         }
+        PostgresTagDataSource.BulkInsert(connection, tableName, tagObjects);
     }
 
     [Command("replay-flows", "Replays the given JSON flow file using the given arguments.")]
@@ -162,9 +178,9 @@ internal class BuilderStressTestCommand : ConsoleAppBase
             lastMiliseconds = sw.ElapsedMilliseconds;     
             var averageFps = sentFlowCount / (sw.ElapsedMilliseconds / 1000.0);
             var elapsed = TimeSpan.FromSeconds(sw.ElapsedMilliseconds / 1000.0);
+            var currentTimestamp = DateTimeOffset.Now;
 
-
-            Console.Write($"flows: {sentFlowCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
+            Console.Write($"now:{currentTimestamp}, flows: {sentFlowCount}, elapsed: {elapsed.ToString(@"hh\:mm\:ss")}, speed: {actualFps:F2} fps, average: {averageFps:F2} fps.                    \r");
         }
 
         var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);

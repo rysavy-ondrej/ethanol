@@ -21,12 +21,12 @@ public record HostContext
     /// <summary>
     /// Gets or sets the start time of the host context.
     /// </summary>
-    public DateTime Start { get; set; }
+    public DateTimeOffset Start { get; set; }
 
     /// <summary>
     /// Gets or sets the end time of the host context.
     /// </summary>
-    public DateTime End { get; set; }
+    public DateTimeOffset End { get; set; }
 
     /// <summary>
     /// Gets or sets the array of IP connection information associated with the host context.

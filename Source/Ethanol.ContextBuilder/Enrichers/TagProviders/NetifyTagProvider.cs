@@ -59,7 +59,7 @@ public class NetifyTagProvider : ITagDataProvider<TagObject, IpHostContext>
     /// <returns>A dictionary where the key is a string representation of a remote address (from the IpFlow array), and the
     /// value is an array of NetifyApplication objects that match the given remote address and time range.
     /// </returns>
-    private IEnumerable<TagObject> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTime start, DateTime end)
+    private IEnumerable<TagObject> GetRemoteTags(IEnumerable<IPAddress> remoteHosts, DateTimeOffset start, DateTimeOffset end)
     {
         //return remoteHosts.SelectMany(addr => _tagQueryable?.Get(addr.ToString(), nameof(NetifyTag), start, end) ?? Enumerable.Empty<TagObject>());
         return _tagDataSource.GetMany(remoteHosts.Select(x => x.ToString()), "NetifyIp", start, end) ?? Enumerable.Empty<TagObject>();

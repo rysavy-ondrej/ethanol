@@ -25,7 +25,7 @@ namespace Ethanol.DataObjects
         /// <summary>
         /// Gets or sets the starting time of the flow.
         /// </summary>
-        public DateTime TimeStart { get; set; }
+        public DateTimeOffset TimeStart { get; set; }
 
         /// <summary>
         /// Gets or sets the duration of the flow.

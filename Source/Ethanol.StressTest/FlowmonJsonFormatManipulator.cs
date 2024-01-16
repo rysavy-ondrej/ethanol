@@ -26,13 +26,13 @@ public class FlowmonJsonFormatManipulator : JsonFormatManipulator
             case "START_NSEC":
             case "START_NSEC_A":
             case "START_NSEC_B":
-                newValue = JsonValue.Create(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffff"));
+                newValue = JsonValue.Create(DateTimeOffset.Now.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss.fffffff"));
                 return true;
             case "END_NSEC":
             case "END_NSEC_A":
             case "END_NSEC_B":
                 var duration = random.Next(10, 10000);
-                newValue = JsonValue.Create(DateTime.Now.AddMilliseconds(duration).ToString("yyyy-MM-dd HH:mm:ss.fffffff"));
+                newValue = JsonValue.Create(DateTimeOffset.Now.UtcDateTime.AddMilliseconds(duration).ToString("yyyy-MM-dd HH:mm:ss.fffffff"));
                 return true;
             case "L3_IPV4_SRC":
                 if (_randomizeAddresses)

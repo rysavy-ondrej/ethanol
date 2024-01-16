@@ -90,7 +90,7 @@ namespace Ethanol.ContextBuilder
                     writer.OnNextBatch(batch.Items);
                     if (batch.Last)
                     {
-                        writer.OnWindowClosed(new DateTime(batch.TickStart), new DateTime(batch.TickStart + batch.Duration));
+                        writer.OnWindowClosed(batch.TickStart, batch.TickStart + batch.Duration);
                     }
                 }
                 contextWrittenCounter += batch.Items.Length;
@@ -163,6 +163,7 @@ namespace Ethanol.ContextBuilder
 
             Batch<IpHostContext> BuildContext(Batch<IGrouping<IPAddress, IpFlow>> batch)
             {
+
                 var contextBatch = new Batch<IpHostContext>(batch.Items.Select(x => new IpHostContext { HostAddress = x.Key, Flows = x.ToArray() }).ToArray(), batch.TickStart, batch.Duration, batch.Last);
                 contextCreatedCounter += batch.Items.Length;
                 return contextBatch;

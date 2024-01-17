@@ -8,5 +8,5 @@
   "PostgresCommandTimeout": 60,
   "TagsTable": "enrichment_data",
   "HostContextTable": "host_context",
-  "TagsChunkSize" : 100
+  "TagsChunkSize" : 50
 }

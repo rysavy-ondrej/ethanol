@@ -1,8 +1,22 @@
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Ethanol.ContextBuilder.Helpers;
 
 public abstract class JsonFormatManipulator
 {
+    Random _random = new Random();
+    protected IPAddress GetNextHostAddress(byte[] addressPrefix)
+    {
+        var addressBytes = new byte[4];
+        var prefixLen = addressPrefix.Length;
+        addressPrefix.CopyTo(addressBytes, 0);
+        for(int i = prefixLen; i < 4; i++)
+        {
+            addressBytes[i] = (byte)_random.Next(0, 255);
+        }
+        return new IPAddress(addressBytes); 
+    }
     public abstract bool UpdateField(string fieldName, JsonElement fieldValue, out JsonValue? newValue);
     public string UpdateRecord(string flowJson)
     {

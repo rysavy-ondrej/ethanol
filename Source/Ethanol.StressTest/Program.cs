@@ -113,7 +113,7 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         //var t = Observable.Interval(TimeSpan.FromMilliseconds(100)).ForEachAsync(printProgress, Context.CancellationToken);
         Console.WriteLine($"Start generating flows:");
 
-        var ipPrefix = (IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr.Address.GetAddressBytes()[..(adr.PrefixLength/8)] : null) ?? throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
+        var ipPrefix = IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr : throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
 
         _logger.LogInformation($"Running builder stress test with tag file: '{tagFile}'. Use random addresses from the prefix={ipPrefix}");
 
@@ -168,14 +168,15 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         [Option("f", "The flow file to replay.")] string flowFormat,
         [Option("c", "The number of flows to read from soure flow file.")] int flowCount,
         [Option("t", "Tcp target host.")] string tcpEndpoint,
-        [Option("r", "Randomize addresses")] bool randomizeAddresses = false,
+        [Option("p", "Address prefix to use for the flow data.")] string addressPrefix,
         [Option("s", "Average delay between records in seconds.")] double interRecordDelay = 0,
         [Option("e", "Command timeout. Default is infinite.")] TimeSpan? timeout = null
     )
     {
         var flowFilePath = Path.GetFullPath(flowFile);
-        _logger.LogInformation($"Running builder stress test with flow file: '{flowFilePath}'. Randomize address={randomizeAddresses}");
-        var flows = JsonSampleFile.LoadFromFile(flowFilePath, getFormatter(flowFormat, randomizeAddresses), flowCount);
+       var ipPrefix = IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr : throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
+        _logger.LogInformation($"Running builder stress test with flow file: '{flowFilePath}'. Client prefix={ipPrefix}");
+        var flows = JsonSampleFile.LoadFromFile(flowFilePath, getFormatter(flowFormat, ipPrefix), flowCount);
 
         var tcpIpEndpoint = IPEndPoint.Parse(tcpEndpoint);
         var random = new Random();
@@ -244,15 +245,15 @@ internal class BuilderStressTestCommand : ConsoleAppBase
         
     }
 
-    private JsonFormatManipulator getFormatter(string? flowFormat, bool randomizeAddresses = false)
+    private JsonFormatManipulator getFormatter(string? flowFormat, IPAddressPrefix prefix)
     {
         if (flowFormat == null) throw new ArgumentNullException(nameof(flowFormat), "The flow format cannot be null.");
         switch(flowFormat)
         {
             case "ipficol-json":
-                return new IpfixcolJsonFormatManipulator(randomizeAddresses);
+                return new IpfixcolJsonFormatManipulator(prefix);
             case "flowmon-json":
-                return new FlowmonJsonFormatManipulator(randomizeAddresses);
+                return new FlowmonJsonFormatManipulator(prefix);
             default:
                 throw new ArgumentException($"Unknown flow format: '{flowFormat}'.");
         }

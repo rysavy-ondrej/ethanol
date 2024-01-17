@@ -11,7 +11,8 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-
+using System.Text.Json;
+using System.Dynamic;
 /// <summary>
 /// Provides a concrete implementation of <see cref="ITagDataSource{T}"/> for PostgreSQL databases.
 /// This class is responsible for fetching tag data from a PostgreSQL database, allowing for integration
@@ -294,7 +295,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         string Truncate(string? input, int maxsize) => input?.Substring(0, Math.Min(input.Length, maxsize)) ?? string.Empty;
 
         var recordCount = 0;
-        using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, validity) FROM STDIN (FORMAT BINARY)"))
+        using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, details, validity) FROM STDIN (FORMAT BINARY)"))
         {
             foreach (var record in records)
             {
@@ -304,8 +305,8 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
                 writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlDbType.Text);
                 writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
                 writer.Write(record.Reliability, NpgsqlDbType.Real);
+                writer.Write(record.Details, NpgsqlDbType.Json);
                 writer.Write(new NpgsqlRange<DateTimeOffset>(record.StartTime.UtcDateTime, record.EndTime.UtcDateTime), NpgsqlDbType.TimestampTzRange);
-                //writer.Write(record.Details, NpgsqlDbType.Json);
             }
 
             writer.Complete();
@@ -339,6 +340,8 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     static TagObject ReadRow(NpgsqlDataReader reader)
     {
         var validity = reader.GetFieldValue<NpgsqlRange<DateTimeOffset>>("validity");
+        var details = reader.GetFieldValue<string>("details");
+
         return new TagObject
         {
             Type = reader.GetString("type"),
@@ -347,7 +350,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             Reliability = reader.GetFloat("reliability"),
             StartTime = validity.LowerBound,
             EndTime = validity.UpperBound,
-            //Details = JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details"))
+            Details = details != null ? JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details")) : null
         };
     }
 

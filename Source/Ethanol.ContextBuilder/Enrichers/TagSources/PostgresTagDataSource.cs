@@ -80,7 +80,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     {
         try
         {
-            NpgsqlCommand cmd = PrepareCommand(key, start, end);
+            using var cmd = PrepareCommand(key, start, end);
             return await ReadObjectsAsync(cmd);
         }
         catch (Exception e)
@@ -295,21 +295,22 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         string Truncate(string? input, int maxsize) => input?.Substring(0, Math.Min(input.Length, maxsize)) ?? string.Empty;
 
         var recordCount = 0;
-        using (var writer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, details, validity) FROM STDIN (FORMAT BINARY)"))
+        using (var importer = connection.BeginBinaryImport($"COPY {tableName} (type, key, value, reliability, details, validity) FROM STDIN (FORMAT BINARY)"))
         {
             foreach (var record in records)
             {
                 recordCount++;
-                writer.StartRow();
-                writer.Write(Truncate(record.Type, ColumnTypeLength), NpgsqlDbType.Text);
-                writer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlDbType.Text);
-                writer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
-                writer.Write(record.Reliability, NpgsqlDbType.Real);
-                writer.Write(record.Details, NpgsqlDbType.Json);
-                writer.Write(new NpgsqlRange<DateTimeOffset>(record.StartTime.UtcDateTime, record.EndTime.UtcDateTime), NpgsqlDbType.TimestampTzRange);
+                importer.StartRow();
+                importer.Write(Truncate(record.Type, ColumnTypeLength), NpgsqlDbType.Text);
+                importer.Write(Truncate(record.Key, ColumnKeyLength), NpgsqlDbType.Text);
+                importer.Write(Truncate(record.Value, ColumnValueLength), NpgsqlDbType.Text);
+                importer.Write(record.Reliability, NpgsqlDbType.Real);
+                importer.Write(record.Details, NpgsqlDbType.Json);
+                importer.Write(new NpgsqlRange<DateTimeOffset>(record.StartTime.UtcDateTime, record.EndTime.UtcDateTime), NpgsqlDbType.TimestampTzRange);
             }
 
-            writer.Complete();
+            importer.Complete();
+            importer.Close();
         }
         return recordCount;
     }

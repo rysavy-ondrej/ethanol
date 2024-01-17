@@ -27,7 +27,7 @@ namespace Ethanol.ContextProvider.Endpoints
         private readonly int _tagsChunkSize;
 
         public ContextsStreamEndpoint(NpgsqlDataSource datasource, EthanolConfiguration configuration, ILogger? logger)
-        {   
+        {
             _datasource = datasource ?? throw new ArgumentNullException(nameof(datasource));
             _hostContextTable = configuration?.HostContextTable ?? throw new ArgumentNullException(nameof(configuration));
             _tagsTableName = configuration?.TagsTable ?? throw new ArgumentNullException(nameof(configuration));
@@ -48,11 +48,22 @@ namespace Ethanol.ContextProvider.Endpoints
                 using var connection = _datasource.OpenConnection();
                 using var tagConnection = _datasource.OpenConnection();
                 var tagsProcessor = new TagsProcessor(tagConnection, _tagsTableName, _logger);
+                var contextCount = 0;
+                var readContextCount = 0;
+                var taggedContextCount = 0;
+
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = $"SELECT COUNT(*) FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()}";
+                    _logger?.LogInformation($"Counting host contexts {query.GetWhereExpression()} from {_hostContextTable} table.");
+                    contextCount = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
+                    _logger?.LogInformation($"Counted {contextCount} host contexts.");
+                }
 
                 _logger?.LogInformation($"Using connection: `{connection.ConnectionString}` to access database.");
                 using (var cmd = connection.CreateCommand())
                 {
-                    cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity ASC";
+                    cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY id ASC";
                     _logger?.LogInformation($"Fetching context objects {query.GetWhereExpression()} from {_hostContextTable} table.");
 
                     using var reader = await cmd.ExecuteReaderAsync(ct);
@@ -60,19 +71,23 @@ namespace Ethanol.ContextProvider.Endpoints
                     {
                         var chunk = ReadNextChunk(reader, out var start, out var end, ct);
                         if (chunk.Count == 0) break; // no more data to read
+                        readContextCount += chunk.Count;
 
-                        _logger?.LogInformation($"Processing context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}...");
-                        var contexts = FetchTags(tagsProcessor, chunk, start, end);
+                        _logger?.LogInformation($"Processing context chunk: host_count={chunk.Count}, validity_from={start?.ToString("o")}, validity_to={end?.ToString("o")}...");
+
+                        var contexts = FetchTags(tagsProcessor, chunk, start!.Value, end!.Value);
                         foreach (var ctx in contexts)
                         {
                             var contextJson = Json.Serialize(ctx);
                             await HttpContext.Response.WriteAsync($"{contextJson}\n", ct);
+                            taggedContextCount++;
                         }
-                        _logger?.LogInformation($"Processed context chunk: host_count={chunk.Count}, validity_from={start}, validity_to={end}.");
+                        _logger?.LogInformation($"Processed context chunk: host_count={chunk.Count}, validity_from={start?.ToString("o")}, validity_to={end?.ToString("o")}.");
                         await HttpContext.Response.Body.FlushAsync(ct); // Flush the data to the client
                     }
                     reader.Close();
                 }
+                _logger?.LogInformation($"Fetched {readContextCount}/{contextCount} host contexts and wrote {taggedContextCount} tagged host contexts.");
                 connection.Close();
                 tagConnection.Close();
             }
@@ -89,17 +104,18 @@ namespace Ethanol.ContextProvider.Endpoints
         /// <param name="start">The start DateTime of the chunk.</param>
         /// <param name="end">The end DateTime of the chunk.</param>
         /// <returns>A list of HostContext objects representing the chunk of data.</returns>
-        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTimeOffset start, out DateTimeOffset end, CancellationToken ct)
+        List<HostContext> ReadNextChunk(NpgsqlDataReader reader, out DateTimeOffset? start, out DateTimeOffset? end, CancellationToken ct)
         {
             var chunk = new List<HostContext>();
-            while (reader.Read() && chunk.Count < _tagsChunkSize && ct.IsCancellationRequested == false)
+            while (chunk.Count < _tagsChunkSize && ct.IsCancellationRequested == false && reader.Read())
             {
-                // read rows in to chunk of the specified size
-                var row = ReadRow(reader);
-                chunk.Add(row);
+                if (TryReadRow(reader, out var row))
+                {// read rows in to chunk of the specified size
+                    chunk.Add(row!);
+                }
             }
-            start = chunk.FirstOrDefault()?.Start ?? DateTimeOffset.MinValue;
-            end = chunk.LastOrDefault()?.End ?? DateTimeOffset.MinValue;
+            start = chunk.FirstOrDefault()?.Start ;
+            end = chunk.LastOrDefault()?.End ;
             return chunk;
         }
         /// <summary>
@@ -113,10 +129,14 @@ namespace Ethanol.ContextProvider.Endpoints
         IEnumerable<HostContext> FetchTags(TagsProcessor tagsProcessor, IEnumerable<HostContext> chunk, DateTimeOffset start, DateTimeOffset end)
         {
             var tags = tagsProcessor.ReadTagObjects(chunk.Select(c => c.Key ?? string.Empty), start, end);
-            _logger.LogInformation($"Fetched {tags.Count} tags for {chunk.Count()} host contexts.");
+            _logger?.LogInformation($"Fetched {tags.Count} tag groups for {chunk.Count()} host contexts.");
             foreach (var ctx in chunk)
             {
-                if (ctx.Key == null) continue;
+                if (ctx.Key == null)
+                {
+                    _logger?.LogError($"Unexpected: Host context with id={ctx.Id} has no key.");
+                    continue;
+                }
                 if (tags.TryGetValue(ctx.Key, out var ctxTags))
                 {
                     ctx.Tags = tagsProcessor.ComputeCompactTags(ctxTags.Where(t => TimeOverlaps(t.StartTime, t.EndTime, ctx.Start, ctx.End)).ToList());
@@ -138,26 +158,36 @@ namespace Ethanol.ContextProvider.Endpoints
             return firstStart <= secondEnd && firstEnd >= secondStart;
         }
 
-        private HostContext ReadRow(NpgsqlDataReader reader)
+        private bool TryReadRow(NpgsqlDataReader reader, out HostContext? hostContext)
         {
-            var id = reader.GetInt64("id");
-            var key = reader.GetString("key");
-            var validity = reader.GetFieldValue<NpgsqlRange<DateTime>>("validity");
-            var connections = JsonSerializer.Deserialize<IpConnectionInfo[]>(reader.GetString("connections"));
-            var resolvedDomains = JsonSerializer.Deserialize<ResolvedDomainInfo[]>(reader.GetString("resolveddomains"));
-            var webUrls = JsonSerializer.Deserialize<WebRequestInfo[]>(reader.GetString("weburls"));
-            var tlsHandshakes = JsonSerializer.Deserialize<TlsHandshakeInfo[]>(reader.GetString("tlshandshakes"));
-            return new HostContext
+            try
             {
-                Id = id,
-                Key = key,
-                Start = validity.LowerBound,
-                End = validity.UpperBound,
-                Connections = connections ?? Array.Empty<IpConnectionInfo>(),
-                ResolvedDomains = resolvedDomains ?? Array.Empty<ResolvedDomainInfo>(),
-                WebUrls = webUrls ?? Array.Empty<WebRequestInfo>(),
-                TlsHandshakes = tlsHandshakes ?? Array.Empty<TlsHandshakeInfo>()
-            };
+                var id = reader.GetInt64("id");
+                var key = reader.GetString("key");
+                var validity = reader.GetFieldValue<NpgsqlRange<DateTimeOffset>>("validity");
+                var connections = JsonSerializer.Deserialize<IpConnectionInfo[]>(reader.GetString("connections"));
+                var resolvedDomains = JsonSerializer.Deserialize<ResolvedDomainInfo[]>(reader.GetString("resolveddomains"));
+                var webUrls = JsonSerializer.Deserialize<WebRequestInfo[]>(reader.GetString("weburls"));
+                var tlsHandshakes = JsonSerializer.Deserialize<TlsHandshakeInfo[]>(reader.GetString("tlshandshakes"));
+                hostContext = new HostContext
+                {
+                    Id = id,
+                    Key = key,
+                    Start = validity.LowerBound,
+                    End = validity.UpperBound,
+                    Connections = connections ?? Array.Empty<IpConnectionInfo>(),
+                    ResolvedDomains = resolvedDomains ?? Array.Empty<ResolvedDomainInfo>(),
+                    WebUrls = webUrls ?? Array.Empty<WebRequestInfo>(),
+                    TlsHandshakes = tlsHandshakes ?? Array.Empty<TlsHandshakeInfo>()
+                };
+                return true;
+            }
+            catch(Exception)
+            {
+                _logger?.LogWarning($"Failed to read a row from the reader.");
+                hostContext = default;
+                return false;
+            }
         }
     }
 }

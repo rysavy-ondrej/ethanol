@@ -122,6 +122,25 @@ class TagsProcessor
         }
         return dictionary;
     }
+
+    internal IDictionary<string, List<TagObject>> ReadTagObjects(DateTimeOffset start, DateTimeOffset end)
+    {
+        var dictionary = new Dictionary<string, List<TagObject>>();
+        var tags = _provider.GetAll(start, end);
+        foreach (var tag in tags)
+        { 
+            if (tag.Key == null) continue;
+            if (dictionary.TryGetValue(tag.Key, out var list))
+            {
+                list.Add(tag);
+            }
+            else
+            {
+                dictionary[tag.Key] = new List<TagObject> { tag };
+            }
+        }
+        return dictionary; 
+    }
 }
 public static class ToStringExtensions
 {

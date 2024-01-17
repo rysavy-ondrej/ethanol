@@ -265,6 +265,15 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         cmd.CommandText = $"SELECT * FROM {_tableName} WHERE type='{tagType}' AND validity && '[{startString},{endString})' AND key IN ({tagKeysExpr})";
         return cmd;
     }
+    
+    private NpgsqlCommand PrepareCommand(DateTimeOffset start, DateTimeOffset end)
+    {
+        var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var cmd = _connection.CreateCommand();
+        cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})'";
+        return cmd;
+    }
     /// <summary>
     /// Creates a new table for storing <see cref="TcpFlowTag"/> records in the database if it does not alrady exist.
     /// </summary>
@@ -360,5 +369,26 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         _connection.Close();
         _connection.Dispose();
     }
+
+    /// <summary>
+    /// Retrieves all objects within the specified time range.
+    /// </summary>
+    /// <param name="start">The start time of the range.</param>
+    /// <param name="end">The end time of the range.</param>
+    /// <returns>An enumerable collection of objects.</returns>
+    public IEnumerable<TagObject> GetAll(DateTimeOffset start, DateTimeOffset end)
+    {
+        try
+        {
+            using var cmd = PrepareCommand(start, end);
+            return ReadObjects(cmd);
+        }
+        catch (Exception e)
+        {
+            _logger?.LogError(e, "Postgres tag source: Error executing reader.");
+            return new List<TagObject>();
+        }
+    }
+
 }
 

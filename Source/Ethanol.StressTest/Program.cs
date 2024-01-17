@@ -117,7 +117,7 @@ internal class BuilderStressTestCommand : ConsoleAppBase
 
         _logger.LogInformation($"Running builder stress test with tag file: '{tagFile}'. Use random addresses from the prefix={ipPrefix}");
 
-
+        var sleepTime = TimeSpan.FromSeconds(interRecordDelay);
         var tags = JsonSampleFile.LoadFromFile(flowFilePath, new TagJsonFormatManipulator(ipPrefix), tagCount, _logger);
 
         _logger.LogInformation($"Connecting to database: '{connectionString}'...");         
@@ -141,8 +141,8 @@ internal class BuilderStressTestCommand : ConsoleAppBase
                 var tagObject = JsonSerializer.Deserialize<TagObject>(tag, jsonOption);
                 if (tagObject == null) continue;
 
-                tagObject.StartTime = DateTimeOffset.Now - TimeSpan.FromDays(1);
-                tagObject.EndTime = DateTimeOffset.Now + TimeSpan.FromDays(1);
+                tagObject.StartTime = DateTimeOffset.Now - TimeSpan.FromMinutes(1);
+                tagObject.EndTime = DateTimeOffset.Now + TimeSpan.FromMinutes(1);
                 tagObjects.AddLast(tagObject);
             }
             catch (JsonException e)
@@ -158,6 +158,8 @@ internal class BuilderStressTestCommand : ConsoleAppBase
             }
             
             sentTagsCount++;
+            Thread.Sleep(sleepTime);
+
         }
         PostgresTagDataSource.BulkInsert(connection, tableName, tagObjects);
     }
@@ -174,7 +176,9 @@ internal class BuilderStressTestCommand : ConsoleAppBase
     )
     {
         var flowFilePath = Path.GetFullPath(flowFile);
-       var ipPrefix = IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr : throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
+        var ipPrefix = IPAddressPrefix.TryParse(addressPrefix, out var adr) ? adr : throw new ArgumentException($"Invalid address prefix: '{addressPrefix}'.");
+        var sleepTime = TimeSpan.FromSeconds(interRecordDelay);
+
         _logger.LogInformation($"Running builder stress test with flow file: '{flowFilePath}'. Client prefix={ipPrefix}");
         var flows = JsonSampleFile.LoadFromFile(flowFilePath, getFormatter(flowFormat, ipPrefix), flowCount);
 
@@ -214,19 +218,7 @@ internal class BuilderStressTestCommand : ConsoleAppBase
                 var flowBytes = Encoding.UTF8.GetBytes(flow);
                 stream.Write(flowBytes, 0, flowBytes.Length);
                 sentFlowCount++;
-                if (interRecordDelay > 0)
-                {
-                    var delay = (int)(interRecordDelay * 1000);
-                    if (delay > 10)
-                    {
-                        var waitTime = delay + random.Next(-delay / 10, delay / 10);
-                        Thread.Sleep(waitTime);
-                    }
-                    else
-                    {
-                        Thread.Sleep(delay);
-                    }
-                }
+                Thread.Sleep(sleepTime);
             }
         }
         catch(SocketException ex)

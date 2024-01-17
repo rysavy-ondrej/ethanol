@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSTZRANGE,
-    details JSON
-);
+    details JSON,
+    validity TSTZRANGE
+)
 
 -- Create indexes on the 'key' and 'type' columns of the 'enrichment_data' table if they don't exist.
 -- These indexes are intended to speed up queries filtering by 'key' or 'type'.
@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS netify_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSTZRANGE,
-    details JSON
-);
+    details JSON,
+    validity TSTZRANGE NOT NULL
+) 
 
 -- Create indexes on the 'key' and 'type' columns of the 'netify_data' table to enhance the performance of queries.
 CREATE INDEX IF NOT EXISTS netify_data_key_idx ON netify_data (key);
@@ -69,15 +69,14 @@ CREATE INDEX IF NOT EXISTS netify_data_validity_idx ON netify_data USING GIST (v
 -- validity: A time range indicating the validity period of the context data.
 
 CREATE TABLE IF NOT EXISTS host_context ( 
-    id SERIAL PRIMARY KEY,   
     key VARCHAR(255) NOT NULL,
     tags JSON,
     connections JSON,
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,
-    validity TSTZRANGE
-);
+    validity TSTZRANGE not null
+)
 
 -- An index is created on the 'key' column of the 'host_context' table to facilitate quick lookups based on the host identifier.
 CREATE INDEX IF NOT EXISTS host_context_key_idx ON host_context (key);

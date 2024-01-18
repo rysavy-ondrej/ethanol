@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Dynamic;
+using System.Diagnostics.CodeAnalysis;
 /// <summary>
 /// Provides a concrete implementation of <see cref="ITagDataSource{T}"/> for PostgreSQL databases.
 /// This class is responsible for fetching tag data from a PostgreSQL database, allowing for integration
@@ -128,7 +129,12 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         }
     }
 
-    private IList<TagObject> ReadObjects(NpgsqlCommand cmd)
+    /// <summary>
+    /// Reads tag objects from the database using the specified NpgsqlCommand.
+    /// </summary>
+    /// <param name="cmd">The NpgsqlCommand object used to execute the query.</param>
+    /// <returns>A list of TagObject instances read from the database.</returns>
+    public IList<TagObject> ReadObjects(NpgsqlCommand cmd)
     {
         if (!EnsureOpenConnection(_connection))
             return new List<TagObject>();
@@ -266,13 +272,19 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
         return cmd;
     }
     
-    private NpgsqlCommand PrepareCommand(DateTimeOffset start, DateTimeOffset end)
+    public NpgsqlCommand PrepareCommand(DateTimeOffset start, DateTimeOffset end, params string[] ordering)
     {
         var startString = start.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
         var endString = end.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
+        var orderString = (ordering.Length > 0) ? "ORDER BY " + String.Join(',', ordering) + " ASC" : String.Empty;
         var cmd = _connection.CreateCommand();
-        cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})'";
+        cmd.CommandText = $"SELECT * FROM {_tableName} WHERE validity && '[{startString},{endString})' {orderString}";
         return cmd;
+    }
+
+    public NpgsqlDataReader ExecuteReader(NpgsqlCommand cmd)
+    {
+        return cmd.ExecuteReader();
     }
     /// <summary>
     /// Creates a new table for storing <see cref="TcpFlowTag"/> records in the database if it does not alrady exist.
@@ -347,7 +359,7 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
     /// </summary>
     /// <param name="reader">The NpgsqlDataReader containing the tag data.</param>
     /// <returns>The TagRecord extracted from the reader.</returns>
-    static TagObject ReadRow(NpgsqlDataReader reader)
+    public static TagObject ReadRow(NpgsqlDataReader reader)
     {
         var validity = reader.GetFieldValue<NpgsqlRange<DateTimeOffset>>("validity");
         var details = reader.GetFieldValue<string>("details");
@@ -362,6 +374,41 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             EndTime = validity.UpperBound,
             Details = details != null ? JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details")) : null
         };
+    }
+
+    /// <summary>
+    /// Tries to read a row from the NpgsqlDataReader and populate a TagObject if the tag key matches.
+    /// </summary>
+    /// <param name="reader">The NpgsqlDataReader to read from.</param>
+    /// <param name="tagkey">The tag key to match.</param>
+    /// <param name="tag">When this method returns, contains the TagObject if the tag key matches; otherwise, contains the default value.</param>
+    /// <returns><c>true</c> if the tag key matches and a TagObject is populated; otherwise, <c>false</c>.</returns>
+    public static bool TryReadRow(NpgsqlDataReader reader, string tagkey, [NotNullWhen(true)] out TagObject? tag)
+    {
+        var key = reader.GetString("key");
+        if (tagkey.Equals(key, StringComparison.OrdinalIgnoreCase))
+        {
+            var validity = reader.GetFieldValue<NpgsqlRange<DateTimeOffset>>("validity");
+            var details = reader.GetFieldValue<string>("details");
+
+            tag = new TagObject
+            {
+                Type = reader.GetString("type"),
+                Key = key,
+                Value = reader.GetString("value"),
+                Reliability = reader.GetFloat("reliability"),
+                StartTime = validity.LowerBound,
+                EndTime = validity.UpperBound,
+                Details = details != null ? JsonSerializer.Deserialize<ExpandoObject>(reader.GetString("details")) : null
+            };
+            return true;
+        }
+        else
+        {
+            tag = default;
+            return false;
+        }
+
     }
 
     public void Dispose()
@@ -389,6 +436,5 @@ public class PostgresTagDataSource : ITagDataSource<TagObject>
             return new List<TagObject>();
         }
     }
-
 }
 

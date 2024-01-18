@@ -141,6 +141,12 @@ class TagsProcessor
         }
         return dictionary; 
     }
+
+    internal Task<NpgsqlDataReader> GetReaderForIntervalAsync(DateTimeOffset start, DateTimeOffset end, string ordering)
+    {
+        var cmd = _provider.PrepareCommand(start, end, ordering);
+        return cmd.ExecuteReaderAsync();
+    }
 }
 public static class ToStringExtensions
 {

@@ -48,7 +48,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = $"SELECT COUNT(*) FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()}";
-                    _logger?.LogInformation($"Counting host contexts {query.GetWhereExpression()} from {_hostContextTable} table.");
+                    _logger?.LogInformation($"Counting host contexts where {query.GetWhereExpression()} from {_hostContextTable} table.");
                     contextCount = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
                     _logger?.LogInformation($"Counted {contextCount} host contexts.");
                 }
@@ -57,7 +57,7 @@ namespace Ethanol.ContextProvider.Endpoints
                 using (var cmd = connection.CreateCommand())
                 {
                     cmd.CommandText = $"SELECT * FROM \"{_hostContextTable}\" WHERE {query.GetWhereExpression()} ORDER BY validity, key ASC";
-                    _logger?.LogInformation($"Fetching context objects {query.GetWhereExpression()} from {_hostContextTable} table.");
+                    _logger?.LogInformation($"Fetching context objects where {query.GetWhereExpression()} from {_hostContextTable} table.");
 
                     using var reader = await cmd.ExecuteReaderAsync(ct);
                     TagsIntervalReader? tagReader = null; 
@@ -74,11 +74,16 @@ namespace Ethanol.ContextProvider.Endpoints
                         // then we need to create a new tag reader for the time range from start to end.
                         if (tagReader == null || tagReader.CoversTimeRange(start, end) == false)
                         {
-                            _logger?.LogInformation($"Creating a new tag reader for the time range from {start} to {end}...");
-                            tagReader?.Close();
-                            tagReader?.Dispose();
+                            if (tagReader != null)
+                            {
+                                _logger?.LogInformation($"Closing tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}: read:{tagReader.TagsRead}, skipped:{tagReader.TagsSkipped}.");
+                                tagReader.Close();
+                                tagReader.Dispose();
+                                tagReader = null;
+                            }
+                            _logger?.LogInformation($"Creating a new tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}...");
                             tagReader = await TagsIntervalReader.Create(tagsProcessor, start, end);
-                            _logger?.LogInformation($"Created a new tag reader for the time range from {start} to {end}.");
+                            _logger?.LogInformation($"Created a new tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}.");
                         }
 
                         // fetch tags for the context from the reader:
@@ -87,9 +92,7 @@ namespace Ethanol.ContextProvider.Endpoints
                         
                         var contextJson = Json.Serialize(ctx);
                         await HttpContext.Response.WriteAsync($"{contextJson}\n", ct);
-                        taggedContextCount++;
-                        
-                        //_logger?.LogInformation($"Processed context chunk: host_count={chunk.Count}, validity_from={start?.ToString("o")}, validity_to={end?.ToString("o")}.");
+                        taggedContextCount++;;
                         await HttpContext.Response.Body.FlushAsync(ct); // Flush the data to the client
                     }
                     reader.Close();
@@ -120,6 +123,9 @@ namespace Ethanol.ContextProvider.Endpoints
 
             public NpgsqlDataReader Reader => _reader;
 
+            public int TagsRead => _tagsRead;
+            public int TagsSkipped => _tagsSkipped;
+
             public bool CoversTimeRange(DateTimeOffset start, DateTimeOffset end)
             {
                 return start == _start && end == _end;
@@ -143,6 +149,9 @@ namespace Ethanol.ContextProvider.Endpoints
 
             bool _readStarted = false;
             bool _eof = false;
+            private int _tagsSkipped;
+            private int _tagsRead;
+
             internal async Task<IList<TagObject>> ReadTagsAsync(string key)
             {
                 var tags = new List<TagObject>();
@@ -162,16 +171,19 @@ namespace Ethanol.ContextProvider.Endpoints
                 // skip rows with keys that are less than the key we are looking for
                 while(String.CompareOrdinal(_reader.GetString("key"), key) < 0)
                 {
+                    _tagsSkipped++;
                     if (await _reader.ReadAsync() == false)
                     {
                         _eof = true;
                         return tags;
-                    } 
+                    }
+                    
                 }  
                 // read rows with the matching key:
                 while(PostgresTagDataSource.TryReadRow(_reader, key, out var tag))
                 {
                     tags.Add(tag);
+                    _tagsRead++;
                     if (await _reader.ReadAsync() == false)
                     {
                         _eof = true;

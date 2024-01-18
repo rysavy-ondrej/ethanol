@@ -76,14 +76,14 @@ namespace Ethanol.ContextProvider.Endpoints
                         {
                             if (tagReader != null)
                             {
-                                _logger?.LogInformation($"Closing tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}: read:{tagReader.TagsRead}, skipped:{tagReader.TagsSkipped}.");
+                                _logger?.LogInformation($"Contexts in time range from {start.ToString("o")} to {end.ToString("o")} completed: Tags read={tagReader.TagsRead}, skipped={tagReader.TagsSkipped}.");
                                 tagReader.Close();
                                 tagReader.Dispose();
                                 tagReader = null;
                             }
                             _logger?.LogInformation($"Creating a new tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}...");
                             tagReader = await TagsIntervalReader.Create(tagsProcessor, start, end);
-                            _logger?.LogInformation($"Created a new tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}.");
+                            _logger?.LogInformation($"Created a new tag reader for the time range from {start.ToString("o")} to {end.ToString("o")}. Processing contexts...");
                         }
 
                         // fetch tags for the context from the reader:

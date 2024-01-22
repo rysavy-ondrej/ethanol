@@ -61,13 +61,13 @@ namespace Ethanol.ContextBuilder
             ILogger? logger,
             CancellationToken cancellationToken)
         {
-            int inputFlowsCounter = 0;
-            int contextCreatedCounter = 0;
-            int contextWrittenCounter = 0;
-            int windowsClosedCounter = 0;
-            int flowsAcceptedCounter = 0;
-            int flowsDeniedCounter = 0;
-            int flowsDroppedCounter = 0;
+            long inputFlowsCounter = 0;
+            long contextCreatedCounter = 0;
+            long contextWrittenCounter = 0;
+            long windowsClosedCounter = 0;
+            long flowsAcceptedCounter = 0;
+            long flowsDeniedCounter = 0;
+            long flowsDroppedCounter = 0;
 
             logger?.LogInformation("Starting pipeline...");
             // CREATING BLOCKS:
@@ -108,21 +108,21 @@ namespace Ethanol.ContextBuilder
             enricherBlock.LinkTo(refinerBlock, new DataflowLinkOptions { PropagateCompletion = true });
             refinerBlock.LinkTo(writerBlock, new DataflowLinkOptions { PropagateCompletion = true });
 
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_read", () => inputFlowsCounter, "flows", "Number of flows read from the input.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter, "flows", "Number of flows accepted by the flow filter.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_denied", () => flowsDeniedCounter, "flows", "Number of flows denied by the flow filter.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.flows_dropped", () => flowsDroppedCounter, "flows", "Number of flows droped by the flow sampler.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
-            s_meter.CreateObservableCounter<int>("ethanol.context_builder.contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.flows_read", () => inputFlowsCounter, "flows", "Number of flows read from the input.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.flows_accepted", () => flowsAcceptedCounter, "flows", "Number of flows accepted by the flow filter.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.flows_denied", () => flowsDeniedCounter, "flows", "Number of flows denied by the flow filter.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.flows_dropped", () => flowsDroppedCounter, "flows", "Number of flows droped by the flow sampler.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
+            s_meter.CreateObservableCounter<long>("ethanol.context_builder.contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
 
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_read", () => inputFlowsCounter, "flows", "Number of windows closed.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_accepted", () => inputFlowsCounter, "flows", "Number of windows closed.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_denied", () => flowsDeniedCounter, "flows", "Number of windows closed.");
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_flows_dropped", () => flowsDroppedCounter, "flows", "Number of windows closed.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_contexts_created", () => contextCreatedCounter, "contexts", "Number of contexts created.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_contexts_written", () => contextWrittenCounter, "contexts", "Number of context written.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_flows_read", () => inputFlowsCounter, "flows", "Number of windows closed.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_flows_accepted", () => inputFlowsCounter, "flows", "Number of windows closed.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_flows_denied", () => flowsDeniedCounter, "flows", "Number of windows closed.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_flows_dropped", () => flowsDroppedCounter, "flows", "Number of windows closed.");
 
-            s_meter.CreateObservableGauge<int>("ethanol.context_builder.total_windows_closed", () => windowsClosedCounter, "windows", "Number of windows closed.");
+            s_meter.CreateObservableGauge<long>("ethanol.context_builder.total_windows_closed", () => windowsClosedCounter, "windows", "Number of windows closed.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_hosts", () => windowBlock.KeyCount, "hosts", "Number of hosts currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.actual_window_flows", () => windowBlock.ValueCount, "flows", "Number of flows currently collected in the active window.");
             s_meter.CreateObservableGauge<int>("ethanol.context_builder.next_window_in", TimeUntilNextWindow, "seconds", "Number of seconds until the next window is created.");

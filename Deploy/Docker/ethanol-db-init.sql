@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
     reliability REAL,
     details JSON,
     validity TSTZRANGE
-)
+);
 
 -- Create indexes on the 'key' and 'type' columns of the 'enrichment_data' table if they don't exist.
 -- These indexes are intended to speed up queries filtering by 'key' or 'type'.
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS netify_data (
     reliability REAL,
     details JSON,
     validity TSTZRANGE NOT NULL
-) 
+);
 
 -- Create indexes on the 'key' and 'type' columns of the 'netify_data' table to enhance the performance of queries.
 CREATE INDEX IF NOT EXISTS netify_data_key_idx ON netify_data (key);
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS host_context (
     weburls JSON,
     tlshandshakes JSON,
     validity TSTZRANGE not null
-)
+);
 
 -- An index is created on the 'key' column of the 'host_context' table to facilitate quick lookups based on the host identifier.
 CREATE INDEX IF NOT EXISTS host_context_key_idx ON host_context (key);

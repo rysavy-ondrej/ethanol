@@ -69,6 +69,7 @@ CREATE INDEX IF NOT EXISTS netify_data_validity_idx ON netify_data USING GIST (v
 -- validity: A time range indicating the validity period of the context data.
 
 CREATE TABLE IF NOT EXISTS host_context ( 
+    id SERIAL PRIMARY KEY, 
     key VARCHAR(255) NOT NULL,
     tags JSON,
     connections JSON,

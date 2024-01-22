@@ -1,4 +1,4 @@
--- WARNING: When chaning this script do not forget to update it also at the following locations:
+-- WARNING: When changing this script do not forget to update it also at the following locations:
 -- TestData/ContextBuilder/db_init
 -- Deploy/Docker/
 --
@@ -16,7 +16,7 @@ GRANT ALL PRIVILEGES ON DATABASE ethanol TO postgres;
 -- key: A string used as a unique identifier for the enrichment data.
 -- value: A string to store the enrichment data value itself.
 -- reliability: A floating-point number to indicate the reliability of the enrichment data.
--- validity: A time range (TSTZRANGE) to represent the period during which the data is considered valid.
+-- validity: A time range (TSRANGE) to represent the period during which the data is considered valid.
 -- details: A JSON object to store additional details related to the enrichment data in a structured format.
 
 CREATE TABLE IF NOT EXISTS enrichment_data (
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS enrichment_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSTZRANGE,
-    details JSON
+    details JSON,
+    validity TSTZRANGE
 );
 
 -- Create indexes on the 'key' and 'type' columns of the 'enrichment_data' table if they don't exist.
@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS netify_data (
     key VARCHAR(64) NOT NULL,
     value VARCHAR(128),
     reliability REAL,
-    validity TSTZRANGE,
-    details JSON
+    details JSON,
+    validity TSTZRANGE NOT NULL
 );
 
 -- Create indexes on the 'key' and 'type' columns of the 'netify_data' table to enhance the performance of queries.
@@ -69,14 +69,14 @@ CREATE INDEX IF NOT EXISTS netify_data_validity_idx ON netify_data USING GIST (v
 -- validity: A time range indicating the validity period of the context data.
 
 CREATE TABLE IF NOT EXISTS host_context ( 
-    id SERIAL PRIMARY KEY,   
+    id SERIAL PRIMARY KEY, 
     key VARCHAR(255) NOT NULL,
     tags JSON,
     connections JSON,
     resolveddomains JSON,
     weburls JSON,
     tlshandshakes JSON,
-    validity TSTZRANGE
+    validity TSTZRANGE not null
 );
 
 -- An index is created on the 'key' column of the 'host_context' table to facilitate quick lookups based on the host identifier.
